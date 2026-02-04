@@ -1,6 +1,7 @@
 import Image from 'next/image';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
+import TopHeader from '@/components/TopHeader';
 import { FaGithub } from 'react-icons/fa';
 import { FiArrowUpRight } from 'react-icons/fi';
 import { Badge } from '@/components/ui/badge';
@@ -163,6 +164,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   if (!project) {
     return (
       <>
+        <TopHeader />
         <Header />
         <div className="min-h-screen flex items-center justify-center">
           <p className="text-gray-500">Project not found</p>
@@ -174,6 +176,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   if (project.hasDetailedView && project.techStack) {
     return (
       <>
+        <TopHeader />
         <Header />
         <section className="pt-32 pb-20">
           <div className="max-w-[1100px] mx-auto px-6 md:px-12">
@@ -295,6 +298,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
 
   return (
     <>
+      <TopHeader />
       <Header />
       <section className="pt-40 pb-40">
         <div className="max-w-[1000px] mx-auto px-6 md:px-12 space-y-8">

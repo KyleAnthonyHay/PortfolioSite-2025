@@ -212,8 +212,8 @@ export default function ChatInterface() {
   };
 
   return (
-    <div className="flex flex-col h-[calc(100vh-10rem)] max-w-3xl mx-auto">
-      <div className="mb-4">
+    <div className="flex flex-col flex-1 max-w-3xl mx-auto w-full px-4 h-full min-h-0 overflow-hidden">
+      <div className="mb-4 flex-shrink-0 pt-6">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -223,7 +223,7 @@ export default function ChatInterface() {
         </Link>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide min-h-0 pb-32">
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
             <div className="w-16 h-16 rounded-full overflow-hidden mb-4 border-2 border-gray-200">
@@ -285,24 +285,26 @@ export default function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} className="p-4">
-        <div className="relative flex items-center">
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Ask about Kyle's projects..."
-            className="w-full px-5 py-4 pr-14 bg-white text-gray-900 placeholder-gray-400 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 shadow-sm"
-            disabled={isLoading}
-          />
-          <button
-            type="submit"
-            disabled={isLoading || !input.trim()}
-            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-gray-900 hover:bg-gray-700 disabled:bg-gray-300 disabled:opacity-50 rounded-full transition-colors"
-            aria-label="Send message"
-          >
-            <ArrowIcon />
-          </button>
+      <form onSubmit={sendMessage} className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-4 pb-6 z-40 safe-area-inset-bottom">
+        <div className="max-w-3xl mx-auto">
+          <div className="relative flex items-center">
+            <input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="Ask about Kyle's projects..."
+              className="w-full px-5 py-4 pr-14 bg-white text-gray-900 placeholder-gray-400 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 shadow-sm"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              disabled={isLoading || !input.trim()}
+              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-gray-900 hover:bg-gray-700 disabled:bg-gray-300 disabled:opacity-50 rounded-full transition-colors"
+              aria-label="Send message"
+            >
+              <ArrowIcon />
+            </button>
+          </div>
         </div>
       </form>
     </div>
