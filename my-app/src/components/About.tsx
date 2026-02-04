@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 const About = () => {
   return (
-    <section className="pt-24 pb-32 bg-none"
+    <section id="about" className="pt-24 pb-32 bg-none"
       
       style={{
         background: "linear-gradient(to bottom, white 0px, #F5F5F5 70px, #F5F5F5 100%)",
@@ -18,10 +18,10 @@ const About = () => {
           
           <div className="space-y-6 text-[#666666] text-[20px] leading-[1.6] mb-12">
             <p>
-            Hi, my name is Kyle-Anthony. I'm based in Brooklyn, NY, and I specialize in Swift, Flutter, and web development. I’ve been hacking away at personal projects and taking internships where I can. I’m currently diving into consumer apps and AI integrations to solve problems for both users and companies.
+            Hi, my name is Kyle-Anthony. I'm based in Brooklyn, NY, and I'm an <a href="https://www.cognizant.com/us/en" target="_blank" rel="noopener noreferrer" className="font-bold">AI Engineer</a> and Software Developer. I’ve been building agentic solutions for enterpise companies and hacking away at personal projects whenever I can.
             </p>
             <p>
-            I've also started a company called <a href="https://annointedproductions.com" target="_blank" rel="noopener noreferrer" className="font-bold">Annointed Productions</a>, where I create media content and collaborate with individuals and businesses to meet their needs.
+            I've also have a startup called <a href="https://annointedproductions.com" target="_blank" rel="noopener noreferrer" className="font-bold">Annointed Productions</a>, where I create media content and collaborate with individuals and businesses to meet their needs.
             </p>
           </div>
 

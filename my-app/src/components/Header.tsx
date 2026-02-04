@@ -2,36 +2,83 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const Header = () => {
-  const [isOpen, setIsOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsVisible(window.scrollY > 50);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50">
-      <nav className="bg-black rounded-full px-6 py-3 flex items-center gap-4">
-        <Link href="/" className="flex items-center gap-2 cursor-pointer">
-          <div className="w-8 h-8 rounded-full overflow-hidden">
-            <Image src="/profile.jpg" alt="Kyle-Anthony Hay" width={32} height={32} className="object-cover" />
+    <TooltipProvider>
+      <header className={`fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 transition-all duration-500 ease-out ${isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0'}`}>
+        <nav className="bg-white/30 backdrop-blur-xl border border-white/40 shadow-lg rounded-full px-6 py-3 flex items-center gap-4">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Link href="/" className="flex items-center gap-2 cursor-pointer">
+                <div className="w-8 h-8 rounded-full overflow-hidden">
+                  <Image src="/profile.jpg" alt="Kyle-Anthony Hay" width={32} height={32} className="object-cover" />
+                </div>
+                <span className="hidden sm:inline text-gray-800 font-medium">Kyle-Anthony Hay</span>
+              </Link>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Home</p>
+            </TooltipContent>
+          </Tooltip>
+          <div className="flex items-center gap-4">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/" className="text-gray-700 hover:text-gray-900">
+                  <HomeIcon />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Home</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/projects" className="text-gray-700 hover:text-gray-900">
+                  <FolderIcon />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Projects</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <a href="https://medium.com/@kyleanthonyhay" target="_blank" rel="noopener noreferrer" className="text-gray-700 hover:text-gray-900">
+                  <PenIcon />
+                </a>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Blog</p>
+              </TooltipContent>
+            </Tooltip>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Link href="/contact" className="text-gray-700 hover:text-gray-900">
+                  <EnvelopeIcon />
+                </Link>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Contact</p>
+              </TooltipContent>
+            </Tooltip>
           </div>
-          <span className="hidden sm:inline text-white">Kyle-Anthony Hay</span>
-        </Link>
-        <div className="flex items-center gap-4">
-          <Link href="/" className="text-white hover:text-gray-300">
-            <HomeIcon />
-          </Link>
-          <Link href="/projects" className="text-white hover:text-gray-300">
-            <FolderIcon />
-          </Link>
-          <a href="https://medium.com/@kyleanthonyhay" target="_blank" rel="noopener noreferrer" className="text-white hover:text-gray-300">
-            <PenIcon />
-          </a>
-          <Link href="/contact" className="text-white hover:text-gray-300">
-            <EnvelopeIcon />
-          </Link>
-        </div>
-      </nav>
-    </header>
+        </nav>
+      </header>
+    </TooltipProvider>
   );
 };
 
