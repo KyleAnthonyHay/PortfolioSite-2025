@@ -10,11 +10,13 @@ import { motion, AnimatePresence } from 'motion/react';
 interface Message {
   role: 'user' | 'assistant';
   content: string;
+  citedProjects?: string[];
 }
 
 interface ChatResponse {
   message: string;
   toolsUsed: string[];
+  citedProjects: string[];
 }
 
 const thinkingPhrases = [
@@ -90,6 +92,57 @@ function MarkdownResponse({ content }: { content: string }) {
   );
 }
 
+const projectNameToId: Record<string, number> = {
+  'Selahnote': 1,
+  'SelahNote': 1,
+  'Expense Tracker': 2,
+  'ExpenseTracker': 2,
+  'The Wall': 3,
+  'TheWall': 3,
+  'Country App': 4,
+  'CountryApp': 4,
+  'Ontract': 5,
+  'OnTract': 5,
+  'Sentio Plus': 6,
+  'Sentio+': 6,
+  'Chatgpt Clone': 7,
+  'ChatGPT Clone': 7,
+};
+
+function CitedSources({ projects }: { projects: string[] }) {
+  if (!projects || projects.length === 0) return null;
+  
+  return (
+    <div className="mt-3 pt-3 border-t border-gray-200">
+      <p className="text-xs text-gray-500 mb-1.5">Sources:</p>
+      <div className="flex flex-wrap gap-1.5">
+        {projects.map((project) => {
+          const projectId = projectNameToId[project];
+          if (projectId) {
+            return (
+              <Link
+                key={project}
+                href={`/projects/${projectId}`}
+                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+              >
+                {project}
+              </Link>
+            );
+          }
+          return (
+            <span
+              key={project}
+              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-200 text-gray-700"
+            >
+              {project}
+            </span>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 export default function ChatInterface() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
@@ -127,7 +180,11 @@ export default function ChatInterface() {
       if (!response.ok) throw new Error('Failed to send message');
 
       const data: ChatResponse = await response.json();
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+      setMessages((prev) => [...prev, { 
+        role: 'assistant', 
+        content: data.message,
+        citedProjects: data.citedProjects,
+      }]);
     } catch (error) {
       console.error('Chat error:', error);
       setMessages((prev) => [
@@ -211,7 +268,10 @@ export default function ChatInterface() {
                 }`}
               >
                 {message.role === 'assistant' ? (
-                  <MarkdownResponse content={message.content} />
+                  <>
+                    <MarkdownResponse content={message.content} />
+                    <CitedSources projects={message.citedProjects || []} />
+                  </>
                 ) : (
                   <p className="text-sm leading-relaxed">{message.content}</p>
                 )}

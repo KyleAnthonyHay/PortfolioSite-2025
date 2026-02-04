@@ -23,6 +23,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: response.message,
       toolsUsed: response.toolsUsed,
+      citedProjects: response.citedProjects,
     });
   } catch (error) {
     console.error("Chat error:", error);

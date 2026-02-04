@@ -1,7 +1,7 @@
 import { ChatOpenAI } from "@langchain/openai";
 import { HumanMessage, AIMessage, SystemMessage, ToolMessage } from "@langchain/core/messages";
 import type { BaseMessage } from "@langchain/core/messages";
-import { allTools } from "./tools";
+import { allTools, extractCitationsFromToolResult } from "./tools";
 
 const SYSTEM_PROMPT = `You are Kyle-Anthony's AI assistant on his portfolio website. Your role is to help visitors learn about Kyle-Anthony Hay, his skills, experience, and projects.
 
@@ -59,6 +59,7 @@ export interface ConversationMessage {
 export interface ChatResponse {
   message: string;
   toolsUsed: string[];
+  citedProjects: string[];
 }
 
 function convertToLangChainMessages(history: ConversationMessage[]): BaseMessage[] {
@@ -78,6 +79,7 @@ export async function chat(
   ];
 
   const toolsUsed: string[] = [];
+  const citedProjectsSet = new Set<string>();
   const chatModel = getModel();
   let response = await chatModel.invoke(messages);
 
@@ -90,10 +92,15 @@ export async function chat(
 
       if (tool) {
         const result = await tool.invoke(toolCall.args);
+        const resultString = typeof result === "string" ? result : JSON.stringify(result);
+        
+        const { content, citedProjects } = extractCitationsFromToolResult(resultString);
+        citedProjects.forEach((p) => citedProjectsSet.add(p));
+        
         messages.push(
           new ToolMessage({
             tool_call_id: toolCall.id!,
-            content: typeof result === "string" ? result : JSON.stringify(result),
+            content,
           })
         );
       }
@@ -105,5 +112,6 @@ export async function chat(
   return {
     message: response.content as string,
     toolsUsed,
+    citedProjects: [...citedProjectsSet],
   };
 }
