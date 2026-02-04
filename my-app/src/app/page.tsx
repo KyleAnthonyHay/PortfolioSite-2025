@@ -3,6 +3,7 @@ import TopHeader from '@/components/TopHeader';
 import Hero from '@/components/Hero';
 import Projects from '@/components/Projects';
 import About from '@/components/About';
+import WebResume from '@/components/WebResume';
 import Footer from '@/components/Footer';
 
 export default function Home() {
@@ -13,7 +14,8 @@ export default function Home() {
       <Hero />
       <Projects />
       <About />
+      <WebResume />
       <Footer />
-</main>
+    </main>
   );
 }
