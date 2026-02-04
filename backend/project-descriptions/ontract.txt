@@ -1,0 +1,125 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+This project is a comprehensive, enterprise-grade Contract Management System 
+designed to help organizations efficiently manage, search, and analyze their 
+contract documents using AI-powered features. The platform combines modern web 
+technologies with advanced AI orchestration to provide intelligent contract 
+discovery, automated metadata extraction, and conversational Q&A capabilities 
+grounded in actual contract content.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose of this application is to serve as a centralized "Contract 
+Intelligence Platform" for organizations managing large volumes of legal 
+documents. Unlike traditional document management systems that rely solely on 
+manual tagging and keyword search, this system uses Retrieval-Augmented 
+Generation (RAG) to enable semantic search and natural language queries across 
+all contracts. It helps legal teams, contract managers, and business users 
+navigate complex contract portfolios with precision, track critical dates and 
+obligations, and extract insights from historical agreements.
+
+TECH STACK
+----------
+- Frontend:
+  * Framework: Next.js 16 (App Router)
+  * Language: TypeScript
+  * Styling: Tailwind CSS 4
+  * UI Components: Radix UI primitives
+  * State Management: React Context API + Custom Hooks
+  * Icons: Lucide React
+  * Forms: React Hook Form + Zod validation
+
+- Backend:
+  * Database: PostgreSQL (via Supabase) with pgvector extension
+  * Authentication: Supabase Auth
+  * File Storage: Supabase Storage
+  * Edge Functions: Deno/Supabase Edge Functions (TypeScript)
+  * API Layer: FastAPI (Python) for document ingestion
+  * AI Orchestration: LangChain & LangGraph (Python)
+  * LLM: AWS Bedrock (Claude 3.5 Sonnet) + OpenAI (GPT-4o)
+  * Embeddings: OpenAI text-embedding-3-small (1024 dimensions)
+
+- Vector Database (RAG):
+  * Storage: PostgreSQL pgvector extension
+  * Embedding Model: OpenAI Embeddings API
+  * Search: Cosine similarity via custom SQL functions
+
+- Infrastructure:
+  * Hosting: Supabase (Database, Auth, Storage, Edge Functions)
+  * Payments: Stripe (subscription management)
+  * Email: Resend (invitation emails)
+  * Monitoring: LangSmith (AI observability)
+
+CODE ORGANIZATION
+-----------------
+- /web:
+  The Next.js frontend application. Organized by feature routes (contracts, 
+  clients, ai, alerts), reusable UI components, server actions for data 
+  mutations, and custom hooks for state management. Includes Stripe integration 
+  for billing and subscription management.
+
+- /api:
+  FastAPI service for document ingestion. Contains the DocumentIngestionAgent 
+  that orchestrates document processing workflows, services for storage and 
+  database operations, and tools for text extraction, chunking, embedding, and 
+  LLM-based metadata extraction using AWS Bedrock.
+
+- /backend:
+  Python-based AI agent system. Contains the main LangGraph agent for contract 
+  Q&A, search tools for global and document-specific queries, and database 
+  clients for Supabase integration. Handles conversational AI interactions with 
+  contract knowledge base.
+
+- /database/supabase:
+  Database schema, migrations, and edge functions. Includes PostgreSQL 
+  migrations for multi-tenant data models, vector search functions, RLS 
+  policies, and Deno edge functions for document ingestion, chat, and 
+  notification workflows.
+
+- /docs:
+  Design documents, requirements, database schema documentation, and setup guides.
+
+KEY FEATURES
+------------
+1. AI-Powered Contract Search: Semantic search across all contracts using 
+   vector embeddings, enabling natural language queries that understand 
+   context and meaning rather than just keywords.
+
+2. Conversational Q&A: Chat interface powered by LangGraph agents that can 
+   answer questions about contracts with citations to source documents and 
+   specific page references.
+
+3. Automated Document Processing:
+   - Text extraction from PDF and DOCX files
+   - Intelligent chunking for optimal retrieval
+   - Automatic metadata extraction (parties, dates, obligations, key terms)
+   - Contract type validation using LLM classification
+
+4. Contract Lifecycle Management:
+   - Status tracking (Draft, Pending Review, Active, Expired)
+   - Expiration date monitoring with automated alerts
+   - Obligation and deliverable tracking
+   - Version history and audit trails
+
+5. Multi-Tenant Architecture: Organization-scoped data isolation using 
+   PostgreSQL Row Level Security (RLS), ensuring complete data separation 
+   between customers.
+
+6. Team Collaboration:
+   - Role-based access control (Superadmin, Admin, User)
+   - Team member invitations via email
+   - Contract ownership and collaboration assignments
+   - Activity feeds and audit logging
+
+7. Client Portal: Read-only portal for client contacts to view their 
+   organization's contracts, enabling transparency and self-service access.
+
+8. Alert System: Automated notifications for contract expirations, renewals, 
+   and custom reminders, with email integration via Resend.
+
+9. Billing & Credits: Stripe-integrated subscription management with 
+   organization-wide credi

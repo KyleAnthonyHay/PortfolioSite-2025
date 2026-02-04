@@ -1,0 +1,96 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+This project is a high-performance, full-stack ChatGPT clone designed as a 
+specialized AI Assistant for institutional policies. It leverages modern 
+web technologies and advanced AI orchestration to provide users with an 
+intuitive chat interface capable of retrieving and reasoning over complex 
+university or organizational documentation.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose of this application is to serve as an "Institutional Policy 
+Specialist." Unlike general-purpose LLMs that may hallucinate or lack specific 
+internal data, this clone uses Retrieval-Augmented Generation (RAG) to ensure 
+responses are grounded in actual policy documents. It is designed to help 
+students, faculty, and staff navigate institutional rules with precision, 
+conciseness, and accuracy.
+
+TECH STACK
+----------
+- Frontend:
+  * Framework: Next.js 14 (App Router)
+  * Language: TypeScript
+  * Styling: Tailwind CSS
+  * Animations: Motion (Framer Motion)
+  * Icons: Lucide React
+  * State Management: React Context API
+
+- Backend:
+  * Framework: FastAPI (Python 3.12+)
+  * AI Orchestration: LangChain & LangGraph
+  * LLM: OpenAI GPT-4o-mini
+  * Persistence: PostgreSQL / Supabase
+  * Checkpointing: LangGraph PostgresSaver (for conversation memory)
+
+- Vector Database (RAG):
+  * Database: ChromaDB
+  * Embedding Model: OpenAI Embeddings
+
+- Infrastructure:
+  * Containerization: Docker & Docker Compose
+  * Tracing/Monitoring: LangSmith
+
+CODE ORGANIZATION
+-----------------
+- /agent:
+  The core AI logic. Contains the LangGraph agent definition (chat_agent.py), 
+  custom tools for policy interaction (tools.py), and the vector database 
+  setup and ingestion scripts (chroma_setup.py, ingest_policies.py).
+
+- /api:
+  The web layer for the backend. Defines the FastAPI endpoints (main.py), 
+  data models (schemas.py), and the database service layer (db_service.py) 
+  for managing chat history and feedback in PostgreSQL.
+
+- /web:
+  The Next.js application. Organized by components (Sidebar, ChatInput, etc.), 
+  context providers for global state, and the main application routes.
+
+- / (Root):
+  Orchestration files including docker-compose.yml and deployment configurations.
+
+KEY FEATURES
+------------
+1. AI Agent with Memory: Uses LangGraph to manage conversation state, 
+   allowing for multi-turn dialogues where the AI remembers previous context.
+2. Semantic Search (RAG): Integrates ChromaDB to perform vector searches 
+   across policy documents, providing relevant excerpts to the LLM.
+3. Policy-Specific Tools:
+   - search_policies: Find relevant info across the database.
+   - list_all_policies: Browse available document titles.
+   - get_policy_by_name: Retrieve full text for a specific policy.
+   - summarize_policy: Get quick 2-3 sentence overviews.
+4. Persistent Chat History: Messages and threads are saved to a PostgreSQL 
+   database, allowing users to return to previous conversations.
+5. Feedback System: Built-in mechanism for users to rate AI responses, 
+   facilitating continuous improvement and monitoring via LangSmith.
+6. Modern UX: A responsive, dark-mode-first UI that mimics the ChatGPT 
+   experience, including message streaming and sidebar navigation.
+
+TASKS IT EXCELS AT
+------------------
+- Policy Navigation: Quickly finding specific rules within massive manuals.
+- Comparative Analysis: Answering questions that span multiple policies.
+- Clarification: Explaining complex institutional language in simpler terms.
+- Compliance Inquiries: Helping users understand requirements (e.g., travel 
+  reimbursement, academic integrity).
+
+SUMMARY
+-------
+This application demonstrates a robust implementation of the Facade pattern, 
+masking complex AI workflows (LangGraph, ChromaDB, and Database transactions) 
+behind a clean, high-performance API and a user-friendly frontend.

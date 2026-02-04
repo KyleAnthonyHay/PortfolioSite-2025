@@ -1,0 +1,86 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+This project is a native iOS application that displays information about 
+countries worldwide. The app fetches country data from the REST Countries API 
+and presents it in a clean, tab-based interface with search and detail views.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose of this application is to provide users with quick access 
+to country information including flags, official names, capitals, population, 
+currencies, and languages. The app serves as a reference tool for exploring 
+geographic and demographic data for all countries.
+
+TECH STACK
+----------
+- Platform: iOS (native)
+- Language: Swift
+- Framework: UIKit
+- Architecture: MVC (Model-View-Controller)
+- Concurrency: Swift Concurrency (async/await)
+- API: REST Countries API v3.1
+- Networking: URLSession
+- UI Components: UITableView, UIImageView, UILabel
+- Image Loading: Custom UIImageView extension with URLSession
+
+CODE ORGANIZATION
+-----------------
+- CountriesViewController.swift:
+  Main list view displaying all countries in a table view. Fetches country 
+  list from API and handles navigation to detail views.
+
+- CountryDetailsViewController.swift:
+  Detail view showing comprehensive country information organized in sections: 
+  general details (name, flag banner), country info (capital, population, 
+  currency), and languages.
+
+- CountriesAPI.swift:
+  API client implementing REST Countries API integration. Handles network 
+  requests, response parsing, and error handling. Provides methods for fetching 
+  all countries and individual country details.
+
+- CountryTableViewCell.swift:
+  Custom table view cell displaying country flag thumbnail, common name, and 
+  official name in the countries list.
+
+- BannerTableViewCell.swift:
+  Custom table view cell for displaying country flag banner images in detail 
+  view with dynamic sizing and layout updates.
+
+- UIImageView+Extension.swift:
+  Extension providing asynchronous image loading functionality with URLSession 
+  download tasks and completion handlers.
+
+- SettingsViewController.swift:
+  Settings screen placeholder (currently minimal implementation).
+
+KEY FEATURES
+------------
+1. Country List: Displays all countries in a scrollable table view with flag 
+   thumbnails, common names, and official names.
+
+2. Country Details: Comprehensive detail view showing:
+   - Country flag banner image
+   - Official name
+   - Capital city
+   - Population
+   - Currency name and symbol
+   - Native languages
+
+3. Asynchronous Data Loading: Uses Swift Concurrency (async/await) for 
+   non-blocking API calls and data fetching.
+
+4. Image Loading: Custom asynchronous image loading with URLSession for flag 
+   images with proper memory management and main thread updates.
+
+5. Tab-Based Navigation: Tab bar interface with Countries and Settings tabs.
+
+6. Error Handling: HTTP status code validation and error handling for API 
+   requests.
+
+7. Dynamic UI Layout: Auto Layout constraints for responsive design and dynamic 
+   table view cell sizing based on image dimensions.

@@ -1,7 +1,6 @@
 import Image from 'next/image';
 import Footer from '@/components/Footer';
 import Header from '@/components/Header';
-import Link from 'next/link';
 import { FaGithub } from 'react-icons/fa';
 import { FiArrowUpRight } from 'react-icons/fi';
 import { Badge } from '@/components/ui/badge';
@@ -176,14 +175,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     return (
       <>
         <Header />
-        <div className="absolute top-12 left-12 z-10">
-          <Link href="/projects" className="text-gray-600 hover:text-gray-800 inline-block p-2">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="15 18 9 12 15 6" />
-            </svg>
-          </Link>
-        </div>
-
         <section className="pt-32 pb-20">
           <div className="max-w-[1100px] mx-auto px-6 md:px-12">
             {/* Hero Section */}
@@ -305,13 +296,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <Header />
-      <div className="absolute top-12 left-12">
-        <Link href="/projects" className="text-gray-600 hover:text-gray-800 inline-block p-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </Link>
-      </div>
       <section className="pt-40 pb-40">
         <div className="max-w-[1000px] mx-auto px-6 md:px-12 space-y-8">
           <div className="group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4] mx-auto max-w-[720px]">

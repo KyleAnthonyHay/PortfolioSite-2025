@@ -9,12 +9,15 @@ const TopHeader = () => {
         </Link>
 
         <div className="hidden md:flex items-center gap-8">
+          <Link href="/" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            Home
+          </Link>
           <Link href="/projects" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             Projects
           </Link>
-          <a href="#about" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+          <Link href="/#about" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
             About
-          </a>
+          </Link>
           <a 
             href="https://medium.com/@kyleanthonyhay" 
             target="_blank" 
@@ -31,6 +34,9 @@ const TopHeader = () => {
           >
             GitHub
           </a>
+          <Link href="/chat" className="text-gray-600 hover:text-gray-900 text-sm font-medium">
+            Chat
+          </Link>
         </div>
 
         <div className="flex items-center gap-3">

@@ -1,0 +1,356 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+ExpenseTracker is an elegant iOS application built with SwiftUI that provides 
+users with a comprehensive solution for tracking, visualizing, and managing 
+personal financial transactions. The app fetches transaction data from a remote 
+API, processes and organizes it by date and category, and presents it through 
+an intuitive interface featuring interactive charts, detailed transaction views, 
+and hierarchical category management.
+
+Designed to demonstrate modern iOS development practices, ExpenseTracker 
+showcases advanced Swift concepts including reactive programming with Combine, 
+MVVM architecture, computed properties, and data visualization using SwiftUI 
+Charts. The application transforms raw transaction data into meaningful insights, 
+enabling users to understand their spending patterns through cumulative expense 
+tracking and organized category-based views.
+
+Unlike basic expense tracking apps that only display lists of transactions, 
+ExpenseTracker provides intelligent data aggregation, visual analytics, and 
+flexible categorization—all while maintaining a clean, declarative codebase 
+that exemplifies SwiftUI best practices.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose is to serve as a demonstration of modern iOS development 
+capabilities while providing a functional expense tracking solution. The app 
+addresses the common need for individuals to monitor their financial 
+transactions, understand spending trends, and organize expenses by category.
+
+The system transforms raw transaction data into actionable insights by:
+- Fetching transaction data asynchronously from remote APIs
+- Grouping transactions chronologically by month
+- Calculating cumulative expenses over time
+- Visualizing spending patterns through interactive charts
+- Enabling category-based organization and editing
+
+ExpenseTracker answers questions like:
+- "What is my total spending over time?"
+- "How are my expenses distributed by category?"
+- "What transactions occurred in a specific month?"
+- "What are my recent transactions?"
+
+The app emphasizes reactive data flow, ensuring that UI updates automatically 
+reflect changes in transaction data, and provides a foundation for more 
+advanced features like data persistence and filtering.
+
+TECH STACK
+----------
+- Frontend (iOS):
+  * Framework: SwiftUI
+  * Language: Swift 5.0+
+  * UI Architecture: MVVM with ObservableObject pattern
+  * Reactive Programming: Combine framework (URLSession publishers, 
+    @Published properties)
+  * Data Visualization: SwiftUICharts library
+  * Icon System: SwiftUIFontIcon (FontAwesome integration)
+  * Navigation: NavigationStack and NavigationLink
+  * Data Structures: Collections framework (OrderedDictionary)
+  * Minimum iOS: 17.6+
+
+- Data Source:
+  * Remote API: JSON endpoint (designcode.io/data/transactions.json)
+  * Data Format: JSON array of transaction objects
+  * Network Layer: URLSession with Combine publishers
+
+- Data Processing:
+  * Date Parsing: Custom DateFormatter extensions
+  * Transaction Grouping: OrderedDictionary by month
+  * Cumulative Calculations: Date interval iteration with stride
+  * Category Management: Hierarchical category system with main and 
+    subcategories
+
+CODE ORGANIZATION
+-----------------
+- /ExpenseTracker:
+  Main iOS application codebase. Contains SwiftUI views, data models, 
+  view models, and utility extensions organized into clear modules:
+  
+  * Views: SwiftUI view hierarchy including ContentView (main dashboard), 
+    RecentTransactionList, TransactionList, TransactionView (detail view), 
+    CategoriesView, and reusable components (TransactionRow, CategoryRow, 
+    TransactionDetialRow).
+  
+  * Data Models: Transaction struct with computed properties for date parsing, 
+    signed amounts, month grouping, and category associations. Category struct 
+    with hierarchical organization (main categories and subcategories) and 
+    icon mapping.
+  
+  * ViewModels: TransactionListViewModel (ObservableObject) that manages:
+    - Transaction data fetching via Combine
+    - Transaction grouping by month
+    - Cumulative expense calculations
+    - Category update operations
+  
+  * Extensions: Utility extensions for Color, DateFormatter, String, Date, 
+    and Double providing formatting, parsing, and calculation helpers.
+  
+  * Preview Data: PreviewData.swift containing mock data for SwiftUI previews 
+    and testing.
+
+KEY FEATURES
+------------
+1. Asynchronous Data Fetching with Combine:
+   - URLSession dataTaskPublisher for network requests
+   - Combine operators (tryMap, decode, receive, sink) for data processing
+   - Error handling with completion callbacks
+   - Reactive updates to UI via @Published properties
+   - Cancellable management for memory safety
+
+2. Transaction Data Visualization:
+   - SwiftUI Charts integration with LineChart component
+   - Cumulative expense tracking over time
+   - Interactive chart display with formatted currency labels
+   - Custom chart styling with gradient colors
+   - Empty state handling when no data is available
+
+3. Hierarchical Category System:
+   - Main categories: Auto & Transport, Bills & Utilities, Entertainment, 
+     Fees & Charges, Food & Dining, Home, Income, Shopping, Transfer
+   - Subcategories: Public Transportation, Taxi, Mobile Phone, Movies & DVDs, 
+     Bank Fee, Finance Charge, Groceries, Restaurants, Rent, Home Supplies, 
+     Paycheque, Software, Credit Card Payment
+   - Category icons using FontAwesome integration
+   - Category selection and editing functionality
+
+4. Transaction Organization:
+   - Grouping by month using OrderedDictionary
+   - Chronological display with section headers
+   - Recent transactions preview (configurable count)
+   - Full transaction list with navigation
+   - Date-based filtering and organization
+
+5. Transaction Detail View:
+   - Comprehensive transaction information display
+   - Merchant, date, financial institution, account details
+   - Category editing with navigation to CategoriesView
+   - Formatted currency and date displays
+   - Clean, list-based UI design
+
+6. Computed Properties and Data Processing:
+   - Transaction.signedAmount: Calculates positive/negative based on type
+   - Transaction.dateParsed: Converts string dates to Date objects
+   - Transaction.month: Extracts month-year string for grouping
+   - Transaction.icon: Maps category ID to FontAwesome icon
+   - Transaction.categoryItem: Resolves category object from ID
+   - Category.subCategories: Filters subcategories by main category ID
+
+7. Cumulative Expense Calculation:
+   - Date interval calculation for current month
+   - Daily expense aggregation using stride iteration
+   - Running sum calculation with rounding
+   - TransactionPrefixSum data structure for chart data
+   - Expense filtering (isExpense flag)
+
+8. Reactive State Management:
+   - @EnvironmentObject for shared ViewModel across views
+   - @Published properties for automatic UI updates
+   - ObservableObject protocol conformance
+   - Combine cancellables for subscription management
+
+9. User Experience Features:
+   - Custom color scheme with asset-based colors
+   - Dark mode support via system colors
+   - Navigation stack with inline navigation bar
+   - Rounded rectangle cards with shadows
+   - Icon-based visual hierarchy
+   - Responsive layout with proper spacing
+
+ARCHITECTURE FLOW
+-----------------
+1. App Initialization:
+   App launches → TransactionListViewModel created → getTransactions() called 
+   → URLSession dataTaskPublisher fetches JSON → Data decoded to [Transaction] 
+   → @Published transactions updated → UI automatically refreshes
+
+2. Data Fetching Pipeline:
+   URL string → URLSession.shared.dataTaskPublisher → tryMap validates HTTP 
+   response → decode converts JSON to [Transaction] → receive(on: DispatchQueue.main) 
+   → sink updates ViewModel → transactions array updated → UI observes changes
+
+3. Transaction Grouping Flow:
+   transactions array → groupTransactionsByMonth() → OrderedDictionary grouping 
+   by month string → Returns TransactionGroup → List displays sections by month 
+   → Transactions displayed within each section
+
+4. Cumulative Expense Calculation:
+   transactions array → accumulateTransactions() → Date interval calculated 
+   → stride iterates through days → Daily expenses filtered and summed → 
+   Cumulative sum calculated → TransactionPrefixSum array returned → Chart 
+   displays line graph → Total expense shown as label
+
+5. Category Update Flow:
+   User taps category in TransactionView → NavigationLink to CategoriesView → 
+   User selects new category → updateCategory() called → Transaction found in 
+   array → categoryId and isEdited flag updated → transactions array updated → 
+   UI reflects change → Navigation dismissed
+
+6. Navigation Flow:
+   ContentView (Overview) → RecentTransactionList → "See All" → TransactionList 
+   → TransactionView → CategoriesView → Category selected → Return to 
+   TransactionView
+
+KEY INNOVATION: REACTIVE DATA FLOW WITH COMBINE
+-----------------------------------------------
+ExpenseTracker demonstrates modern reactive programming patterns using Apple's 
+Combine framework:
+
+1. **Publisher-Subscriber Pattern**: URLSession's dataTaskPublisher creates a 
+   stream of data that flows through Combine operators, transforming raw network 
+   responses into typed Swift objects.
+
+2. **Automatic UI Updates**: @Published properties in ObservableObject 
+   automatically trigger SwiftUI view updates when data changes, eliminating 
+   manual refresh logic.
+
+3. **Operator Chaining**: The data pipeline uses tryMap for validation, decode 
+   for type conversion, receive(on:) for thread management, and sink for 
+   side effects—creating a declarative, composable data flow.
+
+4. **Memory Management**: Cancellables are stored in a Set, ensuring proper 
+   cleanup when the ViewModel is deallocated, preventing memory leaks.
+
+This reactive approach ensures that the UI always reflects the current state 
+of the data, with minimal boilerplate code and clear separation of concerns.
+
+DATA PROCESSING: CUMULATIVE EXPENSE CALCULATION
+------------------------------------------------
+The cumulative expense calculation demonstrates advanced date manipulation and 
+data aggregation:
+
+- **Date Interval Calculation**: Uses Calendar.current.dateInterval(of:for:) 
+  to determine the start and end of the current month
+  
+- **Stride Iteration**: Uses stride(from:to:by:) to iterate through each day 
+  in the month, enabling daily granularity in expense tracking
+  
+- **Filtering and Aggregation**: Filters transactions by date and expense flag, 
+  then reduces to calculate daily totals
+  
+- **Running Sum**: Maintains a cumulative sum that accumulates over time, 
+  creating the foundation for trend visualization
+  
+- **Precision Handling**: Uses roundedTo2Digits() extension to ensure currency 
+  values are properly rounded for display
+
+This approach enables the app to visualize spending trends over time, showing 
+users how their expenses accumulate throughout the month.
+
+DATA MODEL ARCHITECTURE
+------------------------
+The app uses a struct-based data model with computed properties:
+
+- **Transaction**: Core data structure with:
+  - Required fields: id, date, institution, account, amount, type, merchant, 
+    categoryId, category
+  - Boolean flags: isPending, isTransfer, isExpense, isEdited
+  - Computed properties: icon, dateParsed, signedAmount, month, categoryItem
+  
+- **Category**: Hierarchical category system with:
+  - Static main categories (Auto & Transport, Bills & Utilities, etc.)
+  - Static subcategories (Public Transportation, Taxi, etc.)
+  - mainCategoryId for subcategory relationships
+  - Icon mapping via FontAwesome codes
+  
+- **Type Aliases**: 
+  - TransactionGroup: OrderedDictionary<String, [Transaction]> for month grouping
+  - TransactionPrefixSum: [(String, Double)] for cumulative expense data
+
+This architecture enables flexible data manipulation while maintaining type 
+safety and clear relationships between entities.
+
+UI COMPONENT ARCHITECTURE
+--------------------------
+The app follows a modular component design:
+
+- **ContentView**: Main dashboard with overview chart and recent transactions
+- **RecentTransactionList**: Preview component showing limited transactions
+- **TransactionList**: Full list with month-grouped sections
+- **TransactionView**: Detail view for individual transactions
+- **CategoriesView**: Category selection interface with hierarchical display
+- **TransactionRow**: Reusable row component for transaction lists
+- **CategoryRow**: Reusable row component for category selection
+- **TransactionDetialRow**: Reusable detail row component
+
+Each component is self-contained and reusable, following SwiftUI's declarative 
+paradigm. Components receive data through parameters and environment objects, 
+ensuring clear data flow and testability.
+
+BUSINESS USE CASES
+------------------
+- **Personal Finance Management**: Track daily expenses and monitor spending 
+  patterns over time
+- **Budget Planning**: Visualize cumulative expenses to understand monthly 
+  spending trends
+- **Expense Categorization**: Organize transactions by category for better 
+  financial organization
+- **Transaction History**: Browse past transactions grouped by month for 
+  easy reference
+- **Financial Analysis**: Use chart visualization to identify spending trends 
+  and patterns
+
+EXAMPLE WORKFLOWS
+-----------------
+1. **Viewing Expense Overview**:
+   App opens → Data fetches automatically → Chart displays cumulative expenses 
+   → Recent transactions shown below → User sees total spending and recent 
+   activity
+
+2. **Browsing Transaction History**:
+   User taps "See All" → TransactionList displays → Transactions grouped by 
+   month → User scrolls through sections → Taps transaction → Detail view 
+   shows full information
+
+3. **Updating Transaction Category**:
+   User opens transaction detail → Taps category row → CategoriesView displays 
+   → User selects new category → Transaction updates → Returns to detail view 
+   → Category reflects change
+
+4. **Analyzing Spending Trends**:
+   User views overview → Chart shows cumulative line → Identifies spending 
+   patterns → Reviews transactions by month → Understands expense distribution
+
+PROJECT POSITIONING
+-------------------
+ExpenseTracker is designed as a demonstration project that showcases modern 
+iOS development capabilities while providing a functional expense tracking 
+solution. Unlike production apps with backend services and data persistence, 
+ExpenseTracker focuses on:
+
+- **Educational Value**: Demonstrates advanced Swift and SwiftUI concepts
+- **Code Quality**: Clean, maintainable architecture following MVVM patterns
+- **Modern Practices**: Reactive programming with Combine, declarative UI 
+  with SwiftUI
+- **Visual Design**: Elegant UI with custom colors, icons, and charts
+- **Extensibility**: Foundation for adding features like persistence, filtering, 
+  and search
+
+The integration of Combine for reactive data flow, SwiftUI Charts for 
+visualization, and a modular component architecture represents a modern iOS 
+stack that demonstrates production-ready patterns while remaining accessible 
+for learning and extension.
+
+The app serves as a foundation that could be extended with features like:
+- CoreData or SwiftData persistence
+- Advanced filtering and search
+- Budget tracking and alerts
+- Export functionality
+- Multi-account support
+- Recurring transaction detection
+
+The current implementation emphasizes clean code, reactive patterns, and 
+user experience, making it an excellent reference for modern iOS development 
+practices.
