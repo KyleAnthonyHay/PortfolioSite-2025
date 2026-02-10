@@ -45,6 +45,13 @@ function chunkText(text: string, chunkSize: number, overlap: number): string[] {
   return chunks.filter((c) => c.length > 50);
 }
 
+function chunkBySection(text: string): string[] {
+  return text
+    .split(/\n---\n/)
+    .map((section) => section.trim())
+    .filter((section) => section.length > 50);
+}
+
 async function readProjectDescriptions(): Promise<
   { filename: string; content: string }[]
 > {
@@ -77,9 +84,12 @@ async function main() {
 
   for (const { filename, content } of descriptions) {
     const projectName = extractProjectName(filename);
-    const chunks = chunkText(content, CHUNK_SIZE, CHUNK_OVERLAP);
+    const isPersonalInfo = filename === "personal-info.txt";
+    const chunks = isPersonalInfo
+      ? chunkBySection(content)
+      : chunkText(content, CHUNK_SIZE, CHUNK_OVERLAP);
 
-    console.log(`📄 ${projectName}: ${chunks.length} chunks`);
+    console.log(`📄 ${projectName}: ${chunks.length} chunks${isPersonalInfo ? " (section-based)" : ""}`);
 
     chunks.forEach((chunk, index) => {
       allChunks.push({ projectName, chunk, index });

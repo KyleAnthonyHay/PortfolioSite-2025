@@ -49,6 +49,7 @@ TECH STACK
   * Embeddings: OpenAI text-embedding-3-small (via LangChain)
   * Vector Database: ChromaDB (persistent, HTTP, or cloud)
   * Data Processing: Pandas, NumPy
+  * Containerization: Docker
 
 - Vector Database (RAG):
   * Storage: ChromaDB with cosine similarity search

@@ -1,0 +1,223 @@
+NAME:
+Kyle-Anthony
+
+PROFESSIONAL SUMMARY:
+Software Developer with a focus on mobile and frontend development. Experienced in building production-ready applications, AI-powered tools, and clean, user-focused interfaces. Strong interest in iOS development, SaaS products, and AI-assisted productivity software. Has built full-stack applications with RAG architectures, vector databases, and AI orchestration systems.
+
+---
+
+EDUCATION:
+Degree: Bachelor of Science in Computer Science
+Institution: City University of New York (Hunter College)
+Graduation Year: 2024
+
+---
+
+YEARS OF EXPERIENCE (Start Year — calculate years of experience as current year minus start year):
+
+Categories:
+- Software Development: 2022
+- iOS Development (Swift / SwiftUI): 2023
+- Frontend Development (React / Next.js): 2022
+- Backend & APIs: 2024
+- AI/ML Engineering: 2025
+
+Languages:
+- Swift: 2023
+- JavaScript: 2022
+- TypeScript: 2022
+- Java: 2022
+- Python: 2022
+- Dart: 2023
+
+Mobile Frameworks:
+- SwiftUI: 2023
+- UIKit: 2023
+- Flutter: 2023
+
+Frontend Frameworks:
+- React: 2022
+- Next.js: 2022
+- Tailwind CSS: 2022
+
+Backend & Databases:
+- FastAPI: 2024
+- Django: 2024
+- Spring Boot: 2024
+- PostgreSQL / SQL: 2023
+- Firebase: 2023
+- Supabase: 2024
+
+AI & ML:
+- LangChain / LangGraph: 2024
+- OpenAI APIs: 2024
+- AWS Bedrock: 2024
+- ChromaDB: 2025
+- TensorFlow / Keras: 2025
+
+Cloud & Infrastructure:
+- Docker: 2025
+- Google Cloud Platform: 2024
+- Stripe: 2025
+
+Tools:
+- Git & GitHub: 2022
+
+Experience includes professional work, freelance projects, hackathons, and production-level personal applications.
+
+---
+
+EXPERIENCE:
+
+Language Excperience:
+- Swift
+- JavaScript
+- TypeScript
+- Java
+- Python
+- Dart
+
+Mobile Frameworks Excperience:
+- SwiftUI
+- UIKit
+- Flutter
+- SwiftData
+- Combine framework
+- MVVM architecture
+
+Excperience with Frontend Frameworks & Libraries:
+- React
+- Next.js (App Router)
+- Tailwind CSS
+- Radix UI
+- Framer Motion
+- React Hook Form
+- Zod validation
+
+Backend & API Excperience:
+- FastAPI (Python)
+- Django
+- Spring Boot
+- Javalin
+- REST APIs
+- Firebase
+- Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- PostgreSQL with pgvector extension
+- SQL
+
+Excperience with AI & ML Technologies:
+- LangChain & LangGraph (AI orchestration)
+- OpenAI APIs (GPT-4o, GPT-4o-mini, embeddings)
+- AWS Bedrock (Claude models)
+- Vector databases (ChromaDB, pgvector)
+- Retrieval-Augmented Generation (RAG)
+- Embeddings (OpenAI text-embedding-3-small)
+- AssemblyAI (speech-to-text)
+- Fine-tuned transformer models (RoBERTa)
+- TensorFlow/Keras
+- Pandas, NumPy
+
+Excperience with Cloud & Infrastructure:
+- Docker & Docker Compose
+- AWS (Bedrock)
+- Google Cloud Platform (Cloud Run)
+- Supabase
+- Firebase (Auth, Firestore, Storage)
+- Stripe (payment processing)
+- Resend (email)
+
+Mobile-Specific Technologies:
+- AVFoundation (audio processing)
+- RevenueCat (subscription management)
+- StoreKit 2
+- Swift Concurrency (async/await)
+- URLSession networking
+
+Tools:
+- Git & GitHub
+- Docker
+- Postman
+- LangSmith (AI observability)
+- Jupyter Notebooks
+
+---
+
+PROJECT EXPERIENCE:
+
+AI-Powered Applications:
+- Built ChatGPT clone with RAG architecture using LangChain, LangGraph, ChromaDB, and FastAPI
+- Developed Sentio+ customer intelligence platform with vector search, sentiment analysis, and fine-tuned ML models
+- Created contract management system with semantic search, automated metadata extraction, and multi-tenant architecture
+- Implemented AI note-taking app (SelahNote) with real-time transcription, streaming LLM responses, and hierarchical organization
+
+iOS Applications:
+- Built native iOS apps with SwiftUI and UIKit
+- Implemented MVVM architecture with Combine for reactive data flow
+- Created expense tracking app with SwiftUI Charts, async data fetching, and hierarchical category management
+- Developed country information app with REST API integration and async/await concurrency
+- Built audio recording app with AVFoundation, WebSocket streaming, and SwiftData persistence
+
+Full-Stack Web Applications:
+- Built Next.js applications with TypeScript, Tailwind CSS, and modern React patterns
+- Implemented multi-tenant SaaS architecture with Supabase, Row Level Security, and Stripe integration
+- Created social media platform with Flutter for cross-platform deployment
+- Developed document ingestion pipelines with FastAPI, automated text extraction, and vector embeddings
+
+---
+
+TEAM & LEADERSHIP EXPERIENCE:
+- Worked on teams of 15+ developers
+- Experience leading small development teams
+- Comfortable with task ownership, collaboration, and code reviews
+
+---
+
+CAREER INTERESTS:
+- iOS / Mobile Development
+- Frontend Engineering
+- Software Engineering
+- AI/ML Engineering
+- RAG Systems
+- Vector Databases
+- LangChain, LangGraph
+- Python
+- SQL
+
+---
+
+WORK STATUS:
+- Open to full-time software engineering roles
+- Open to contract and freelance opportunities
+- Open to hybrid or on-site roles
+
+---
+
+LOCATION:
+- Based in the United States
+
+---
+
+SENIORITY/EXPERIENCE LEVEL:
+- Entry to early mid-level software engineer
+
+---
+
+RECRUITER FAQ:
+
+Q: When did you graduate?
+A: 2024 from Hunter College (City University of New York)
+
+Q: How many years of experience do you have?
+A: Has been in software development since 2022, with a focus on mobile and frontend. Calculate years as (current year - 2022). Experience includes professional work, freelance projects, hackathons, and production-level personal applications.
+
+Q: Is your experience professional or personal?
+A: A combination of professional work, freelance projects, hackathons, and production-level personal applications.
+
+Q: What area are you strongest in?
+A: iOS development using Swift and SwiftUI, with strong experience in full-stack development including React/Next.js frontends, Python/FastAPI backends, and AI-powered applications with RAG architectures.
+
+Q: What technologies are you most experienced with?
+A: Swift/SwiftUI for iOS, React/Next.js/TypeScript for frontend, Python/FastAPI for backend, and LangChain/LangGraph for AI orchestration. Experienced with vector databases (ChromaDB, pgvector), OpenAI APIs, and building production-ready SaaS applications.
+
+Q: Have you worked with AI/ML technologies?
+A: Yes, extensive experience building RAG systems, working with vector databases, LangChain/LangGraph orchestration, fine-tuning models, and integrating LLMs (OpenAI, AWS Bedrock) into production applications.
