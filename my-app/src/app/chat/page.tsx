@@ -1,5 +1,5 @@
+import { Suspense } from 'react';
 import ChatInterface from '@/components/ChatInterface';
-import Header from '@/components/Header';
 
 export const metadata = {
   title: 'Chat | Kyle-Anthony Hay',
@@ -8,11 +8,12 @@ export const metadata = {
 
 export default function ChatPage() {
   return (
-    <main className="h-screen bg-white flex flex-col overflow-hidden">
+    <main className="h-[100dvh] bg-white flex flex-col overflow-hidden fixed inset-0">
       <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-        <ChatInterface />
+        <Suspense>
+          <ChatInterface />
+        </Suspense>
       </div>
-      <Header />
     </main>
   );
 }

@@ -2,32 +2,17 @@
 
 import { Button } from '@/components/ui/button';
 import Profile from './Profile';
-import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
+import { IconSlider } from '@/components/IconSlider';
 
 const Hero = () => {
-  const [copied, setCopied] = useState(false);
-  const copyEmail = async () => {
-    try {
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        await navigator.clipboard.writeText('haykyle917@gmail.com');
-      } else {
-        const textarea = document.createElement('textarea');
-        textarea.value = 'haykyle917@gmail.com';
-        textarea.setAttribute('readonly', '');
-        textarea.style.position = 'absolute';
-        textarea.style.left = '-9999px';
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textarea);
-      }
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
-      console.error('Failed to copy email:', error);
-    }
-  };
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const openResume = () => {
     const win = window.open('', '_blank');
@@ -45,66 +30,45 @@ const Hero = () => {
   };
 
   const techIcons = [
-    'c++', 'django', 'figma', 'firebase', 'flutter',
-    'mongodb', 'python', 'reactjs', 'swift', 'tailwindcss', 'typescript'
+    'c++.svg', 'django.svg', 'figma.svg', 'firebase.svg', 'flutter.svg',
+    'mongodb.svg', 'python.svg', 'reactjs.svg', 'swift.svg', 'tailwindcss.svg', 'typescript.svg',
+    'anthropic.png', 'aws.png', 'chromadb.png', 'docker.png', 'openai.png', 'supabase.png'
   ];
 
   return (
     <section className="pt-32 pb-20">
       <div className="max-w-[1200px] mx-auto px-6 md:px-12">
         <div className="max-w-[600px] mx-auto">
-          <Profile />
+          <div className={mounted ? 'animate-fade-in-up' : 'opacity-0'}>
+            <Profile />
+          </div>
           <div className="space-y-6">
-            <h1 className="text-[32px] leading-[1.1] font-normal tracking-[-0.02em]">
-            Solving problems using AI and modern frameworks
+            <h1 className={`text-[32px] leading-[1.1] font-normal tracking-[-0.02em] ${mounted ? 'animate-fade-in-up animation-delay-100' : 'opacity-0'}`}>
+            Solving problems <br /> using AI and modern frameworks
             </h1>
-            <p className="text-[20px] leading-[1.6] text-[#666666]">
+            <p className={`text-[20px] leading-[1.6] text-[#666666] ${mounted ? 'animate-fade-in-up animation-delay-200' : 'opacity-0'}`}>
             I'm a software developer who is building, learning and integrating constantly. If you'd like to connect, my info is below.
             </p>
-            <div className="flex gap-3 pt-2">
+            <div className={`flex gap-3 pt-2 ${mounted ? 'animate-fade-in-up animation-delay-300' : 'opacity-0'}`}>
               <Button
                 onClick={() => openResume()}
-                className="bg-black text-white hover:bg-black/90 rounded-full h-12 px-6 text-[15px] transition-transform transform hover:scale-105 duration-200 ease-in-out"
+                className="bg-black text-white hover:bg-black/90 rounded-xl h-12 px-6 text-[15px] transition-transform transform hover:scale-105 duration-200 ease-in-out"
               >
                 Resume →
               </Button>
-              <Button
-                onClick={copyEmail}
-                variant="outline"
-                className="border-[#E5E5E5] hover:bg-[#F5F5F5] rounded-full h-12 px-6 text-[15px]"
-              >
-                {copied ? 'Copied!' : 'Copy Email'}
-              </Button>
+              <Link href="/chat">
+                <Button
+                  variant="outline"
+                  className="border-[#E5E5E5] hover:bg-[#F5F5F5] rounded-xl h-12 px-6 text-[15px] flex items-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4" />
+                  Talk to my AI Agent
+                </Button>
+              </Link>
             </div>
             
-            {/* Sliding Icons with Gradient Mask */}
-            <div className="relative w-full overflow-hidden mt-16">
-              <div className="absolute inset-y-0 left-0 w-[60px] bg-gradient-to-r from-white to-transparent z-10"></div>
-              <div className="absolute inset-y-0 right-0 w-[60px] bg-gradient-to-l from-white to-transparent z-10"></div>
-              <div className="flex animate-slide">
-                {/* First set of icons */}
-                {techIcons.map((icon, index) => (
-                  <div key={`first-${index}`} className="flex-none mx-4 opacity-50 w-[40px] h-[40px] relative">
-                    <Image
-                      src={`/icons/${icon}.svg`}
-                      alt={`${icon} icon`}
-                      fill
-                      className="grayscale object-contain"
-                    />
-                  </div>
-                ))}
-                {/* Second set of icons for seamless loop */}
-                {techIcons.map((icon, index) => (
-                  <div key={`second-${index}`} className="flex-none mx-4 opacity-50 w-[40px] h-[40px] relative">
-                    <Image
-                      src={`/icons/${icon}.svg`}
-                      alt={`${icon} icon`}
-                      fill
-                      className="grayscale object-contain"
-                    />
-                  </div>
-                ))}
-              </div>
+            <div className={`mt-16 ${mounted ? 'animate-fade-in animation-delay-400' : 'opacity-0'}`}>
+              <IconSlider icons={techIcons} gradientColor="#FFFFFF" duration={60} />
             </div>
           </div>
         </div>

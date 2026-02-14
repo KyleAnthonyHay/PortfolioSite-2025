@@ -9,7 +9,7 @@ const TopHeader = () => {
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="bg-gray-50 border-b border-gray-200 relative">
+    <header className="bg-gray-50/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
         <Link href="/" className="text-gray-900 font-semibold text-lg flex items-center gap-2">
           Kyle-Anthony

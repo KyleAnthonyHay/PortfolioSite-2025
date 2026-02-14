@@ -2,15 +2,20 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { Badge } from '@/components/ui/badge';
+import { IconSlider } from '@/components/IconSlider';
 
-const skills = [
-  'Python', 'C++', 'Swift', 'TypeScript', 'React', 
-  'LangChain', 'AWS', 'MongoDB', 'Flutter', 'SQL'
+const techIconsRow1 = [
+  'c++.svg', 'django.svg', 'figma.svg', 'firebase.svg', 'flutter.svg',
+  'mongodb.svg', 'python.svg', 'reactjs.svg', 'swift.svg'
+];
+
+const techIconsRow2 = [
+  'tailwindcss.svg', 'typescript.svg', 'anthropic.png', 'aws.png', 
+  'chromadb.png', 'docker.png', 'openai.png', 'supabase.png'
 ];
 
 const experience = [
-  { role: 'AI Engineer Training', company: 'Cognizant', year: '2025' },
+  { role: 'AI Engineer', company: 'Cognizant', year: '2026' },
   { role: 'Software Engineering Intern', company: 'The Difference', year: '2023' },
 ];
 
@@ -84,25 +89,12 @@ const WebResume = () => {
           </div>
 
           {/* Right Content */}
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <p className="text-[#444] text-lg mb-8 leading-relaxed">
-              I&apos;m Kyle-Anthony, an AI Engineer based in Brooklyn, NY. I build intelligent software 
+              I&apos;m Kyle-Anthony, an AI Engineer based in New York. I build intelligent software 
               solutions that blend modern AI capabilities with solid engineering practices. Currently 
-              training at Cognizant and always shipping side projects.
+              developing solutions at Cognizant and always shipping side projects.
             </p>
-
-            {/* Skills */}
-            <div className="flex flex-wrap gap-2 mb-10">
-              {skills.map((skill) => (
-                <Badge 
-                  key={skill} 
-                  variant="outline" 
-                  className="bg-white border-gray-200 text-gray-700 px-4 py-2 text-sm font-medium rounded-full"
-                >
-                  {skill}
-                </Badge>
-              ))}
-            </div>
 
             {/* Experience */}
             <div className="mb-8">
@@ -111,11 +103,11 @@ const WebResume = () => {
                 {experience.map((exp, index) => (
                   <div 
                     key={index} 
-                    className="flex items-center justify-between py-4 border-b border-gray-200 last:border-b-0 min-h-[57px]"
+                    className="grid grid-cols-[1fr_auto_auto] sm:grid-cols-[1fr_120px_60px] items-center gap-4 py-4 border-b border-gray-200 last:border-b-0 min-h-[57px]"
                   >
                     <span className="font-medium text-gray-900">{exp.role}</span>
-                    <span className="text-gray-500 text-sm hidden sm:block">{exp.company}</span>
-                    <span className="text-gray-400 text-sm">{exp.year}</span>
+                    <span className="text-gray-500 text-sm hidden sm:block text-center">{exp.company}</span>
+                    <span className="text-gray-400 text-sm text-right">{exp.year}</span>
                   </div>
                 ))}
               </div>
@@ -130,6 +122,12 @@ const WebResume = () => {
                 </div>
                 <span className="text-gray-400 text-sm">2024</span>
               </div>
+            </div>
+
+            {/* Tech Icons Slider */}
+            <div className="mt-8 pt-6 border-t border-gray-200 space-y-6">
+              <IconSlider icons={techIconsRow1} duration={25} />
+              <IconSlider icons={[...techIconsRow2].reverse()} reverse duration={25} />
             </div>
           </div>
         </div>

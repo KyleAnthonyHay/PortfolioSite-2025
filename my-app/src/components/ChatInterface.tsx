@@ -143,6 +143,27 @@ function CitedSources({ projects }: { projects: string[] }) {
   );
 }
 
+const STORAGE_KEY = 'portfolio-chat-history';
+
+function loadMessagesFromStorage(): Message[] {
+  if (typeof window === 'undefined') return [];
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    return stored ? JSON.parse(stored) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveMessagesToStorage(messages: Message[]) {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+  } catch {
+    // Storage full or unavailable
+  }
+}
+
 export default function ChatInterface() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
@@ -150,8 +171,21 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isHydrated, setIsHydrated] = useState(false);
   const hasSentInitialRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const stored = loadMessagesFromStorage();
+    setMessages(stored);
+    setIsHydrated(true);
+  }, []);
+
+  useEffect(() => {
+    if (isHydrated) {
+      saveMessagesToStorage(messages);
+    }
+  }, [messages, isHydrated]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -197,11 +231,11 @@ export default function ChatInterface() {
   };
 
   useEffect(() => {
-    if (initialQuery && !hasSentInitialRef.current) {
+    if (isHydrated && initialQuery && !hasSentInitialRef.current) {
       hasSentInitialRef.current = true;
-      sendMessageText(initialQuery, []);
+      sendMessageText(initialQuery, messages);
     }
-  }, [initialQuery]);
+  }, [isHydrated, initialQuery]);
 
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,7 +247,7 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col flex-1 max-w-3xl mx-auto w-full px-4 h-full min-h-0 overflow-hidden">
-      <div className="mb-4 flex-shrink-0 pt-6">
+      <div className="mb-4 flex-shrink-0 pt-6 flex items-center justify-between">
         <Link
           href="/"
           className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
@@ -221,6 +255,14 @@ export default function ChatInterface() {
           <BackIcon />
           <span className="text-sm">Back</span>
         </Link>
+        {messages.length > 0 && (
+          <button
+            onClick={() => setMessages([])}
+            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+          >
+            Clear chat
+          </button>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide min-h-0 pb-32">
@@ -305,6 +347,9 @@ export default function ChatInterface() {
               <ArrowIcon />
             </button>
           </div>
+          <p className="text-center text-xs text-gray-500 mt-2">
+            KyleGPT is AI and can make mistakes. Check important info.
+          </p>
         </div>
       </form>
     </div>
