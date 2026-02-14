@@ -1,9 +1,7 @@
 'use client';
 import { FormEvent, useEffect } from 'react';
 import { useForm, ValidationError } from '@formspree/react';
-import Header from '@/components/Header';
-import Link from 'next/link';
-import Image from 'next/image';
+import TopHeader from '@/components/TopHeader';
 import { useRouter } from 'next/navigation';
 import Footer from '@/components/Footer';
 
@@ -20,15 +18,8 @@ export default function ContactPage() {
 
   return (
     <>
-      <Header />
-      <div className="absolute top-12 left-12">
-        <Link href="/" className="text-gray-600 hover:text-gray-800 inline-block p-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </Link>
-      </div>
-      <section className="pt-40 pb-24">
+      <TopHeader />
+      <section className="pt-16 pb-24">
         <div className="max-w-[800px] mx-auto px-6 md:px-12 space-y-8">
           <h1 className="text-[32px] font-medium text-[#666666]">Contact Me</h1>
           <form onSubmit={handleSubmit} className="space-y-8">

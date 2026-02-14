@@ -1,0 +1,365 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+Sentio+ is an AI-powered decision-support platform that transforms large-scale, 
+unstructured customer review data into actionable business insights using a 
+Retrieval-Augmented Generation (RAG) architecture. Designed as an internal 
+intelligence tool for Product, CX, Strategy, and Leadership teams, it enables 
+aspect-level reasoning over customer feedback, grounding every insight in real 
+review evidence.
+
+Unlike traditional sentiment dashboards that only classify positive vs. 
+negative, Sentio+ answers why customers feel the way they do, which product 
+aspects drive ratings, and what teams should prioritize to improve outcomes.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose is to serve as a centralized "Customer Intelligence 
+Platform" for organizations managing large volumes of customer feedback. Unlike 
+systems that rely solely on manual tagging and keyword search, Sentio+ uses 
+RAG to enable semantic search and natural language queries across all reviews. 
+It helps teams navigate complex feedback portfolios, track sentiment trends, 
+and extract insights from historical reviews.
+
+The system translates unstructured feedback into decision-ready insights that 
+inform product prioritization, roadmap planning, and customer experience 
+improvements. It answers questions like:
+- "What usability issues are driving 1-star reviews in Finance apps?"
+- "How have payment-related complaints evolved over the last 6 months?"
+- "What features do users in the 'Everyone' content segment value most?"
+
+TECH STACK
+----------
+- Frontend:
+  * Framework: Next.js 16 (App Router)
+  * Language: TypeScript
+  * Styling: Tailwind CSS 4
+  * UI Components: Radix UI primitives, Framer Motion
+  * State Management: React Context API + Custom Hooks
+  * Icons: Lucide React
+  * Demo Interface: Streamlit (Python)
+
+- Backend:
+  * API Framework: FastAPI (Python)
+  * AI Orchestration: LangChain & LangGraph
+  * LLM: AWS Bedrock (Claude 3 Sonnet) + OpenAI-compatible APIs
+  * Embeddings: OpenAI text-embedding-3-small (via LangChain)
+  * Vector Database: ChromaDB (persistent, HTTP, or cloud)
+  * Data Processing: Pandas, NumPy
+
+- Vector Database (RAG):
+  * Storage: ChromaDB with cosine similarity search
+  * Embedding Model: OpenAI Embeddings API (via LangChain)
+  * Search: Metadata-aware retrieval with filtering by app, category, rating, date
+
+- Infrastructure:
+  * Containerization: Docker & Docker Compose
+  * Data Storage: Local filesystem (CSV datasets)
+  * Monitoring: Custom logging with structured JSON configuration
+  * Development: Jupyter Notebooks for exploration and validation
+
+CODE ORGANIZATION
+-----------------
+- /app:
+  FastAPI backend service. Contains RAG orchestration, LangChain agent with 
+  tools (search_reviews, get_collection_stats, list_available_apps), vector 
+  store wrapper for ChromaDB, LLM client supporting AWS Bedrock and 
+  OpenAI-compatible APIs, document ingestion service, and API routes for query, 
+  chat, and ingest operations.
+
+- /web:
+  Next.js frontend application. Includes landing page with marketing content, 
+  demo chat interface, responsive design with Tailwind CSS, and integration 
+  with FastAPI backend for RAG queries.
+
+- /streamlit-app:
+  Streamlit demo application. Provides interactive chat interface, collection 
+  statistics display, query settings and filters, and real-time API health 
+  monitoring.
+
+- /etl:
+  Data extraction and preprocessing scripts. Handles CSV data merging, review 
+  ID generation, and dataset preparation for ingestion.
+
+- /notebooks:
+  Jupyter notebooks for data exploration, RAG pipeline validation, and 
+  iterative development. Includes notebooks for data preprocessing, RAG testing, 
+  and analysis workflows.
+
+- /data:
+  Directory for raw and processed datasets. Stores Google Play Store reviews 
+  data (apps_reviews.csv, apps_info.csv) and processed outputs.
+
+- /docs:
+  Design documents, architecture diagrams, example pipeline documentation, and 
+  setup guides.
+
+KEY FEATURES
+------------
+1. AI-Powered Semantic Search: Semantic search across all reviews using vector 
+   embeddings, enabling natural language queries that understand context and 
+   meaning rather than just keywords.
+
+2. Conversational Q&A with LangChain Agents: Chat interface powered by 
+   LangGraph agents that can answer questions about reviews with citations to 
+   source documents. Agents use tools for review search, collection statistics, 
+   and app listing.
+
+3. Automated Document Processing:
+   - Text extraction and cleaning from CSV datasets
+   - Intelligent chunking for optimal retrieval
+   - Metadata enrichment (app name, category, rating, date, content rating)
+   - Hybrid stratified sampling for signal quality
+
+4. Aspect-Level Sentiment Analysis:
+   - Identifies specific product aspects driving sentiment (usability, 
+     payments, performance, pricing)
+   - Tracks sentiment trends across time and categories
+   - Provides evidence-grounded insights with source citations
+
+5. Metadata-Aware Retrieval:
+   - Filter by app name, category, rating, date range
+   - LLM-powered source selection for focused queries
+   - Distance threshold filtering for relevance
+
+6. Multi-Interface Access:
+   - Next.js web application for production use
+   - Streamlit demo for quick testing and validation
+   - RESTful API for programmatic access
+
+7. Flexible LLM Integration:
+   - Support for AWS Bedrock (Claude models)
+   - OpenAI-compatible API support (Ollama, LM Studio, vLLM)
+   - Configurable temperature and token limits
+
+8. Vector Store Flexibility:
+   - Persistent local ChromaDB for development
+   - HTTP client for distributed deployments
+   - ChromaDB Cloud support for production
+
+9. Business Intelligence:
+   - Collection statistics (total documents, unique apps, categories)
+   - Trend detection across time periods
+   - Category and rating-based analysis
+   - Export-ready insights for stakeholders
+
+DATA SOURCE
+-----------
+Sentio+ is powered by the Google Play Store Reviews dataset from Kaggle:
+- Source: Kaggle – Google Play Market Reviews
+- Scale: ~1M reviews across ~500 app titles (subset used during prototyping)
+- Sampling: Hybrid stratified sampling of 50,000 reviews
+- Key Fields:
+  - Review text
+  - Star rating (1–5)
+  - App category
+  - Review date
+  - Content rating (Everyone, Teen, etc.)
+  - Helpful count
+
+Purpose: Enable fine-grained analysis of customer sentiment, feature requests, 
+and recurring pain points across app categories.
+
+ARCHITECTURE FLOW
+-----------------
+1. Data Ingestion: CSV datasets → Pandas processing → Text chunking → 
+   Embedding generation → ChromaDB indexing
+
+2. Query & Retrieval: User question → Semantic search in ChromaDB → Optional 
+   metadata filtering → Top-K document retrieval
+
+3. Generation & Grounding: Retrieved reviews → LLM synthesis → 
+   Evidence-grounded answer → Source citations → User response
+
+4. Agent Orchestration: User message → LangChain agent → Tool selection 
+   (search_reviews, get_stats, list_apps) → Tool execution → Response 
+   synthesis → Conversation memory
+
+KEY INNOVATION: HYBRID STRATIFIED SAMPLING
+------------------------------------------
+Rather than naive random sampling, Sentio+ implements hybrid stratified 
+sampling to maximize signal quality:
+- Breadth (Coverage): Reviews balanced across all categories and ratings (1-5 
+  stars)
+- Depth (Signal Quality): Within each category/rating bucket, prioritizes:
+  - Long reviews (>150 characters) for detailed evidence
+  - Helpful reviews (high helpful_count) for peer-vetted insights
+  - Recent reviews (~60% from last 12 months) for current relevance
+
+This treats each review as high-information testimony, avoiding low-signal 
+noise and improving downstream retrieval and LLM reasoning quality.
+
+SENTIMENT ANALYSIS MODEL: ADVANCED FINE-TUNING METHODOLOGY
+-----------------------------------------------------------
+At the core of Sentio+'s sentiment classification capability is a 
+production-grade transformer model fine-tuned specifically for e-commerce 
+review analysis. The system employs Twitter RoBERTa (cardiffnlp/twitter-
+roberta-base-sentiment-latest), a 124M-parameter RoBERTa variant pre-trained 
+on ~58M Twitter sentiment examples, as the base architecture.
+
+MODEL ARCHITECTURE & TRANSFER LEARNING STRATEGY
+-----------------------------------------------
+The model architecture consists of a 12-layer RoBERTa encoder (768 hidden 
+dimensions, 12 attention heads) with a task-specific classification head. 
+RoBERTa was selected over alternatives (DistilBERT, domain-specific Amazon 
+models) due to its superior handling of informal language, expressive phrasing, 
+and sentiment-heavy expressions—characteristics that align closely with 
+customer review text.
+
+To adapt this general-purpose sentiment model to e-commerce review analysis 
+while preserving pretrained linguistic knowledge, we implemented a 
+sophisticated fine-tuning strategy that balances domain adaptation with 
+generalization:
+
+1. **Partial Layer Freezing**: The first 6 of 12 transformer encoder layers 
+   (50% of the encoder) were frozen during fine-tuning, preserving low-level 
+   linguistic features learned from pretraining. Only the upper 6 layers and 
+   the classification head (768→768→3 projection) were trainable, reducing 
+   trainable parameters from 124.6M to 82.1M (34% reduction). This selective 
+   freezing prevents catastrophic forgetting of general language understanding 
+   while allowing domain-specific adaptation in higher-level semantic 
+   representations.
+
+2. **Conservative Learning Rate**: Initial learning rate of 2e-5 (Adam 
+   optimizer) ensures stable gradient updates without destabilizing pretrained 
+   weights. This rate is approximately 10x smaller than typical from-scratch 
+   training rates, reflecting the principle that pretrained models require 
+   gentler updates to maintain their learned representations.
+
+3. **Adaptive Learning Rate Scheduling**: ReduceLROnPlateau callback monitors 
+   validation loss with patience=1, reducing learning rate by factor 0.5 when 
+   validation performance plateaus. This enables fine-grained convergence 
+   without manual hyperparameter tuning, with minimum learning rate floor of 
+   1e-7 to prevent complete stagnation.
+
+OVERFITTING PREVENTION: MULTI-LAYERED REGULARIZATION STRATEGY
+-------------------------------------------------------------
+Given the class imbalance in review datasets (typically 70-80% positive, 10-15% 
+neutral, 10-15% negative) and the risk of memorizing training patterns, we 
+implemented a comprehensive regularization framework:
+
+1. **Early Stopping with Best Weight Restoration**: EarlyStopping callback 
+   monitors validation loss with patience=3 epochs. When validation loss 
+   fails to improve for 3 consecutive epochs, training terminates and model 
+   weights are automatically restored to the epoch with best validation 
+   performance. This prevents the model from continuing to learn training-set 
+   specific patterns after generalization has peaked.
+
+2. **Model Checkpointing**: ModelCheckpoint callback saves model weights 
+   whenever validation loss improves, ensuring the best-performing checkpoint 
+   is preserved even if later epochs degrade. This is critical because 
+   transformer fine-tuning often exhibits non-monotonic validation curves 
+   where early epochs achieve optimal generalization.
+
+3. **Stratified Data Splitting**: Train/validation/test splits (80/10/10) 
+   maintain class distribution across splits using stratified sampling. This 
+   ensures that validation and test sets are representative of the true 
+   class distribution, preventing misleading metrics that could arise from 
+   imbalanced splits.
+
+4. **Batch-Level Regularization**: Batch size of 8 provides implicit 
+   regularization through stochastic gradient noise, preventing the model from 
+   overfitting to specific batch compositions. Smaller batches increase 
+   gradient variance, which acts as a natural regularizer.
+
+5. **Sequence Length Optimization**: Maximum sequence length of 128 tokens 
+   balances context preservation with computational efficiency. Truncation 
+   beyond this length prevents the model from overfitting to extremely long 
+   review patterns while maintaining sufficient context for accurate sentiment 
+   classification.
+
+VALIDATION METHODOLOGY & GENERALIZATION ASSESSMENT
+--------------------------------------------------
+To rigorously assess model generalization, we employed a multi-faceted 
+evaluation approach:
+
+- **Holdout Test Set Evaluation**: Final model performance measured on a 
+  held-out test set (10% of data) that was never used during training or 
+  hyperparameter tuning. This provides an unbiased estimate of real-world 
+  performance.
+
+- **Validation Loss Monitoring**: Continuous monitoring of validation loss 
+  during training enables detection of overfitting before it manifests in 
+  degraded test performance. Divergence between training and validation loss 
+  curves signals the onset of overfitting.
+
+- **Curated Test Suite**: A hand-curated set of 8 diverse review examples 
+  (covering edge cases like mixed sentiment, sarcasm, and nuanced language) 
+  was evaluated before and after fine-tuning to measure domain adaptation 
+  quality. Baseline accuracy improved from 50% to 62.5% on this suite, 
+  demonstrating successful transfer learning.
+
+TRAINING DYNAMICS & CONVERGENCE ANALYSIS
+----------------------------------------
+Fine-tuning was conducted for up to 3 epochs with the following observed 
+dynamics:
+
+- **Epoch 1**: Training accuracy 85.1%, validation accuracy 85.5%, validation 
+  loss 0.3408. Model demonstrates strong initial learning with minimal 
+  overfitting gap.
+
+- **Epoch 2**: Training accuracy 87.1%, validation accuracy 85.2%, validation 
+  loss 0.3308 (best). Model continues to improve generalization, achieving 
+  optimal validation performance.
+
+- **Epoch 3**: Training accuracy 88.9%, validation accuracy 85.8%, validation 
+  loss 0.3885. Training accuracy continues to rise while validation loss 
+  increases, indicating overfitting onset. Early stopping triggered, weights 
+  restored to Epoch 2 checkpoint.
+
+Final test set performance: 83.9% accuracy, 0.3420 loss. The model 
+demonstrates strong generalization with a training-test accuracy gap of only 
+~5%, indicating effective regularization.
+
+TECHNICAL INNOVATIONS IN MODEL DEPLOYMENT
+-----------------------------------------
+Beyond training, the production deployment incorporates several ML engineering 
+best practices:
+
+- **Model Versioning**: Timestamped run directories preserve training 
+  configurations, hyperparameters, and checkpoints for reproducibility and 
+  model lineage tracking.
+
+- **Dual Model Inference**: System supports both pretrained (baseline) and 
+  fine-tuned model inference, enabling A/B testing and performance comparison 
+  in production.
+
+- **Confidence Calibration**: Prediction outputs include confidence scores 
+  (softmax probabilities) enabling downstream systems to filter low-confidence 
+  predictions for human review.
+
+- **TensorFlow/Keras Integration**: Native TensorFlow 2.x implementation 
+  enables efficient GPU acceleration, XLA compilation, and seamless 
+  integration with production inference pipelines.
+
+BUSINESS USE CASES
+------------------
+- Product Teams: Identify top recurring bugs and UX pain points; prioritize 
+  features based on real customer impact
+- Strategy & Leadership: Detect systemic issues across product lines; inform 
+  roadmap and investment decisions
+- Customer Experience (CX): Understand root causes of negative sentiment; 
+  track shifts in customer perception over time
+
+EXAMPLE QUERIES
+---------------
+- "What are the most common reasons for 1-star reviews in Finance apps?"
+- "Which features are users requesting most in the last quarter?"
+- "How do Teen-rated app complaints differ from Everyone-rated apps?"
+- "What issues are driving churn-related feedback this year?"
+- "Why are 1-star reviews increasing for Finance apps in the last 6 months?"
+
+PROJECT POSITIONING
+-------------------
+Sentio+ is designed as a consulting-grade internal analytics tool, not a 
+consumer chatbot. Its primary value lies in converting raw customer feedback 
+into strategic, explainable insights that organizations can act on with 
+confidence. The platform emphasizes evidence-first answers, clear separation of 
+preprocessing/retrieval/generation, and metadata-aware retrieval for precise 
+filtering and analysis. The sentiment analysis component serves as a critical 
+foundation, providing high-quality, generalizable sentiment classification that 
+enables downstream RAG systems to reason about customer feedback with 
+confidence.

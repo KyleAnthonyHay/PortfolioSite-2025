@@ -1,0 +1,220 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+Sentio+ is an AI-powered decision-support platform that transforms large-scale, 
+unstructured customer review data into actionable business insights using a 
+Retrieval-Augmented Generation (RAG) architecture. Designed as an internal 
+intelligence tool for Product, CX, Strategy, and Leadership teams, it enables 
+aspect-level reasoning over customer feedback, grounding every insight in real 
+review evidence.
+
+Unlike traditional sentiment dashboards that only classify positive vs. 
+negative, Sentio+ answers why customers feel the way they do, which product 
+aspects drive ratings, and what teams should prioritize to improve outcomes.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose is to serve as a centralized "Customer Intelligence 
+Platform" for organizations managing large volumes of customer feedback. Unlike 
+systems that rely solely on manual tagging and keyword search, Sentio+ uses 
+RAG to enable semantic search and natural language queries across all reviews. 
+It helps teams navigate complex feedback portfolios, track sentiment trends, 
+and extract insights from historical reviews.
+
+The system translates unstructured feedback into decision-ready insights that 
+inform product prioritization, roadmap planning, and customer experience 
+improvements. It answers questions like:
+- "What usability issues are driving 1-star reviews in Finance apps?"
+- "How have payment-related complaints evolved over the last 6 months?"
+- "What features do users in the 'Everyone' content segment value most?"
+
+TECH STACK
+----------
+- Frontend:
+  * Framework: Next.js 16 (App Router)
+  * Language: TypeScript
+  * Styling: Tailwind CSS 4
+  * UI Components: Radix UI primitives, Framer Motion
+  * State Management: React Context API + Custom Hooks
+  * Icons: Lucide React
+  * Demo Interface: Streamlit (Python)
+
+- Backend:
+  * API Framework: FastAPI (Python)
+  * AI Orchestration: LangChain & LangGraph
+  * LLM: AWS Bedrock (Claude 3 Sonnet) + OpenAI-compatible APIs
+  * Embeddings: OpenAI text-embedding-3-small (via LangChain)
+  * Vector Database: ChromaDB (persistent, HTTP, or cloud)
+  * Data Processing: Pandas, NumPy
+  * Containerization: Docker
+
+- Vector Database (RAG):
+  * Storage: ChromaDB with cosine similarity search
+  * Embedding Model: OpenAI Embeddings API (via LangChain)
+  * Search: Metadata-aware retrieval with filtering by app, category, rating, date
+
+- Infrastructure:
+  * Containerization: Docker & Docker Compose
+  * Data Storage: Local filesystem (CSV datasets)
+  * Monitoring: Custom logging with structured JSON configuration
+  * Development: Jupyter Notebooks for exploration and validation
+
+CODE ORGANIZATION
+-----------------
+- /app:
+  FastAPI backend service. Contains RAG orchestration, LangChain agent with 
+  tools (search_reviews, get_collection_stats, list_available_apps), vector 
+  store wrapper for ChromaDB, LLM client supporting AWS Bedrock and 
+  OpenAI-compatible APIs, document ingestion service, and API routes for query, 
+  chat, and ingest operations.
+
+- /web:
+  Next.js frontend application. Includes landing page with marketing content, 
+  demo chat interface, responsive design with Tailwind CSS, and integration 
+  with FastAPI backend for RAG queries.
+
+- /streamlit-app:
+  Streamlit demo application. Provides interactive chat interface, collection 
+  statistics display, query settings and filters, and real-time API health 
+  monitoring.
+
+- /etl:
+  Data extraction and preprocessing scripts. Handles CSV data merging, review 
+  ID generation, and dataset preparation for ingestion.
+
+- /notebooks:
+  Jupyter notebooks for data exploration, RAG pipeline validation, and 
+  iterative development. Includes notebooks for data preprocessing, RAG testing, 
+  and analysis workflows.
+
+- /data:
+  Directory for raw and processed datasets. Stores Google Play Store reviews 
+  data (apps_reviews.csv, apps_info.csv) and processed outputs.
+
+- /docs:
+  Design documents, architecture diagrams, example pipeline documentation, and 
+  setup guides.
+
+KEY FEATURES
+------------
+1. AI-Powered Semantic Search: Semantic search across all reviews using vector 
+   embeddings, enabling natural language queries that understand context and 
+   meaning rather than just keywords.
+
+2. Conversational Q&A with LangChain Agents: Chat interface powered by 
+   LangGraph agents that can answer questions about reviews with citations to 
+   source documents. Agents use tools for review search, collection statistics, 
+   and app listing.
+
+3. Automated Document Processing:
+   - Text extraction and cleaning from CSV datasets
+   - Intelligent chunking for optimal retrieval
+   - Metadata enrichment (app name, category, rating, date, content rating)
+   - Hybrid stratified sampling for signal quality
+
+4. Aspect-Level Sentiment Analysis:
+   - Identifies specific product aspects driving sentiment (usability, 
+     payments, performance, pricing)
+   - Tracks sentiment trends across time and categories
+   - Provides evidence-grounded insights with source citations
+
+5. Metadata-Aware Retrieval:
+   - Filter by app name, category, rating, date range
+   - LLM-powered source selection for focused queries
+   - Distance threshold filtering for relevance
+
+6. Multi-Interface Access:
+   - Next.js web application for production use
+   - Streamlit demo for quick testing and validation
+   - RESTful API for programmatic access
+
+7. Flexible LLM Integration:
+   - Support for AWS Bedrock (Claude models)
+   - OpenAI-compatible API support (Ollama, LM Studio, vLLM)
+   - Configurable temperature and token limits
+
+8. Vector Store Flexibility:
+   - Persistent local ChromaDB for development
+   - HTTP client for distributed deployments
+   - ChromaDB Cloud support for production
+
+9. Business Intelligence:
+   - Collection statistics (total documents, unique apps, categories)
+   - Trend detection across time periods
+   - Category and rating-based analysis
+   - Export-ready insights for stakeholders
+
+DATA SOURCE
+-----------
+Sentio+ is powered by the Google Play Store Reviews dataset from Kaggle:
+- Source: Kaggle – Google Play Market Reviews
+- Scale: ~1M reviews across ~500 app titles (subset used during prototyping)
+- Sampling: Hybrid stratified sampling of 50,000 reviews
+- Key Fields:
+  - Review text
+  - Star rating (1–5)
+  - App category
+  - Review date
+  - Content rating (Everyone, Teen, etc.)
+  - Helpful count
+
+Purpose: Enable fine-grained analysis of customer sentiment, feature requests, 
+and recurring pain points across app categories.
+
+ARCHITECTURE FLOW
+-----------------
+1. Data Ingestion: CSV datasets → Pandas processing → Text chunking → 
+   Embedding generation → ChromaDB indexing
+
+2. Query & Retrieval: User question → Semantic search in ChromaDB → Optional 
+   metadata filtering → Top-K document retrieval
+
+3. Generation & Grounding: Retrieved reviews → LLM synthesis → 
+   Evidence-grounded answer → Source citations → User response
+
+4. Agent Orchestration: User message → LangChain agent → Tool selection 
+   (search_reviews, get_stats, list_apps) → Tool execution → Response 
+   synthesis → Conversation memory
+
+KEY INNOVATION: HYBRID STRATIFIED SAMPLING
+------------------------------------------
+Rather than naive random sampling, Sentio+ implements hybrid stratified 
+sampling to maximize signal quality:
+- Breadth (Coverage): Reviews balanced across all categories and ratings (1-5 
+  stars)
+- Depth (Signal Quality): Within each category/rating bucket, prioritizes:
+  - Long reviews (>150 characters) for detailed evidence
+  - Helpful reviews (high helpful_count) for peer-vetted insights
+  - Recent reviews (~60% from last 12 months) for current relevance
+
+This treats each review as high-information testimony, avoiding low-signal 
+noise and improving downstream retrieval and LLM reasoning quality.
+
+BUSINESS USE CASES
+------------------
+- Product Teams: Identify top recurring bugs and UX pain points; prioritize 
+  features based on real customer impact
+- Strategy & Leadership: Detect systemic issues across product lines; inform 
+  roadmap and investment decisions
+- Customer Experience (CX): Understand root causes of negative sentiment; 
+  track shifts in customer perception over time
+
+EXAMPLE QUERIES
+---------------
+- "What are the most common reasons for 1-star reviews in Finance apps?"
+- "Which features are users requesting most in the last quarter?"
+- "How do Teen-rated app complaints differ from Everyone-rated apps?"
+- "What issues are driving churn-related feedback this year?"
+- "Why are 1-star reviews increasing for Finance apps in the last 6 months?"
+
+PROJECT POSITIONING
+-------------------
+Sentio+ is designed as a consulting-grade internal analytics tool, not a 
+consumer chatbot. Its primary value lies in converting raw customer feedback 
+into strategic, explainable insights that organizations can act on with 
+confidence. The platform emphasizes evidence-first answers, clear separation of 
+preprocessing/retrieval/generation, and metadata-aware retrieval for precise 
+filtering and analysis.

@@ -1,11 +1,12 @@
 'use client';
 
-import Header from '@/components/Header';
+import TopHeader from '@/components/TopHeader';
 import Link from 'next/link';
 import Image from 'next/image';
 import Footer from '@/components/Footer';
 import { FaGithub } from 'react-icons/fa';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useInView } from '@/hooks/useInView';
 
 type Category = 'All' | 'iOS Apps' | 'Web Apps';
 
@@ -23,6 +24,12 @@ const categories: Category[] = ['All', 'iOS Apps', 'Web Apps'];
 
 export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState<Category>('All');
+  const [mounted, setMounted] = useState(false);
+  const { ref: gridRef, isInView: gridInView } = useInView({ threshold: 0.05 });
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const filteredProjects = activeCategory === 'All' 
     ? projects 
@@ -30,19 +37,11 @@ export default function ProjectsPage() {
 
   return (
     <>
-      <Header />
-      <div className="absolute top-12 left-12">
-        <Link href="/" className="text-gray-600 hover:text-gray-800 inline-block p-2">
-          <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
-            <polyline points="15 18 9 12 15 6" />
-          </svg>
-        </Link>
-      </div>
-
-      <section className="pt-32 pb-16">
+      <TopHeader />
+      <section className="pt-16 pb-16">
         <div className="max-w-[800px] mx-auto px-6 md:px-12 text-center">
-          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">Projects</h1>
-          <p className="text-lg text-gray-600 max-w-[600px] mx-auto">
+          <h1 className={`text-5xl md:text-6xl font-bold text-gray-900 mb-6 ${mounted ? 'animate-fade-in-up' : 'opacity-0'}`}>Projects</h1>
+          <p className={`text-lg text-gray-600 max-w-[600px] mx-auto ${mounted ? 'animate-fade-in-up animation-delay-100' : 'opacity-0'}`}>
             A collection of apps and experiences I&apos;ve built — from mobile to web.
           </p>
         </div>
@@ -50,7 +49,7 @@ export default function ProjectsPage() {
 
       <section className="pb-8">
         <div className="max-w-[800px] mx-auto px-6 md:px-12">
-          <nav className="flex items-center justify-center gap-6 border-b border-gray-200 pb-4">
+          <nav className={`flex items-center justify-center gap-6 border-b border-gray-200 pb-4 ${mounted ? 'animate-fade-in animation-delay-200' : 'opacity-0'}`}>
             {categories.map((category) => (
               <button
                 key={category}
@@ -68,11 +67,11 @@ export default function ProjectsPage() {
         </div>
       </section>
 
-      <section className="pt-16 pb-40">
+      <section className="pt-16 pb-40" ref={gridRef}>
         <div className="max-w-[1100px] mx-auto px-6 md:px-12">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {filteredProjects.map((project) => (
-              <div key={project.id} className="space-y-4">
+            {filteredProjects.map((project, index) => (
+              <div key={project.id} className={`space-y-4 ${gridInView ? `animate-scale-in animation-delay-${(index % 4) * 100 + 100}` : 'opacity-0'}`}>
                 {project.id === 1 || project.id === 2 || project.id === 3 || project.id === 4 || project.id === 5 || project.id === 6 || project.id === 7 ? (
                   <Link href={`/projects/${project.id}`} className="block group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4] cursor-pointer">
                     <div className={`absolute inset-0 flex justify-center ${project.landscape ? 'items-center' : 'items-start pt-12'}`}>

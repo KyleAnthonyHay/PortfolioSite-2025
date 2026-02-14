@@ -2,8 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { useInView } from '@/hooks/useInView';
 
 const Projects = () => {
+  const { ref, isInView } = useInView({ threshold: 0.1 });
   const projects = [
     {
       id: 1,
@@ -52,16 +54,20 @@ const Projects = () => {
   ];
 
   return (
-    <section className="pb-20">
+    <section className="pb-20" ref={ref}>
       <div className="max-w-[1200px] mx-auto px-6 md:px-12">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {projects.map((project) => {
+          {projects.map((project, index) => {
+            const animationClass = isInView 
+              ? `animate-scale-in animation-delay-${(index % 4) * 100 + 100}` 
+              : 'opacity-0';
+            
             if (project.detailPage) {
               return (
                 <Link
                   key={project.id}
                   href={project.detailPage}
-                  className="group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4]"
+                  className={`group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4] ${animationClass}`}
                 >
                   <div className={`absolute inset-0 flex justify-center ${project.landscape ? 'items-center' : 'items-start pt-16'}`}>
                     <div className={`relative transform transition-transform duration-800 ${project.landscape ? 'w-[75%] aspect-[16/9] group-hover:scale-105' : 'w-[45%] aspect-[9/19] group-hover:-translate-y-3'}`}>
@@ -86,7 +92,7 @@ const Projects = () => {
                 href={href}
                 target={hasLink ? '_blank' : undefined}
                 rel={hasLink ? 'noopener noreferrer' : undefined}
-                className="group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4]"
+                className={`group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4] ${animationClass}`}
               >
                 <div className={`absolute inset-0 flex justify-center ${project.landscape ? 'items-center' : 'items-start pt-16'}`}>
                   <div className={`relative transform transition-transform duration-800 ${project.landscape ? 'w-[75%] aspect-[16/9] group-hover:scale-105' : 'w-[45%] aspect-[9/19] group-hover:-translate-y-3'}`}>

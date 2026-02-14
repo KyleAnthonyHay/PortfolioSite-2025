@@ -1,0 +1,86 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+A cross-platform social media application built with Flutter that enables users 
+to create posts, view a shared feed, and interact with other users. The app 
+provides a simple, real-time social networking experience with user 
+authentication, profile management, and a public message wall where all users 
+can share content.
+
+PURPOSE & CONTEXT
+-----------------
+The application serves as a social media platform where users can post messages 
+to a shared feed ("THE WALL") visible to all authenticated users. It provides 
+a streamlined social networking experience focused on text-based posts and user 
+discovery, enabling users to connect, share thoughts, and browse other users' 
+profiles.
+
+TECH STACK
+----------
+- Framework: Flutter (Dart SDK >=3.3.0 <4.0.0)
+- Backend Services: Firebase
+  * Authentication: Firebase Auth
+  * Database: Cloud Firestore
+  * Platform Support: iOS, Android, Web, Linux, macOS, Windows
+
+- UI/UX:
+  * Material Design
+  * Custom theme system (Light/Dark mode)
+  * Reusable component architecture
+
+CODE ORGANIZATION
+-----------------
+- /lib/auth:
+  Authentication flow with Firebase Auth. Handles user login, registration, 
+  and session management. Includes LoginOrRegister widget that toggles between 
+  login and registration pages.
+
+- /lib/pages:
+  Main application screens including HomePage (feed with posts), ProfilePage 
+  (user profile display), UsersPage (user discovery), LoginPage, and 
+  RegisterPage.
+
+- /lib/components:
+  Reusable UI components including MyButton, MyTextField, MyDrawer, MyListTile, 
+  MyPostButton, and MyBackButton for consistent UI patterns.
+
+- /lib/database:
+  Firestore database service layer. Handles post creation, retrieval, and 
+  real-time stream updates. Posts stored with user email, message content, and 
+  timestamp.
+
+- /lib/theme:
+  Theme configuration for LightMode and DarkMode with Material Design color 
+  schemes.
+
+- /lib/helper:
+  Helper functions for common operations like displaying messages to users.
+
+KEY FEATURES
+------------
+1. User Authentication: Email/password registration and login via Firebase 
+   Auth with automatic session management and protected routes.
+
+2. Real-Time Feed: Public message wall ("THE WALL") displaying all user posts 
+   in reverse chronological order with real-time updates via Firestore streams.
+
+3. Post Creation: Users can create and publish text-based posts that are 
+   immediately visible to all authenticated users.
+
+4. User Profiles: Profile pages displaying username, email, and profile icon 
+   for each registered user.
+
+5. User Discovery: Browse all registered users in the application with 
+   username and email display.
+
+6. Dark Mode Support: System-wide light and dark theme switching with Material 
+   Design color schemes.
+
+7. Cross-Platform: Single codebase deployment to iOS, Android, Web, Linux, 
+   macOS, and Windows platforms.
+
+8. Navigation: Drawer-based navigation for accessing home, profile, and users 
+   pages with consistent back button navigation patterns.

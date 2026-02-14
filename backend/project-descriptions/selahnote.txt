@@ -1,0 +1,343 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+SelahNote (Lectra) is an AI-powered note-taking application for iOS that 
+transforms audio content—including live recordings, uploaded audio files, and 
+YouTube videos—into organized, structured notes using advanced speech 
+recognition and large language models. Designed specifically for students, 
+professionals, and content consumers who need to capture and synthesize 
+information from lectures, sermons, meetings, and educational videos, SelahNote 
+provides real-time transcription, intelligent summarization, and hierarchical 
+folder organization.
+
+Unlike traditional note-taking apps that require manual typing or basic 
+recording playback, SelahNote automates the entire workflow: capture audio, 
+transcribe speech with high accuracy, and generate comprehensive markdown-formatted 
+notes with structured headings, scripture references, and key insights—all 
+while maintaining chronological fidelity to the original content.
+
+PURPOSE & CONTEXT
+-----------------
+The primary purpose is to serve as an intelligent audio-to-notes conversion 
+platform that eliminates the friction between content consumption and knowledge 
+retention. Users can record lectures or sermons in real-time, upload existing 
+audio files, or extract transcripts from YouTube videos, then receive 
+AI-generated notes that preserve important details, scriptural context, and 
+thematic structure.
+
+The system addresses the challenge of information overload by transforming 
+long-form audio content into scannable, searchable, and organized notes. It 
+answers questions like:
+- "What were the main points from today's lecture?"
+- "Which scriptures were referenced in this sermon?"
+- "What were the key takeaways from this YouTube video?"
+- "How can I organize my notes by topic or date?"
+
+SelahNote emphasizes evidence-first note generation, ensuring that every 
+insight is grounded in the actual transcribed content, with support for 
+regeneration and manual editing to refine AI output.
+
+TECH STACK
+----------
+- Frontend (iOS):
+  * Framework: SwiftUI
+  * Language: Swift 5.0+
+  * Data Persistence: SwiftData (Apple's modern data modeling framework)
+  * UI Architecture: MVVM with ObservableObject pattern
+  * Audio Framework: AVFoundation (recording, playback, format conversion)
+  * Networking: URLSession with async/await
+  * Authentication: Firebase Auth
+  * Subscriptions: RevenueCat (StoreKit 2 integration)
+  * Minimum iOS: 17.6+
+
+- Backend Services:
+  * Transcription: AssemblyAI (streaming and batch transcription APIs)
+  * Note Generation: OpenAI GPT-4o (streaming chat completions)
+  * YouTube Transcript Service: Google Cloud Run (Python Flask function)
+  * YouTube Metadata: Supadata API (via Cloud Run proxy)
+  * Authentication: Firebase Authentication
+  * Cloud Infrastructure: Google Cloud Platform
+
+- Data Storage:
+  * Local Persistence: SwiftData (SQLite-backed, on-device)
+  * Data Models: RootDirectory → Folders → TranscriptionTuples → 
+    (AudioFile, Transcription, LiveTranscription, Note)
+  * File Format: Audio stored as Data blobs (MPEG-4 AAC format)
+
+- Audio Processing:
+  * Recording Format: MPEG-4 AAC, 44.1kHz, mono, high quality
+  * Live Streaming: WebSocket-based streaming to AssemblyAI (16kHz PCM-16)
+  * Format Conversion: AVAudioConverter for real-time audio pipeline
+  * Background Processing: Background task management for continuous recording
+
+CODE ORGANIZATION
+-----------------
+- /Lectra:
+  Main iOS application codebase. Contains SwiftUI views, data models, 
+  utilities, and business logic organized into clear modules:
+  
+  * /Views: SwiftUI view hierarchy including MainTabView, RecordView, 
+    FolderView, FileListView, TupleView, and specialized components for 
+    audio upload, note generation, and playback.
+  
+  * /Data Models: SwiftData model definitions (TranscriptionTuple, Folder, 
+    RootDirectory, AudioFile, Transcription, LiveTranscription, Note) with 
+    relationship management and cascade deletion rules.
+  
+  * /Utilities: Core business logic and service clients:
+    - AudioRecorderManager: Orchestrates recording, transcription, and 
+      summarization workflows
+    - AssemblyAIClient: Batch transcription API integration
+    - AssemblyAIStreamingClient: Real-time WebSocket streaming transcription
+    - LiveTranscriptionController: AVAudioEngine integration for live capture
+    - OpenAIClientWrapper: GPT-4o streaming chat completion for note generation
+    - YouTubeAudioDownloader: Cloud Run service client for transcript fetching
+    - FolderManager: CRUD operations for folder and tuple organization
+    - WebSocketManager: Low-level WebSocket connection management
+  
+  * /ViewModels: UserViewModel for subscription and authentication state
+  
+  * /Theme: Custom color schemes, markdown rendering, and UI styling
+
+- /AudioScraper:
+  Google Cloud Run service (Python) that proxies YouTube transcript requests 
+  to Supadata API. Handles URL normalization, async job polling, error 
+  handling, and Secret Manager integration for API key management.
+
+KEY FEATURES
+------------
+1. Real-Time Audio Recording with Live Transcription:
+   - High-quality audio capture using AVFoundation
+   - WebSocket-based streaming transcription to AssemblyAI during recording
+   - Real-time partial transcript updates displayed to user
+   - Background task management to prevent interruption during recording
+   - Pause/resume functionality with state preservation
+
+2. Multiple Audio Input Sources:
+   - Direct recording via device microphone
+   - Audio file upload from Files app (with security-scoped resource handling)
+   - YouTube video transcript extraction via Cloud Run service
+   - Support for various audio formats with automatic processing
+
+3. AI-Powered Note Generation:
+   - Automated transcription using AssemblyAI (high-accuracy speech recognition)
+   - Intelligent summarization using OpenAI GPT-4o with custom system prompts
+   - Structured markdown output with hierarchical headings (H1, H2, H3)
+   - Scripture reference detection and formatting
+   - Chronological preservation of content order
+   - Streaming response updates for real-time feedback
+   - Regeneration capability for iterative refinement
+
+4. Hierarchical Organization System:
+   - Folder-based organization (RootDirectory → Folders → TranscriptionTuples)
+   - Drag-and-drop folder management
+   - Search and sort functionality (by name, date)
+   - Recent items tracking with last-opened timestamps
+   - Cascade deletion for data integrity
+
+5. TranscriptionTuple Data Model:
+   - Unified data structure linking audio, transcription, live transcript, 
+     and generated notes
+   - Optional relationships (audio may exist without transcription, etc.)
+   - Metadata: creation date, last opened, YouTube link association
+   - ObservableObject for reactive UI updates
+
+6. Advanced Audio Processing:
+   - Audio format conversion (device format → 16kHz PCM-16 for streaming)
+   - Background audio session management
+   - Audio interruption handling (phone calls, other apps)
+   - Route change detection (headphones, Bluetooth)
+
+7. YouTube Integration:
+   - URL validation and normalization (supports youtu.be, youtube.com/live, 
+     shorts, etc.)
+   - Cloud Run service for transcript fetching (handles async job polling)
+   - Automatic note generation from YouTube transcripts
+   - Metadata extraction (title, description, channel info)
+
+8. User Experience Features:
+   - Dark mode support with custom color schemes
+   - Markdown rendering for generated notes
+   - Audio playback controls with progress tracking
+   - Empty state handling with helpful guidance
+   - Onboarding flow for first-time users
+   - Settings management (transcription language, appearance)
+
+9. Authentication & Monetization:
+   - Firebase Authentication integration
+   - RevenueCat subscription management
+   - Paywall view for premium features
+   - User subscription status tracking
+
+ARCHITECTURE FLOW
+-----------------
+1. Recording Workflow:
+   User starts recording → AVAudioEngine captures audio → LiveTranscriptionController 
+   converts to PCM-16 → WebSocket streams to AssemblyAI → Partial transcripts 
+   displayed → Recording stops → Final transcript saved → OpenAI generates notes 
+   → Notes saved to TranscriptionTuple → User can view/edit
+
+2. Upload Workflow:
+   User selects audio file → Security-scoped resource accessed → Audio data 
+   loaded → TranscriptionTuple created → AssemblyAI batch transcription → 
+   OpenAI summarization → Notes generated → Saved to folder
+
+3. YouTube Workflow:
+   User pastes YouTube URL → URL validated → Cloud Run service called → 
+   Supadata API fetches transcript → Transcript returned → OpenAI generates 
+   notes → Notes saved with YouTube link metadata
+
+4. Note Generation Pipeline:
+   Raw transcription text → Custom system prompt (sermon/lecture-specific rules) 
+   → GPT-4o streaming completion → Markdown-formatted notes → Title extraction 
+   → Saved to TranscriptionTuple.note → Displayed in TupleView
+
+5. Data Persistence Flow:
+   SwiftData models → ModelContext operations → SQLite storage → Automatic 
+   relationship management → Cascade deletion → Live @Query updates → UI 
+   reactivity
+
+KEY INNOVATION: DUAL TRANSCRIPTION MODALITIES
+---------------------------------------------
+SelahNote implements two complementary transcription approaches:
+
+1. **Live Streaming Transcription**: During recording, audio is streamed in 
+   real-time via WebSocket to AssemblyAI, providing immediate feedback and 
+   allowing users to see what's being captured. This uses PCM-16 format at 
+   16kHz, optimized for low-latency streaming.
+
+2. **Batch Transcription**: After recording completes or for uploaded files, 
+   the full audio is uploaded to AssemblyAI for high-accuracy batch 
+   processing. This ensures maximum accuracy for the final transcript used in 
+   note generation.
+
+This dual approach balances user experience (immediate feedback) with 
+accuracy (final transcript quality), addressing the trade-off between 
+real-time responsiveness and transcription fidelity.
+
+NOTE GENERATION: CUSTOM PROMPT ENGINEERING
+------------------------------------------
+The note generation system uses a sophisticated system prompt designed 
+specifically for sermon and lecture content:
+
+- **Structured Output**: Enforces markdown formatting with strict hierarchy 
+  (H1 titles max 25 characters, H2/H3 for subpoints)
+- **Scripture Handling**: Automatically detects and formats scriptural 
+  references with proper citation style
+- **Chronological Preservation**: Maintains exact order of content as spoken
+- **Content Filtering**: Removes profanity and inappropriate content
+- **Impersonal Style**: Generates notes in third-person, direct style without 
+  speaker references
+- **Comprehensive Coverage**: Emphasizes detailed, thorough summaries that 
+  preserve important points, explanations, lists, and statistics
+
+The prompt is language-aware, supporting multiple transcription languages while 
+maintaining consistent output structure.
+
+DATA MODEL ARCHITECTURE
+------------------------
+The app uses SwiftData's modern data modeling with clear relationship 
+hierarchies:
+
+- **RootDirectory**: Top-level container (singleton pattern)
+  - Contains: Folders array
+  
+- **Folder**: Organizational unit
+  - Contains: TranscriptionTuples array
+  - Supports: Rename, delete, move operations
+  
+- **TranscriptionTuple**: Core entity linking all related data
+  - Optional AudioFile (recorded/uploaded audio)
+  - Optional Transcription (batch transcription result)
+  - Optional LiveTranscription (streaming transcript)
+  - Optional Note (AI-generated markdown notes)
+  - Metadata: name, createdAt, lastOpenedAt, youtubeLink
+  
+- **Cascade Deletion**: Deleting a Folder cascades to Tuples, which cascade 
+  to related AudioFile, Transcription, LiveTranscription, and Note entities, 
+  ensuring data consistency.
+
+This architecture enables flexible content organization while maintaining 
+referential integrity and efficient querying through SwiftData's @Query 
+property wrappers.
+
+CLOUD INFRASTRUCTURE: YOUTUBE TRANSCRIPT SERVICE
+------------------------------------------------
+The YouTube transcript extraction service is deployed as a Google Cloud Run 
+function (Python/Flask) that:
+
+- Accepts POST requests with YouTube URLs
+- Validates and normalizes YouTube URL formats
+- Proxies requests to Supadata API for transcript fetching
+- Handles async job polling (202 responses) with configurable timeouts
+- Manages API keys via Secret Manager (production) or environment variables 
+  (local testing)
+- Returns structured JSON with transcript content, language, and available 
+  language options
+
+This service decouples the iOS app from direct API dependencies, provides 
+centralized error handling, and enables future enhancements (caching, rate 
+limiting, transcript quality improvements) without app updates.
+
+BUSINESS USE CASES
+------------------
+- **Students**: Record lectures, automatically generate study notes, organize 
+  by course or topic
+- **Religious Communities**: Capture sermons, extract scripture references, 
+  create searchable sermon libraries
+- **Professionals**: Transcribe meetings, generate action items and summaries, 
+  maintain organized meeting archives
+- **Content Creators**: Extract insights from YouTube videos, generate 
+  structured notes for research and content planning
+- **Researchers**: Build searchable audio libraries with AI-generated summaries 
+  and hierarchical organization
+
+EXAMPLE WORKFLOWS
+-----------------
+1. **Live Lecture Recording**:
+   Open app → Select folder → Start recording → See live transcription → 
+   Stop recording → Wait for final transcription → AI generates notes → 
+   Review/edit notes → Save to folder
+
+2. **YouTube Video Processing**:
+   Open app → Select folder → Paste YouTube URL → Cloud service fetches 
+   transcript → AI generates notes → Notes appear with video metadata → 
+   Save to folder
+
+3. **Audio File Upload**:
+   Open app → Select folder → Upload audio file → Processing begins → 
+   Transcription completes → Notes generated → View in folder
+
+4. **Note Organization**:
+   Browse folders → Search for specific notes → Sort by date/name → 
+   Open note → Edit if needed → Move to different folder → Delete old 
+   recordings
+
+PROJECT POSITIONING
+-------------------
+SelahNote is designed as a premium iOS application that bridges the gap 
+between passive content consumption and active knowledge management. Unlike 
+generic transcription services that only convert speech to text, SelahNote 
+adds intelligent structure, organization, and synthesis—transforming raw audio 
+into actionable, searchable, and well-organized notes.
+
+The platform emphasizes:
+- **Accuracy**: Dual transcription modalities ensure high-quality input
+- **Intelligence**: Custom AI prompts generate contextually appropriate notes
+- **Organization**: Hierarchical folder system enables scalable content 
+  management
+- **Flexibility**: Multiple input sources (recording, upload, YouTube) 
+  accommodate diverse use cases
+- **Privacy**: On-device storage with SwiftData ensures user data remains 
+  private
+- **User Experience**: Real-time feedback, streaming updates, and intuitive 
+  UI reduce friction in the note-taking workflow
+
+The integration of AssemblyAI for transcription and OpenAI for summarization 
+represents a modern AI stack that delivers production-grade accuracy while 
+maintaining the flexibility to adapt to different content types and user 
+needs. The Cloud Run service architecture enables scalable YouTube integration 
+without burdening the iOS app with complex API management.
