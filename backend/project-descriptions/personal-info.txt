@@ -197,11 +197,6 @@ LOCATION:
 
 ---
 
-SENIORITY/EXPERIENCE LEVEL:
-- Entry to early mid-level software engineer
-
----
-
 RECRUITER FAQ:
 
 Q: When did you graduate?
