@@ -26,9 +26,11 @@ const thinkingPhrases = [
   'Generating response...',
 ];
 
+const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
+
 function ShimmeringText({ text }: { text: string }) {
   return (
-    <span className="inline-block bg-gradient-to-r from-gray-400 via-gray-600 to-gray-400 bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer">
+    <span className="inline-block bg-gradient-to-r from-zinc-400 via-zinc-600 to-zinc-400 bg-[length:200%_100%] bg-clip-text text-transparent animate-shimmer text-sm">
       {text}
     </span>
   );
@@ -46,7 +48,7 @@ function ThinkingIndicator() {
 
   return (
     <div className="flex justify-start">
-      <div className="bg-gray-100 px-4 py-3 rounded-2xl rounded-bl-md">
+      <div className="bg-white border border-slate-200/50 px-4 py-3 rounded-2xl rounded-bl-md shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={phraseIndex}
@@ -65,22 +67,22 @@ function ThinkingIndicator() {
 
 function MarkdownResponse({ content }: { content: string }) {
   return (
-    <div className="prose prose-sm prose-gray max-w-none">
+    <div className="prose prose-sm prose-zinc max-w-none">
       <ReactMarkdown
         components={{
-          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+          p: ({ children }) => <p className="mb-2 last:mb-0 text-sm leading-relaxed">{children}</p>,
           ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
           ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal">{children}</ol>,
-          li: ({ children }) => <li className="mb-1">{children}</li>,
-          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-          h1: ({ children }) => <h1 className="text-lg font-bold mb-2">{children}</h1>,
-          h2: ({ children }) => <h2 className="text-base font-bold mb-2">{children}</h2>,
-          h3: ({ children }) => <h3 className="text-sm font-bold mb-1">{children}</h3>,
+          li: ({ children }) => <li className="mb-1 text-sm">{children}</li>,
+          strong: ({ children }) => <strong className="font-semibold text-zinc-900">{children}</strong>,
+          h1: ({ children }) => <h1 className="text-base font-semibold mb-2 text-zinc-900">{children}</h1>,
+          h2: ({ children }) => <h2 className="text-sm font-semibold mb-2 text-zinc-900">{children}</h2>,
+          h3: ({ children }) => <h3 className="text-sm font-medium mb-1 text-zinc-900">{children}</h3>,
           code: ({ children }) => (
-            <code className="bg-gray-200 px-1 py-0.5 rounded text-xs">{children}</code>
+            <code className="bg-zinc-100 px-1.5 py-0.5 rounded-md text-xs font-mono">{children}</code>
           ),
           pre: ({ children }) => (
-            <pre className="bg-gray-800 text-gray-100 p-3 rounded-lg overflow-x-auto text-xs mb-2">
+            <pre className="bg-zinc-900 text-zinc-100 p-4 rounded-xl overflow-x-auto text-xs mb-2 font-mono">
               {children}
             </pre>
           ),
@@ -111,10 +113,10 @@ const projectNameToId: Record<string, number> = {
 
 function CitedSources({ projects }: { projects: string[] }) {
   if (!projects || projects.length === 0) return null;
-  
+
   return (
-    <div className="mt-3 pt-3 border-t border-gray-200">
-      <p className="text-xs text-gray-500 mb-1.5">Sources:</p>
+    <div className="mt-3 pt-3 border-t border-zinc-100">
+      <p className="text-[10px] uppercase tracking-widest text-zinc-400 font-medium mb-2">Sources</p>
       <div className="flex flex-wrap gap-1.5">
         {projects.map((project) => {
           const projectId = projectNameToId[project];
@@ -123,7 +125,7 @@ function CitedSources({ projects }: { projects: string[] }) {
               <Link
                 key={project}
                 href={`/projects/${projectId}`}
-                className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-200 text-gray-700 hover:bg-gray-300 transition-colors"
+                className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs bg-zinc-50 border border-zinc-100 text-zinc-600 hover:bg-zinc-100 hover:border-zinc-200 active:scale-[0.97] transition-all duration-200"
               >
                 {project}
               </Link>
@@ -132,7 +134,7 @@ function CitedSources({ projects }: { projects: string[] }) {
           return (
             <span
               key={project}
-              className="inline-flex items-center px-2 py-0.5 rounded-full text-xs bg-gray-200 text-gray-700"
+              className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs bg-zinc-50 border border-zinc-100 text-zinc-500"
             >
               {project}
             </span>
@@ -167,19 +169,26 @@ function saveMessagesToStorage(messages: Message[]) {
 export default function ChatInterface() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q');
-  
+
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const hasSentInitialRef = useRef(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const stored = loadMessagesFromStorage();
     setMessages(stored);
     setIsHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (isHydrated && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [isHydrated]);
 
   useEffect(() => {
     if (isHydrated) {
@@ -214,8 +223,8 @@ export default function ChatInterface() {
       if (!response.ok) throw new Error('Failed to send message');
 
       const data: ChatResponse = await response.json();
-      setMessages((prev) => [...prev, { 
-        role: 'assistant', 
+      setMessages((prev) => [...prev, {
+        role: 'assistant',
         content: data.message,
         citedProjects: data.citedProjects,
       }]);
@@ -247,35 +256,39 @@ export default function ChatInterface() {
 
   return (
     <div className="flex flex-col flex-1 max-w-3xl mx-auto w-full px-4 h-full min-h-0 overflow-hidden">
-      <div className="mb-4 flex-shrink-0 pt-6 flex items-center justify-between">
+      {/* Header */}
+      <div className="flex-shrink-0 pt-6 pb-4 flex items-center justify-between">
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
+          className="inline-flex items-center gap-2 text-zinc-400 hover:text-zinc-900 active:scale-[0.97] transition-all duration-200"
         >
           <BackIcon />
-          <span className="text-sm">Back</span>
+          <span className="text-sm font-medium">Back</span>
         </Link>
         {messages.length > 0 && (
           <button
             onClick={() => setMessages([])}
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-xs font-medium text-zinc-400 hover:text-zinc-600 px-3 py-1.5 rounded-lg hover:bg-zinc-100 active:scale-[0.97] transition-all duration-200"
           >
             Clear chat
           </button>
         )}
       </div>
 
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide min-h-0 pb-32">
+      {/* Messages */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-hide min-h-0 pb-36">
         {messages.length === 0 && (
-          <div className="flex flex-col items-center justify-center h-full text-center text-gray-500">
-            <div className="w-16 h-16 rounded-full overflow-hidden mb-4 border-2 border-gray-200">
-              <Image src="/profile.jpg" alt="Kyle-Anthony" width={64} height={64} className="object-cover" />
+          <div className="flex flex-col items-center justify-center h-full text-center">
+            <div className="w-14 h-14 rounded-full overflow-hidden mb-5 ring-2 ring-zinc-200/60 ring-offset-2 ring-offset-[#f9fafb]">
+              <Image src="/profile.jpg" alt="Kyle-Anthony" width={56} height={56} className="object-cover" />
             </div>
-            <h2 className="text-xl font-semibold text-gray-800 mb-2">Chat with Kyle&apos;s AI Assistant</h2>
-            <p className="max-w-md text-sm">
-              Ask me anything about Kyle-Anthony&apos;s projects, skills, or experience. I have detailed knowledge of all his work.
+            <h2 className="text-lg font-semibold text-zinc-900 tracking-tight mb-2">
+              Chat with Kyle&apos;s AI Assistant
+            </h2>
+            <p className="max-w-sm text-sm text-zinc-400 leading-relaxed mb-8">
+              Ask me anything about Kyle-Anthony&apos;s projects, skills, or experience.
             </p>
-            <div className="mt-6 flex flex-wrap gap-2 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {[
                 'What projects has Kyle built?',
                 'Tell me about his iOS apps',
@@ -283,8 +296,11 @@ export default function ChatInterface() {
               ].map((suggestion) => (
                 <button
                   key={suggestion}
-                  onClick={() => setInput(suggestion)}
-                  className="px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-full transition-colors"
+                  onClick={() => {
+                    setInput(suggestion);
+                    inputRef.current?.focus();
+                  }}
+                  className="px-4 py-2 text-sm bg-white border border-zinc-200/60 text-zinc-600 hover:text-zinc-900 hover:border-zinc-300 rounded-xl active:scale-[0.97] transition-all duration-200 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]"
                 >
                   {suggestion}
                 </button>
@@ -299,14 +315,14 @@ export default function ChatInterface() {
               key={index}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2 }}
+              transition={{ ...spring, delay: 0 }}
               className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[85%] px-4 py-3 rounded-2xl ${
+                className={`max-w-[85%] px-4 py-3 ${
                   message.role === 'user'
-                    ? 'bg-gray-900 text-white rounded-br-md'
-                    : 'bg-gray-100 text-gray-800 rounded-bl-md'
+                    ? 'bg-zinc-900 text-white rounded-2xl rounded-br-md'
+                    : 'bg-white text-zinc-700 rounded-2xl rounded-bl-md border border-slate-200/50 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]'
                 }`}
               >
                 {message.role === 'assistant' ? (
@@ -327,28 +343,30 @@ export default function ChatInterface() {
         <div ref={messagesEndRef} />
       </div>
 
-      <form onSubmit={sendMessage} className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-100 px-4 pt-4 pb-6 z-40 safe-area-inset-bottom">
+      {/* Input */}
+      <form onSubmit={sendMessage} className="fixed bottom-0 left-0 right-0 bg-[#f9fafb]/80 backdrop-blur-xl border-t border-zinc-200/40 px-4 pt-4 pb-6 z-40">
         <div className="max-w-3xl mx-auto">
           <div className="relative flex items-center">
             <input
+              ref={inputRef}
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about Kyle's projects..."
-              className="w-full px-5 py-4 pr-14 bg-white text-gray-900 placeholder-gray-400 rounded-full border border-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-300 shadow-sm"
+              className="w-full px-5 py-3.5 pr-14 bg-white text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] text-sm"
               disabled={isLoading}
             />
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center bg-gray-900 hover:bg-gray-700 disabled:bg-gray-300 disabled:opacity-50 rounded-full transition-colors"
+              className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-200 disabled:opacity-50 rounded-xl active:scale-[0.95] transition-all duration-200"
               aria-label="Send message"
             >
               <ArrowIcon />
             </button>
           </div>
-          <p className="text-center text-xs text-gray-500 mt-2">
-            KyleGPT is AI and can make mistakes. Check important info.
+          <p className="text-center text-[11px] text-zinc-400 mt-2.5">
+            KyleGPT is AI and can make mistakes.
           </p>
         </div>
       </form>
@@ -357,13 +375,13 @@ export default function ChatInterface() {
 }
 
 const BackIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
     <path d="M19 12H5M12 19l-7-7 7-7" />
   </svg>
 );
 
 const ArrowIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
+  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="flex-shrink-0">
     <line x1="7" y1="17" x2="17" y2="7" />
     <polyline points="7 7 17 7 17 17" />
   </svg>

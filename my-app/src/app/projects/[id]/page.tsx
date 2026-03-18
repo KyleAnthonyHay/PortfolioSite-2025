@@ -3,10 +3,6 @@ import Footer from '@/components/Footer';
 import TopHeader from '@/components/TopHeader';
 import { FaGithub } from 'react-icons/fa';
 import { FiArrowUpRight } from 'react-icons/fi';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { Sparkles } from 'lucide-react';
 import ProjectFeatures from '@/components/ProjectFeatures';
 import { AnimatedSection } from '@/components/AnimatedSection';
 
@@ -33,11 +29,11 @@ interface Project {
 }
 
 const projects: Project[] = [
-  { 
-    id: 1, 
-    title: 'SelahNote', 
-    image: '/projects/selah-note.png', 
-    description: 'SelahNote is an AI notetaker for sermons. It provides file organization, recording summaries, and file upload capabilities to streamline the process of taking notes during sermons.', 
+  {
+    id: 1,
+    title: 'SelahNote',
+    image: '/projects/selah-note.png',
+    description: 'SelahNote is an AI notetaker for sermons. It provides file organization, recording summaries, and file upload capabilities to streamline the process of taking notes during sermons.',
     link: 'https://selahnote.app',
     category: 'iOS',
     overview: 'SelahNote (Lectra) is an AI-powered note-taking application for iOS that transforms live recordings, uploaded audio, and YouTube content into structured, reference-aware notes through a hybrid local-first and cloud-synced architecture. It now combines real-time transcription, agentic note generation, Convex-backed sync workflows, and Pinecone-powered reference retrieval to turn spoken content into searchable, enriched notes.',
@@ -49,11 +45,11 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
-  { 
-    id: 2, 
-    title: 'ExpenseTracker', 
-    image: '/projects/expense-tracker.png', 
-    description: 'ExpenseTracker is a finance analytics tool that gathers data from an API and displays your monthly transactions on a graph. It also allows you to assign transaction categories for organization.', 
+  {
+    id: 2,
+    title: 'ExpenseTracker',
+    image: '/projects/expense-tracker.png',
+    description: 'ExpenseTracker is a finance analytics tool that gathers data from an API and displays your monthly transactions on a graph. It also allows you to assign transaction categories for organization.',
     github: 'https://github.com/KyleAnthonyHay/ExpenseTracker/tree/main/ExpenseTracker',
     category: 'iOS',
     overview: 'ExpenseTracker is an elegant iOS application built with SwiftUI that provides users with a comprehensive solution for tracking, visualizing, and managing personal financial transactions. The app fetches transaction data from a remote API, processes and organizes it by date and category, and presents it through an intuitive interface featuring interactive charts, detailed transaction views, and hierarchical category management.',
@@ -65,11 +61,11 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
-  { 
-    id: 3, 
-    title: 'TheWall', 
-    image: '/projects/the-wall.png', 
-    description: "TheWall is a social board application that displays users' posts to a collective feed called 'The Wall.' Users can sign up using Gmail.", 
+  {
+    id: 3,
+    title: 'TheWall',
+    image: '/projects/the-wall.png',
+    description: "TheWall is a social board application that displays users' posts to a collective feed called 'The Wall.' Users can sign up using Gmail.",
     github: 'https://github.com/KyleAnthonyHay/socialmedia-appV2.0',
     category: 'iOS',
     overview: 'A cross-platform social media application built with Flutter that enables users to create posts, view a shared feed, and interact with other users. The app provides a simple, real-time social networking experience with user authentication, profile management, and a public message wall where all users can share content.',
@@ -81,11 +77,11 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
-  { 
-    id: 4, 
-    title: 'CountryApp', 
-    image: '/projects/country-viewer.png', 
-    description: 'Allows you to view all the countries of the world and their relevant data. Country-relative population is automatically updated via a country data gathering API.', 
+  {
+    id: 4,
+    title: 'CountryApp',
+    image: '/projects/country-viewer.png',
+    description: 'Allows you to view all the countries of the world and their relevant data. Country-relative population is automatically updated via a country data gathering API.',
     github: 'https://github.com/KyleAnthonyHay/Countries-App',
     category: 'iOS',
     overview: 'A native iOS application that displays information about countries worldwide. The app fetches country data from the REST Countries API and presents it in a clean, tab-based interface with search and detail views.',
@@ -97,9 +93,9 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
-  { 
-    id: 5, 
-    title: 'OnTract', 
+  {
+    id: 5,
+    title: 'OnTract',
     image: '/projects/ontract.png',
     images: ['/projects/ontract.png', '/projects/ontract-dash-dark.png', '/projects/ontract-dash-light.png'],
     description: 'An enterprise-grade Contract Management System that helps organizations efficiently manage, search, and analyze contracts using AI-powered features.',
@@ -115,13 +111,13 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
-  { 
-    id: 6, 
-    title: 'Sentio+', 
+  {
+    id: 6,
+    title: 'Sentio+',
     image: '/projects/sentio-1.png',
     images: ['/projects/sentio-1.png', '/projects/sentio-2.png'],
-    description: 'An AI-powered decision-support platform that transforms customer review data into actionable business insights using RAG architecture.', 
-    github: 'https://github.com/KyleAnthonyHay/sentio', 
+    description: 'An AI-powered decision-support platform that transforms customer review data into actionable business insights using RAG architecture.',
+    github: 'https://github.com/KyleAnthonyHay/sentio',
     landscape: true,
     category: 'Web',
     overview: 'Sentio+ is an AI-powered decision-support platform that transforms large-scale, unstructured customer review data into actionable business insights using a Retrieval-Augmented Generation (RAG) architecture. Designed as an internal intelligence tool for Product, CX, Strategy, and Leadership teams, it enables aspect-level reasoning over customer feedback, grounding every insight in real review evidence.',
@@ -133,12 +129,12 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
-  { 
-    id: 7, 
-    title: 'ChatGPT Clone', 
-    image: '/projects/chatgpt-clone.png', 
-    description: 'A high-performance ChatGPT clone designed as a specialized AI Assistant for institutional policies using RAG architecture.', 
-    link: 'https://chat-gpt-clone-delta-ten.vercel.app/', 
+  {
+    id: 7,
+    title: 'ChatGPT Clone',
+    image: '/projects/chatgpt-clone.png',
+    description: 'A high-performance ChatGPT clone designed as a specialized AI Assistant for institutional policies using RAG architecture.',
+    link: 'https://chat-gpt-clone-delta-ten.vercel.app/',
     landscape: true,
     category: 'Web',
     overview: 'A high-performance, full-stack ChatGPT clone designed as a specialized AI Assistant for institutional policies. It leverages modern web technologies and advanced AI orchestration to provide users with an intuitive chat interface capable of retrieving and reasoning over complex university or organizational documentation.',
@@ -156,17 +152,23 @@ export function generateStaticParams() {
   return projects.map((p) => ({ id: p.id.toString() }));
 }
 
+const techStackColors: Record<string, string> = {
+  frontend: 'bg-blue-500',
+  backend: 'bg-emerald-500',
+  infrastructure: 'bg-amber-500',
+};
+
 export default async function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const idNum = parseInt(id, 10);
   const project = projects.find((p) => p.id === idNum);
-  
+
   if (!project) {
     return (
       <>
         <TopHeader />
-        <div className="min-h-screen flex items-center justify-center">
-          <p className="text-gray-500">Project not found</p>
+        <div className="min-h-[100dvh] flex items-center justify-center">
+          <p className="text-zinc-400 text-sm">Project not found</p>
         </div>
       </>
     );
@@ -176,117 +178,81 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
     return (
       <>
         <TopHeader />
-        <section className="pt-32 pb-20">
-          <div className="max-w-[1100px] mx-auto px-6 md:px-12">
-            {/* Hero Section */}
-            <AnimatedSection className="space-y-6 mb-16" immediate>
-              <div className="flex items-center gap-3 flex-wrap">
-                <h1 className="text-4xl md:text-5xl font-bold text-gray-900">{project.title}</h1>
-                <Badge variant="secondary" className="text-sm">
-                  {project.category}
-                </Badge>
+        <section className="pt-28 pb-24">
+          <div className="max-w-[1100px] mx-auto px-6 md:px-10">
+            {/* Hero */}
+            <AnimatedSection className="mb-16" immediate>
+              <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">
+                {project.category === 'iOS' ? 'iOS App' : 'Web App'}
+              </p>
+              <div className="flex items-center gap-4 flex-wrap mb-6">
+                <h1 className="text-4xl md:text-5xl tracking-tighter leading-none text-zinc-900">{project.title}</h1>
                 {project.link && (
-                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                    <FiArrowUpRight className="w-7 h-7 text-gray-500 hover:text-gray-800 transition-all" />
+                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
+                    <FiArrowUpRight className="w-4 h-4 text-zinc-600" />
                   </a>
                 )}
                 {project.github && (
-                  <a href={project.github} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                    <FaGithub className="w-6 h-6 text-gray-500 hover:text-gray-800 transition-all" />
+                  <a href={project.github} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
+                    <FaGithub className="w-4 h-4 text-zinc-600" />
                   </a>
                 )}
               </div>
-              <p className="text-xl text-gray-600 leading-relaxed">{project.overview}</p>
+              <p className="text-base text-zinc-500 leading-relaxed max-w-[65ch]">{project.overview}</p>
             </AnimatedSection>
 
             {/* Main Image */}
-            <AnimatedSection className="mb-16" animation="scale-in" delay={100} immediate>
-              <div className="relative overflow-hidden rounded-[24px] bg-[#F5F5F5]">
+            <AnimatedSection className="mb-20" animation="scale-in" delay={100} immediate>
+              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)]">
                 <div className="aspect-[16/9] relative m-4">
                   <Image
                     src={project.image}
                     alt={project.title}
                     fill
-                    className="object-contain rounded-[16px]"
+                    className="object-contain rounded-[1.5rem]"
                   />
                 </div>
               </div>
             </AnimatedSection>
 
-            {/* Purpose Section */}
-            <AnimatedSection className="mb-16">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-4">Purpose</h2>
-              <p className="text-lg text-gray-600 leading-relaxed">{project.purpose}</p>
+            {/* Purpose */}
+            <AnimatedSection className="mb-20">
+              <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">Purpose</p>
+              <p className="text-base text-zinc-500 leading-relaxed max-w-[65ch]">{project.purpose}</p>
             </AnimatedSection>
 
-            <Separator className="my-12" />
+            <div className="border-t border-zinc-200/60 my-16" />
 
             {/* Key Features */}
-            <AnimatedSection className="mb-16">
-              <div className="flex items-center gap-2 mb-8">
-                <Sparkles className="w-6 h-6 text-emerald-500" />
-                <h2 className="text-2xl font-semibold text-gray-900">Key Features</h2>
-              </div>
+            <AnimatedSection className="mb-20">
+              <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-8">Key Features</p>
               <ProjectFeatures projectId={project.id} />
             </AnimatedSection>
 
-            <Separator className="my-12" />
+            <div className="border-t border-zinc-200/60 my-16" />
 
             {/* Tech Stack */}
             <AnimatedSection className="mb-16">
-              <h2 className="text-2xl font-semibold text-gray-900 mb-8">Tech Stack</h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Card className="bg-white border-gray-200">
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                      Frontend
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {project.techStack.frontend?.map((tech, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {tech}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+              <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-8">Tech Stack</p>
 
-                <Card className="bg-white border-gray-200">
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
-                      Backend
-                    </h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                {(['frontend', 'backend', 'infrastructure'] as const).map((layer) => (
+                  <div key={layer} className="bg-white rounded-[1.5rem] p-8 border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)]">
+                    <div className="flex items-center gap-2 mb-5">
+                      <div className={`w-2 h-2 rounded-full ${techStackColors[layer]}`} />
+                      <h3 className="text-zinc-900 font-medium text-sm capitalize">{layer}</h3>
+                    </div>
                     <div className="flex flex-wrap gap-2">
-                      {project.techStack.backend?.map((tech, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
+                      {project.techStack![layer]?.map((tech, i) => (
+                        <span key={i} className="inline-flex items-center px-3 py-1.5 rounded-lg bg-zinc-50 border border-zinc-100 text-zinc-600 text-xs font-medium">
                           {tech}
-                        </Badge>
+                        </span>
                       ))}
                     </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white border-gray-200">
-                  <CardContent className="p-6">
-                    <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                      <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                      Infrastructure
-                    </h3>
-                    <div className="flex flex-wrap gap-2">
-                      {project.techStack.infrastructure?.map((tech, i) => (
-                        <Badge key={i} variant="outline" className="text-xs">
-                          {tech}
-                        </Badge>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
+                  </div>
+                ))}
               </div>
             </AnimatedSection>
-
           </div>
         </section>
         <Footer />
@@ -297,12 +263,12 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <TopHeader />
-      <section className="pt-40 pb-40">
-        <div className="max-w-[1000px] mx-auto px-6 md:px-12 space-y-8">
+      <section className="pt-28 pb-32">
+        <div className="max-w-[900px] mx-auto px-6 md:px-10 space-y-10">
           <AnimatedSection animation="scale-in" immediate>
-            <div className="group relative bg-[#F5F5F5] rounded-[20px] overflow-hidden aspect-[6/4] mx-auto max-w-[720px]">
+            <div className="relative bg-white rounded-[2rem] overflow-hidden border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] aspect-[6/4] mx-auto max-w-[720px]">
               <div className={`absolute inset-0 flex justify-center ${project.landscape ? 'items-center' : 'items-start pt-16'}`}>
-                <div className={`relative transform transition-transform duration-800 ${project.landscape ? 'w-[75%] aspect-[16/9] hover:scale-102' : 'w-[45%] aspect-[9/19] hover:-translate-y-3'}`}>
+                <div className={`relative transform transition-transform duration-700 ${project.landscape ? 'w-[75%] aspect-[16/9]' : 'w-[45%] aspect-[9/19]'}`}>
                   <Image
                     src={project.image}
                     alt={project.title}
@@ -315,26 +281,26 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           </AnimatedSection>
 
           <AnimatedSection delay={100} immediate>
-            <div className="flex items-center gap-3">
-              <h1 className="text-[32px] font-medium">{project.title}</h1>
+            <div className="flex items-center gap-4">
+              <h1 className="text-3xl md:text-4xl tracking-tighter leading-none text-zinc-900">{project.title}</h1>
               {project.category && (
-                <Badge variant="secondary" className="text-sm">
+                <span className="inline-flex items-center px-3 py-1 rounded-lg bg-zinc-100 text-zinc-500 text-xs font-medium">
                   {project.category}
-                </Badge>
+                </span>
               )}
               {project.link ? (
-                <a href={project.link} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                  <FiArrowUpRight className="w-7 h-7 text-gray-500 grayscale hover:grayscale-0 transition-all" />
+                <a href={project.link} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
+                  <FiArrowUpRight className="w-4 h-4 text-zinc-600" />
                 </a>
               ) : project.github && (
-                <a href={project.github} target="_blank" rel="noopener noreferrer" className="inline-flex items-center">
-                  <FaGithub className="w-7 h-7 text-gray-500 grayscale hover:grayscale-0 transition-all" />
+                <a href={project.github} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
+                  <FaGithub className="w-4 h-4 text-zinc-600" />
                 </a>
               )}
             </div>
           </AnimatedSection>
           <AnimatedSection delay={200} immediate>
-            <p className="text-[20px] leading-[1.6] text-[#666666]">{project.description}</p>
+            <p className="text-base text-zinc-500 leading-relaxed max-w-[65ch]">{project.description}</p>
           </AnimatedSection>
         </div>
         <Footer />
