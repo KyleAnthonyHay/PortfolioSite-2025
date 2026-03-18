@@ -118,7 +118,7 @@ const Hero = () => {
             initial={{ opacity: 0, scale: 0.95, x: 40 }}
             animate={mounted ? { opacity: 1, scale: 1, x: 0 } : {}}
             transition={{ ...spring, delay: 0.2 }}
-            className="order-1 lg:order-2"
+            className="order-1 lg:order-2 hidden lg:block"
           >
             <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[560px] rounded-[2rem] overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]">
               <Image
