@@ -1,7 +1,7 @@
 {
   "name": "portfolio-rag-backend",
   "version": "1.0.0",
-  "description": "RAG backend for portfolio chatbot with pgvector embeddings",
+  "description": "RAG backend for portfolio chatbot with Pinecone integrated embeddings",
   "type": "module",
   "scripts": {
     "seed": "npx tsx src/scripts/seed-embeddings.ts",
@@ -9,8 +9,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.45.0",
-    "openai": "^4.56.0",
+    "@pinecone-database/pinecone": "^7.1.0",
     "dotenv": "^16.4.5"
   },
   "devDependencies": {

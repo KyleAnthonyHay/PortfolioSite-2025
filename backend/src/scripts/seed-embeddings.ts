@@ -1,147 +1,65 @@
-import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
-import { generateEmbeddings } from "../lib/openai.js";
+import {
+  loadPortfolioChunks,
+  PERSONAL_INFO_PROJECT_NAME,
+} from "../lib/project-content.js";
 import {
   clearProjectEmbeddings,
   insertProjectEmbeddings,
-  type ProjectEmbedding,
-} from "../lib/supabase.js";
+  type PineconeProjectRecord,
+} from "../lib/pinecone.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DESCRIPTIONS_DIR = path.join(__dirname, "../../project-descriptions");
-const CHUNK_SIZE = 1500;
-const CHUNK_OVERLAP = 200;
-
-function extractProjectName(filename: string): string {
-  return filename
-    .replace(".txt", "")
-    .split("-")
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-function chunkText(text: string, chunkSize: number, overlap: number): string[] {
-  const chunks: string[] = [];
-  let start = 0;
-
-  while (start < text.length) {
-    const end = Math.min(start + chunkSize, text.length);
-    let chunk = text.slice(start, end);
-
-    if (end < text.length) {
-      const lastNewline = chunk.lastIndexOf("\n\n");
-      if (lastNewline > chunkSize / 2) {
-        chunk = chunk.slice(0, lastNewline);
-      }
-    }
-
-    chunks.push(chunk.trim());
-    start = start + chunk.length - overlap;
-
-    if (start >= text.length - overlap) break;
-  }
-
-  return chunks.filter((c) => c.length > 50);
-}
-
-function chunkBySection(text: string): string[] {
-  return text
-    .split(/\n---\n/)
-    .map((section) => section.trim())
-    .filter((section) => section.length > 50);
-}
-
-async function readProjectDescriptions(): Promise<
-  { filename: string; content: string }[]
-> {
-  const files = await fs.readdir(DESCRIPTIONS_DIR);
-  const txtFiles = files.filter((f) => f.endsWith(".txt"));
-
-  const descriptions = await Promise.all(
-    txtFiles.map(async (filename) => {
-      const filepath = path.join(DESCRIPTIONS_DIR, filename);
-      const content = await fs.readFile(filepath, "utf-8");
-      return { filename, content };
-    })
-  );
-
-  return descriptions;
-}
+const BATCH_SIZE = 96;
 
 async function main() {
-  console.log("🚀 Starting project embeddings seed...\n");
+  console.log("Starting Pinecone indexing...\n");
 
-  console.log("📖 Reading project descriptions...");
-  const descriptions = await readProjectDescriptions();
-  console.log(`   Found ${descriptions.length} project files\n`);
+  console.log("Reading project descriptions...");
+  const chunks = await loadPortfolioChunks(DESCRIPTIONS_DIR);
+  console.log(`   Found ${chunks.length} chunks\n`);
 
-  console.log("🧹 Clearing existing embeddings...");
+  console.log("Clearing existing Pinecone namespace...");
   await clearProjectEmbeddings();
   console.log("   Done\n");
 
-  const allChunks: { projectName: string; chunk: string; index: number }[] = [];
+  console.log("Upserting records into Pinecone...\n");
 
-  for (const { filename, content } of descriptions) {
-    const projectName = extractProjectName(filename);
-    const isPersonalInfo = filename === "personal-info.txt";
-    const chunks = isPersonalInfo
-      ? chunkBySection(content)
-      : chunkText(content, CHUNK_SIZE, CHUNK_OVERLAP);
-
-    console.log(`📄 ${projectName}: ${chunks.length} chunks${isPersonalInfo ? " (section-based)" : ""}`);
-
-    chunks.forEach((chunk, index) => {
-      allChunks.push({ projectName, chunk, index });
-    });
-  }
-
-  console.log(`\n📊 Total chunks to embed: ${allChunks.length}`);
-  console.log("🔄 Generating embeddings (this may take a moment)...\n");
-
-  const BATCH_SIZE = 20;
-  const embeddings: Omit<ProjectEmbedding, "id">[] = [];
-
-  for (let i = 0; i < allChunks.length; i += BATCH_SIZE) {
-    const batch = allChunks.slice(i, i + BATCH_SIZE);
-    const texts = batch.map((c) => c.chunk);
+  for (let i = 0; i < chunks.length; i += BATCH_SIZE) {
+    const batch = chunks.slice(i, i + BATCH_SIZE);
+    const records: PineconeProjectRecord[] = batch.map((chunk) => ({
+      id: chunk.id,
+      text: chunk.content,
+      project_name: chunk.projectName,
+      chunk_index: chunk.chunkIndex,
+      source_file: chunk.sourceFile,
+      record_type: chunk.recordType,
+    }));
 
     console.log(
-      `   Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(allChunks.length / BATCH_SIZE)}...`
+      `   Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(chunks.length / BATCH_SIZE)}...`
     );
 
-    const batchEmbeddings = await generateEmbeddings(texts);
-
-    for (let j = 0; j < batch.length; j++) {
-      embeddings.push({
-        project_name: batch[j].projectName,
-        content: batch[j].chunk,
-        chunk_index: batch[j].index,
-        metadata: {
-          source_file: descriptions.find(
-            (d) => extractProjectName(d.filename) === batch[j].projectName
-          )?.filename,
-        },
-        embedding: batchEmbeddings[j],
-      });
-    }
+    await insertProjectEmbeddings(records);
   }
 
-  console.log("\n💾 Inserting embeddings into Supabase...");
-  await insertProjectEmbeddings(embeddings);
-
-  console.log(`\n✅ Successfully seeded ${embeddings.length} embeddings!`);
+  console.log(`\nIndexed ${chunks.length} records successfully.`);
   console.log("   Projects indexed:");
-  const projectCounts = embeddings.reduce(
-    (acc, e) => {
-      acc[e.project_name] = (acc[e.project_name] || 0) + 1;
+
+  const projectCounts = chunks.reduce(
+    (acc, chunk) => {
+      acc[chunk.projectName] = (acc[chunk.projectName] || 0) + 1;
       return acc;
     },
     {} as Record<string, number>
   );
 
   Object.entries(projectCounts).forEach(([name, count]) => {
-    console.log(`   - ${name}: ${count} chunks`);
+    const label =
+      name === PERSONAL_INFO_PROJECT_NAME ? `${name} (section-based)` : name;
+    console.log(`   - ${label}: ${count} chunks`);
   });
 }
 

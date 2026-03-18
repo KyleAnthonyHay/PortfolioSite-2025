@@ -40,12 +40,12 @@ const projects: Project[] = [
     description: 'SelahNote is an AI notetaker for sermons. It provides file organization, recording summaries, and file upload capabilities to streamline the process of taking notes during sermons.', 
     link: 'https://selahnote.app',
     category: 'iOS',
-    overview: 'SelahNote (Lectra) is an AI-powered note-taking application for iOS that transforms audio content—including live recordings, uploaded audio files, and YouTube videos—into organized, structured notes using advanced speech recognition and large language models. Designed specifically for students, professionals, and content consumers who need to capture and synthesize information from lectures, sermons, meetings, and educational videos.',
-    purpose: 'Serves as an intelligent audio-to-notes conversion platform that eliminates the friction between content consumption and knowledge retention. Users can record lectures or sermons in real-time, upload existing audio files, or extract transcripts from YouTube videos, then receive AI-generated notes that preserve important details, scriptural context, and thematic structure.',
+    overview: 'SelahNote (Lectra) is an AI-powered note-taking application for iOS that transforms live recordings, uploaded audio, and YouTube content into structured, reference-aware notes through a hybrid local-first and cloud-synced architecture. It now combines real-time transcription, agentic note generation, Convex-backed sync workflows, and Pinecone-powered reference retrieval to turn spoken content into searchable, enriched notes.',
+    purpose: 'Serves as an intelligent audio-to-notes platform that closes the gap between listening and understanding. Users can capture sermons or lectures in real time, upload existing audio, or ingest YouTube transcripts, then receive structured notes, scripture-aware summaries, and synchronized content that stays available across devices.',
     techStack: {
-      frontend: ['SwiftUI', 'Swift 5.0+', 'SwiftData', 'MVVM', 'AVFoundation', 'URLSession', 'Firebase Auth', 'RevenueCat'],
-      backend: ['AssemblyAI (streaming & batch)', 'OpenAI GPT-4o', 'Google Cloud Run (Python Flask)', 'Firebase Authentication'],
-      infrastructure: ['SwiftData (SQLite)', 'Google Cloud Platform', 'Secret Manager', 'StoreKit 2']
+      frontend: ['SwiftUI', 'Swift 5+', 'SwiftData', 'MVVM', 'AVFoundation', 'Starscream WebSockets', 'Firebase Auth', 'RevenueCat'],
+      backend: ['Convex', 'AssemblyAI (streaming & batch)', 'OpenAI GPT-4o', 'OpenAI Embeddings', 'Pinecone', 'Google Cloud Run / Functions', 'Supadata API'],
+      infrastructure: ['Local-first SwiftData storage', 'Convex cloud sync', 'Google Cloud', 'Firebase token validation', 'StoreKit / RevenueCat']
     },
     hasDetailedView: true
   },
