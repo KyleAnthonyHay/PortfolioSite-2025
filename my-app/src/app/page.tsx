@@ -8,7 +8,7 @@ import Header from '@/components/Header';
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-white">
+    <main className="min-h-[100dvh] bg-[#f9fafb]">
       <TopHeader />
       <Hero />
       <Projects />

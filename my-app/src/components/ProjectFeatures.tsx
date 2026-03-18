@@ -1,12 +1,11 @@
 'use client';
 
-import { Card, CardContent } from '@/components/ui/card';
-import { 
-  MessageSquare, 
-  Upload, 
-  Calendar, 
-  Users, 
-  Bell, 
+import {
+  MessageSquare,
+  Upload,
+  Calendar,
+  Users,
+  Bell,
   CreditCard,
   Search,
   Shield,
@@ -34,301 +33,83 @@ import {
   Globe,
   Moon,
   LayoutGrid,
-  MapPin,
   Flag,
   Building2,
-  Languages
 } from 'lucide-react';
 
 const ontractFeatures = [
-  {
-    icon: <Search className="w-5 h-5 text-emerald-500" />,
-    title: 'AI-Powered Search',
-    description: 'Semantic search using vector embeddings for natural language queries across all contracts.'
-  },
-  {
-    icon: <MessageSquare className="w-5 h-5 text-blue-500" />,
-    title: 'Conversational Q&A',
-    description: 'Chat interface powered by LangGraph agents with citations to source documents.'
-  },
-  {
-    icon: <Upload className="w-5 h-5 text-purple-500" />,
-    title: 'Automated Processing',
-    description: 'Text extraction, intelligent chunking, and automatic metadata extraction from documents.'
-  },
-  {
-    icon: <Calendar className="w-5 h-5 text-orange-500" />,
-    title: 'Lifecycle Management',
-    description: 'Status tracking, expiration monitoring, and obligation tracking with audit trails.'
-  },
-  {
-    icon: <Shield className="w-5 h-5 text-red-500" />,
-    title: 'Multi-Tenant Security',
-    description: 'Organization-scoped data isolation using PostgreSQL Row Level Security.'
-  },
-  {
-    icon: <Users className="w-5 h-5 text-cyan-500" />,
-    title: 'Team Collaboration',
-    description: 'Role-based access control, team invitations, and activity feeds.'
-  },
-  {
-    icon: <Bell className="w-5 h-5 text-yellow-500" />,
-    title: 'Alert System',
-    description: 'Automated notifications for expirations, renewals, and custom reminders.'
-  },
-  {
-    icon: <CreditCard className="w-5 h-5 text-pink-500" />,
-    title: 'Billing & Credits',
-    description: 'Stripe-integrated subscription management with organization-wide credits.'
-  }
+  { icon: <Search className="w-4 h-4" />, title: 'AI-Powered Search', description: 'Semantic search using vector embeddings for natural language queries across all contracts.' },
+  { icon: <MessageSquare className="w-4 h-4" />, title: 'Conversational Q&A', description: 'Chat interface powered by LangGraph agents with citations to source documents.' },
+  { icon: <Upload className="w-4 h-4" />, title: 'Automated Processing', description: 'Text extraction, intelligent chunking, and automatic metadata extraction from documents.' },
+  { icon: <Calendar className="w-4 h-4" />, title: 'Lifecycle Management', description: 'Status tracking, expiration monitoring, and obligation tracking with audit trails.' },
+  { icon: <Shield className="w-4 h-4" />, title: 'Multi-Tenant Security', description: 'Organization-scoped data isolation using PostgreSQL Row Level Security.' },
+  { icon: <Users className="w-4 h-4" />, title: 'Team Collaboration', description: 'Role-based access control, team invitations, and activity feeds.' },
+  { icon: <Bell className="w-4 h-4" />, title: 'Alert System', description: 'Automated notifications for expirations, renewals, and custom reminders.' },
+  { icon: <CreditCard className="w-4 h-4" />, title: 'Billing & Credits', description: 'Stripe-integrated subscription management with organization-wide credits.' },
 ];
 
 const sentioFeatures = [
-  {
-    icon: <Brain className="w-5 h-5 text-emerald-500" />,
-    title: 'AI-Powered Semantic Search',
-    description: 'Semantic search across all reviews using vector embeddings, enabling natural language queries that understand context and meaning rather than just keywords.'
-  },
-  {
-    icon: <MessageSquare className="w-5 h-5 text-blue-500" />,
-    title: 'Conversational Q&A with LangChain Agents',
-    description: 'Chat interface powered by LangGraph agents that can answer questions about reviews with citations to source documents. Agents use tools for review search, collection statistics, and app listing.'
-  },
-  {
-    icon: <Upload className="w-5 h-5 text-purple-500" />,
-    title: 'Automated Document Processing',
-    description: 'Text extraction and cleaning from CSV datasets, intelligent chunking for optimal retrieval, metadata enrichment, and hybrid stratified sampling for signal quality.'
-  },
-  {
-    icon: <TrendingUp className="w-5 h-5 text-orange-500" />,
-    title: 'Aspect-Level Sentiment Analysis',
-    description: 'Identifies specific product aspects driving sentiment (usability, payments, performance, pricing), tracks sentiment trends across time and categories, and provides evidence-grounded insights with source citations.'
-  },
-  {
-    icon: <Filter className="w-5 h-5 text-red-500" />,
-    title: 'Metadata-Aware Retrieval',
-    description: 'Filter by app name, category, rating, date range. LLM-powered source selection for focused queries with distance threshold filtering for relevance.'
-  },
-  {
-    icon: <Database className="w-5 h-5 text-cyan-500" />,
-    title: 'Vector Store Flexibility',
-    description: 'Persistent local ChromaDB for development, HTTP client for distributed deployments, and ChromaDB Cloud support for production.'
-  },
-  {
-    icon: <BarChart3 className="w-5 h-5 text-yellow-500" />,
-    title: 'Business Intelligence',
-    description: 'Collection statistics (total documents, unique apps, categories), trend detection across time periods, category and rating-based analysis, and export-ready insights for stakeholders.'
-  },
-  {
-    icon: <FileText className="w-5 h-5 text-pink-500" />,
-    title: 'Multi-Interface Access',
-    description: 'Next.js web application for production use, Streamlit demo for quick testing and validation, and RESTful API for programmatic access.'
-  }
+  { icon: <Brain className="w-4 h-4" />, title: 'AI-Powered Semantic Search', description: 'Semantic search across all reviews using vector embeddings, enabling natural language queries that understand context and meaning.' },
+  { icon: <MessageSquare className="w-4 h-4" />, title: 'Conversational Q&A', description: 'Chat interface powered by LangGraph agents that can answer questions about reviews with citations to source documents.' },
+  { icon: <Upload className="w-4 h-4" />, title: 'Automated Document Processing', description: 'Text extraction and cleaning from CSV datasets, intelligent chunking for optimal retrieval, and metadata enrichment.' },
+  { icon: <TrendingUp className="w-4 h-4" />, title: 'Aspect-Level Sentiment', description: 'Identifies specific product aspects driving sentiment, tracks trends across time and categories with evidence-grounded insights.' },
+  { icon: <Filter className="w-4 h-4" />, title: 'Metadata-Aware Retrieval', description: 'Filter by app name, category, rating, date range with LLM-powered source selection for focused queries.' },
+  { icon: <Database className="w-4 h-4" />, title: 'Vector Store Flexibility', description: 'Persistent local ChromaDB for development, HTTP client for distributed deployments, and ChromaDB Cloud for production.' },
+  { icon: <BarChart3 className="w-4 h-4" />, title: 'Business Intelligence', description: 'Collection statistics, trend detection across time periods, category and rating-based analysis, and export-ready insights.' },
+  { icon: <FileText className="w-4 h-4" />, title: 'Multi-Interface Access', description: 'Next.js web application for production, Streamlit demo for testing, and RESTful API for programmatic access.' },
 ];
 
 const chatgptCloneFeatures = [
-  {
-    icon: <Brain className="w-5 h-5 text-emerald-500" />,
-    title: 'AI Agent with Memory',
-    description: 'Uses LangGraph to manage conversation state, allowing for multi-turn dialogues where the AI remembers previous context and maintains coherent conversations.'
-  },
-  {
-    icon: <Search className="w-5 h-5 text-blue-500" />,
-    title: 'Semantic Search (RAG)',
-    description: 'Integrates ChromaDB to perform vector searches across policy documents, providing relevant excerpts to the LLM for accurate, evidence-grounded responses.'
-  },
-  {
-    icon: <BookOpen className="w-5 h-5 text-purple-500" />,
-    title: 'Policy-Specific Tools',
-    description: 'Specialized tools including search_policies, list_all_policies, get_policy_by_name, and summarize_policy for navigating institutional documentation.'
-  },
-  {
-    icon: <History className="w-5 h-5 text-orange-500" />,
-    title: 'Persistent Chat History',
-    description: 'Messages and threads are saved to a PostgreSQL database, allowing users to return to previous conversations and maintain context across sessions.'
-  },
-  {
-    icon: <ThumbsUp className="w-5 h-5 text-red-500" />,
-    title: 'Feedback System',
-    description: 'Built-in mechanism for users to rate AI responses, facilitating continuous improvement and monitoring via LangSmith for quality assurance.'
-  },
-  {
-    icon: <Zap className="w-5 h-5 text-cyan-500" />,
-    title: 'Modern UX',
-    description: 'A responsive, dark-mode-first UI that mimics the ChatGPT experience, including message streaming and sidebar navigation for seamless interaction.'
-  }
+  { icon: <Brain className="w-4 h-4" />, title: 'AI Agent with Memory', description: 'LangGraph manages conversation state for multi-turn dialogues with context retention.' },
+  { icon: <Search className="w-4 h-4" />, title: 'Semantic Search (RAG)', description: 'ChromaDB vector searches across policy documents for accurate, evidence-grounded responses.' },
+  { icon: <BookOpen className="w-4 h-4" />, title: 'Policy-Specific Tools', description: 'Specialized tools for searching, listing, retrieving, and summarizing institutional policies.' },
+  { icon: <History className="w-4 h-4" />, title: 'Persistent Chat History', description: 'Messages and threads saved to PostgreSQL for returning to previous conversations.' },
+  { icon: <ThumbsUp className="w-4 h-4" />, title: 'Feedback System', description: 'Built-in mechanism for rating AI responses with LangSmith monitoring for quality assurance.' },
+  { icon: <Zap className="w-4 h-4" />, title: 'Modern UX', description: 'Responsive, dark-mode-first UI with message streaming and sidebar navigation.' },
 ];
 
 const selahNoteFeatures = [
-  {
-    icon: <Mic className="w-5 h-5 text-emerald-500" />,
-    title: 'Real-Time Audio Recording with Live Transcription',
-    description: 'High-quality audio capture using AVFoundation with WebSocket-based streaming transcription to AssemblyAI during recording. Real-time partial transcript updates displayed to user with background task management.'
-  },
-  {
-    icon: <FileAudio className="w-5 h-5 text-blue-500" />,
-    title: 'Multiple Audio Input Sources',
-    description: 'Direct recording via device microphone, audio file upload from Files app, and YouTube video transcript extraction via Cloud Run service. Support for various audio formats with automatic processing.'
-  },
-  {
-    icon: <Sparkles className="w-5 h-5 text-purple-500" />,
-    title: 'AI-Powered Note Generation',
-    description: 'Automated transcription using AssemblyAI with intelligent summarization via OpenAI GPT-4o. Structured markdown output with hierarchical headings, scripture reference detection, and chronological preservation of content order.'
-  },
-  {
-    icon: <FolderTree className="w-5 h-5 text-orange-500" />,
-    title: 'Hierarchical Organization System',
-    description: 'Folder-based organization (RootDirectory → Folders → TranscriptionTuples) with drag-and-drop management, search and sort functionality, recent items tracking, and cascade deletion for data integrity.'
-  },
-  {
-    icon: <Youtube className="w-5 h-5 text-red-500" />,
-    title: 'YouTube Integration',
-    description: 'URL validation and normalization supporting various YouTube formats. Cloud Run service for transcript fetching with async job polling, automatic note generation from YouTube transcripts, and metadata extraction.'
-  },
-  {
-    icon: <Play className="w-5 h-5 text-cyan-500" />,
-    title: 'Advanced Audio Processing',
-    description: 'Audio format conversion (device format → 16kHz PCM-16 for streaming), background audio session management, interruption handling, and route change detection for seamless recording experience.'
-  },
-  {
-    icon: <Brain className="w-5 h-5 text-yellow-500" />,
-    title: 'Dual Transcription Modalities',
-    description: 'Live streaming transcription for immediate feedback during recording, combined with batch transcription for maximum accuracy. Balances real-time responsiveness with transcription fidelity.'
-  },
-  {
-    icon: <FileText className="w-5 h-5 text-pink-500" />,
-    title: 'Custom Prompt Engineering',
-    description: 'Sophisticated system prompts designed for sermon and lecture content with structured markdown output, scripture handling, chronological preservation, and language-aware processing.'
-  }
+  { icon: <Mic className="w-4 h-4" />, title: 'Real-Time Transcription', description: 'High-quality audio capture with WebSocket-based streaming transcription to AssemblyAI during recording.' },
+  { icon: <FileAudio className="w-4 h-4" />, title: 'Multiple Audio Sources', description: 'Direct recording, audio file upload from Files app, and YouTube video transcript extraction.' },
+  { icon: <Sparkles className="w-4 h-4" />, title: 'AI Note Generation', description: 'Automated transcription with intelligent summarization via GPT-4o and scripture reference detection.' },
+  { icon: <FolderTree className="w-4 h-4" />, title: 'Hierarchical Organization', description: 'Folder-based organization with drag-and-drop, search and sort, and cascade deletion.' },
+  { icon: <Youtube className="w-4 h-4" />, title: 'YouTube Integration', description: 'URL validation supporting various YouTube formats with Cloud Run transcript fetching.' },
+  { icon: <Play className="w-4 h-4" />, title: 'Advanced Audio Processing', description: 'Audio format conversion, background session management, and interruption handling.' },
+  { icon: <Brain className="w-4 h-4" />, title: 'Dual Transcription', description: 'Live streaming for immediate feedback combined with batch transcription for maximum accuracy.' },
+  { icon: <FileText className="w-4 h-4" />, title: 'Custom Prompts', description: 'Sophisticated prompts for sermon and lecture content with structured markdown output.' },
 ];
 
 const expenseTrackerFeatures = [
-  {
-    icon: <RefreshCw className="w-5 h-5 text-emerald-500" />,
-    title: 'Asynchronous Data Fetching with Combine',
-    description: 'URLSession dataTaskPublisher for network requests with Combine operators (tryMap, decode, receive, sink) for data processing. Reactive updates to UI via @Published properties with proper error handling and cancellable management.'
-  },
-  {
-    icon: <LineChart className="w-5 h-5 text-blue-500" />,
-    title: 'Transaction Data Visualization',
-    description: 'SwiftUI Charts integration with LineChart component for cumulative expense tracking over time. Interactive chart display with formatted currency labels, custom styling with gradient colors, and empty state handling.'
-  },
-  {
-    icon: <Tag className="w-5 h-5 text-purple-500" />,
-    title: 'Hierarchical Category System',
-    description: 'Main categories (Auto & Transport, Bills & Utilities, Entertainment, etc.) with subcategories. Category icons using FontAwesome integration, category selection and editing functionality for transaction organization.'
-  },
-  {
-    icon: <Calendar className="w-5 h-5 text-orange-500" />,
-    title: 'Transaction Organization',
-    description: 'Grouping by month using OrderedDictionary with chronological display and section headers. Recent transactions preview with configurable count, full transaction list with navigation, and date-based filtering.'
-  },
-  {
-    icon: <FileText className="w-5 h-5 text-red-500" />,
-    title: 'Transaction Detail View',
-    description: 'Comprehensive transaction information display including merchant, date, financial institution, and account details. Category editing with navigation to CategoriesView, formatted currency and date displays.'
-  },
-  {
-    icon: <DollarSign className="w-5 h-5 text-cyan-500" />,
-    title: 'Cumulative Expense Calculation',
-    description: 'Date interval calculation for current month with daily expense aggregation using stride iteration. Running sum calculation with rounding, TransactionPrefixSum data structure for chart data, and expense filtering.'
-  },
-  {
-    icon: <Zap className="w-5 h-5 text-yellow-500" />,
-    title: 'Reactive State Management',
-    description: '@EnvironmentObject for shared ViewModel across views, @Published properties for automatic UI updates, ObservableObject protocol conformance, and Combine cancellables for subscription management.'
-  },
-  {
-    icon: <BarChart3 className="w-5 h-5 text-pink-500" />,
-    title: 'Computed Properties and Data Processing',
-    description: 'Transaction.signedAmount calculates positive/negative based on type, Transaction.dateParsed converts string dates to Date objects, Transaction.month extracts month-year string for grouping, and Transaction.categoryItem resolves category object from ID.'
-  }
+  { icon: <RefreshCw className="w-4 h-4" />, title: 'Async Data Fetching', description: 'URLSession with Combine operators for reactive updates via @Published properties.' },
+  { icon: <LineChart className="w-4 h-4" />, title: 'Data Visualization', description: 'SwiftUI Charts with LineChart for cumulative expense tracking over time.' },
+  { icon: <Tag className="w-4 h-4" />, title: 'Category System', description: 'Hierarchical categories with subcategories and FontAwesome icon integration.' },
+  { icon: <Calendar className="w-4 h-4" />, title: 'Transaction Organization', description: 'Grouping by month with chronological display, section headers, and date-based filtering.' },
+  { icon: <FileText className="w-4 h-4" />, title: 'Transaction Detail', description: 'Comprehensive info display including merchant, date, institution, and category editing.' },
+  { icon: <DollarSign className="w-4 h-4" />, title: 'Expense Calculation', description: 'Date interval calculation with daily aggregation and running sum for chart data.' },
+  { icon: <Zap className="w-4 h-4" />, title: 'Reactive State', description: '@EnvironmentObject for shared ViewModel with @Published properties for automatic UI updates.' },
+  { icon: <BarChart3 className="w-4 h-4" />, title: 'Data Processing', description: 'Computed properties for signed amounts, date parsing, month extraction, and category resolution.' },
 ];
 
 const theWallFeatures = [
-  {
-    icon: <User className="w-5 h-5 text-emerald-500" />,
-    title: 'User Authentication',
-    description: 'Email/password registration and login via Firebase Auth with automatic session management and protected routes. Secure authentication flow with login and registration pages.'
-  },
-  {
-    icon: <MessageSquare className="w-5 h-5 text-blue-500" />,
-    title: 'Real-Time Feed',
-    description: 'Public message wall ("THE WALL") displaying all user posts in reverse chronological order with real-time updates via Firestore streams. Instant visibility of new posts to all authenticated users.'
-  },
-  {
-    icon: <Upload className="w-5 h-5 text-purple-500" />,
-    title: 'Post Creation',
-    description: 'Users can create and publish text-based posts that are immediately visible to all authenticated users. Simple post creation interface with instant feed updates.'
-  },
-  {
-    icon: <Users className="w-5 h-5 text-orange-500" />,
-    title: 'User Profiles',
-    description: 'Profile pages displaying username, email, and profile icon for each registered user. User discovery feature to browse all registered users in the application.'
-  },
-  {
-    icon: <Moon className="w-5 h-5 text-red-500" />,
-    title: 'Dark Mode Support',
-    description: 'System-wide light and dark theme switching with Material Design color schemes. Custom theme system for consistent UI experience across the application.'
-  },
-  {
-    icon: <Globe className="w-5 h-5 text-cyan-500" />,
-    title: 'Cross-Platform',
-    description: 'Single codebase deployment to iOS, Android, Web, Linux, macOS, and Windows platforms. Flutter framework enables consistent experience across all platforms.'
-  },
-  {
-    icon: <LayoutGrid className="w-5 h-5 text-yellow-500" />,
-    title: 'Reusable Component Architecture',
-    description: 'Modular UI components including MyButton, MyTextField, MyDrawer, MyListTile, MyPostButton, and MyBackButton for consistent UI patterns and maintainable codebase.'
-  },
-  {
-    icon: <Database className="w-5 h-5 text-pink-500" />,
-    title: 'Firestore Database Integration',
-    description: 'Firestore database service layer handling post creation, retrieval, and real-time stream updates. Posts stored with user email, message content, and timestamp for chronological organization.'
-  }
+  { icon: <User className="w-4 h-4" />, title: 'User Authentication', description: 'Email/password registration via Firebase Auth with automatic session management.' },
+  { icon: <MessageSquare className="w-4 h-4" />, title: 'Real-Time Feed', description: 'Public message wall with real-time updates via Firestore streams.' },
+  { icon: <Upload className="w-4 h-4" />, title: 'Post Creation', description: 'Text-based posts immediately visible to all authenticated users.' },
+  { icon: <Users className="w-4 h-4" />, title: 'User Profiles', description: 'Profile pages with username, email, and user discovery features.' },
+  { icon: <Moon className="w-4 h-4" />, title: 'Dark Mode', description: 'System-wide light and dark theme switching with Material Design.' },
+  { icon: <Globe className="w-4 h-4" />, title: 'Cross-Platform', description: 'Single codebase for iOS, Android, Web, Linux, macOS, and Windows.' },
+  { icon: <LayoutGrid className="w-4 h-4" />, title: 'Component Architecture', description: 'Modular UI components for consistent patterns and maintainability.' },
+  { icon: <Database className="w-4 h-4" />, title: 'Firestore Integration', description: 'Database service layer for post creation, retrieval, and real-time streams.' },
 ];
 
 const countryViewerFeatures = [
-  {
-    icon: <Globe className="w-5 h-5 text-emerald-500" />,
-    title: 'Country List',
-    description: 'Displays all countries in a scrollable table view with flag thumbnails, common names, and official names. Clean, organized interface for browsing countries worldwide.'
-  },
-  {
-    icon: <FileText className="w-5 h-5 text-blue-500" />,
-    title: 'Country Details',
-    description: 'Comprehensive detail view showing country flag banner image, official name, capital city, population, currency name and symbol, and native languages.'
-  },
-  {
-    icon: <Zap className="w-5 h-5 text-purple-500" />,
-    title: 'Asynchronous Data Loading',
-    description: 'Uses Swift Concurrency (async/await) for non-blocking API calls and data fetching. Ensures smooth UI performance without blocking the main thread.'
-  },
-  {
-    icon: <Flag className="w-5 h-5 text-orange-500" />,
-    title: 'Image Loading',
-    description: 'Custom asynchronous image loading with URLSession for flag images with proper memory management and main thread updates. Efficient image caching and display.'
-  },
-  {
-    icon: <LayoutGrid className="w-5 h-5 text-red-500" />,
-    title: 'Tab-Based Navigation',
-    description: 'Tab bar interface with Countries and Settings tabs for easy navigation between different sections of the application.'
-  },
-  {
-    icon: <Shield className="w-5 h-5 text-cyan-500" />,
-    title: 'Error Handling',
-    description: 'HTTP status code validation and error handling for API requests. Robust error management ensures graceful handling of network issues.'
-  },
-  {
-    icon: <Building2 className="w-5 h-5 text-yellow-500" />,
-    title: 'Dynamic UI Layout',
-    description: 'Auto Layout constraints for responsive design and dynamic table view cell sizing based on image dimensions. Adapts to different screen sizes and content.'
-  },
-  {
-    icon: <Database className="w-5 h-5 text-pink-500" />,
-    title: 'REST Countries API Integration',
-    description: 'API client implementing REST Countries API v3.1 integration. Handles network requests, response parsing, and provides methods for fetching all countries and individual country details.'
-  }
+  { icon: <Globe className="w-4 h-4" />, title: 'Country List', description: 'Scrollable table view with flag thumbnails, common names, and official names.' },
+  { icon: <FileText className="w-4 h-4" />, title: 'Country Details', description: 'Flag banner, official name, capital, population, currency, and languages.' },
+  { icon: <Zap className="w-4 h-4" />, title: 'Async Data Loading', description: 'Swift Concurrency (async/await) for non-blocking API calls.' },
+  { icon: <Flag className="w-4 h-4" />, title: 'Image Loading', description: 'Custom async image loading with URLSession for flag images.' },
+  { icon: <LayoutGrid className="w-4 h-4" />, title: 'Tab Navigation', description: 'Tab bar interface with Countries and Settings tabs.' },
+  { icon: <Shield className="w-4 h-4" />, title: 'Error Handling', description: 'HTTP status code validation and graceful network error management.' },
+  { icon: <Building2 className="w-4 h-4" />, title: 'Dynamic Layout', description: 'Auto Layout with responsive design and dynamic cell sizing.' },
+  { icon: <Database className="w-4 h-4" />, title: 'REST API Integration', description: 'REST Countries API v3.1 with network requests and response parsing.' },
 ];
 
 interface ProjectFeaturesProps {
@@ -341,19 +122,20 @@ export default function ProjectFeatures({ projectId }: ProjectFeaturesProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {features.map((feature, index) => (
-        <Card key={index} className="bg-white border-gray-200 hover:border-gray-300 transition-colors">
-          <CardContent className="p-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-gray-100 rounded-lg">
-                {feature.icon}
-              </div>
-              <div className="flex-1">
-                <h3 className="font-medium text-gray-900 mb-2">{feature.title}</h3>
-                <p className="text-sm text-gray-600">{feature.description}</p>
-              </div>
+        <div
+          key={index}
+          className="bg-white rounded-[1.25rem] p-6 border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] hover:shadow-[0_8px_24px_-8px_rgba(0,0,0,0.06)] transition-shadow duration-300"
+        >
+          <div className="flex items-start gap-4">
+            <div className="p-2.5 bg-zinc-50 rounded-xl text-zinc-500 shrink-0">
+              {feature.icon}
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-zinc-900 font-medium text-sm mb-1.5">{feature.title}</h3>
+              <p className="text-zinc-400 text-sm leading-relaxed">{feature.description}</p>
+            </div>
+          </div>
+        </div>
       ))}
     </div>
   );
