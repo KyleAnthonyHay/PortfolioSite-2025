@@ -151,6 +151,21 @@
   100% { background-position: -200% 0; }
 }
 
+/*
+  Marquee. The track holds exactly two copies of the content, so -50% lands on
+  the start of the second copy — the loop point is identical to frame zero and
+  the seam is invisible. No measuring, so nothing drifts on resize.
+*/
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+@keyframes marquee-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
 }

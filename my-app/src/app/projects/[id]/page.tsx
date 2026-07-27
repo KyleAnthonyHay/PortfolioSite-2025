@@ -1,10 +1,25 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import Footer from '@/components/Footer';
 import TopHeader from '@/components/TopHeader';
 import { FaGithub } from 'react-icons/fa';
-import { FiArrowUpRight } from 'react-icons/fi';
+import { FiArrowUpRight, FiArrowLeft } from 'react-icons/fi';
 import ProjectFeatures from '@/components/ProjectFeatures';
 import { AnimatedSection } from '@/components/AnimatedSection';
+import ProjectShowcase from '@/components/showcases';
+import { hasShowcase } from '@/components/showcases/registry';
+
+function BackLink() {
+  return (
+    <Link
+      href="/projects"
+      className="inline-flex items-center gap-2 -ml-1 mb-8 pl-1 pr-3 py-1.5 rounded-lg text-sm font-medium text-zinc-400 hover:text-zinc-900 hover:bg-zinc-100/80 active:scale-[0.97] transition-all duration-200"
+    >
+      <FiArrowLeft className="w-4 h-4" />
+      All projects
+    </Link>
+  );
+}
 
 type Category = 'iOS' | 'Web';
 
@@ -182,6 +197,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
           <div className="max-w-[1100px] mx-auto px-6 md:px-10">
             {/* Hero */}
             <AnimatedSection className="mb-16" immediate>
+              <BackLink />
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">
                 {project.category === 'iOS' ? 'iOS App' : 'Web App'}
               </p>
@@ -201,18 +217,22 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
               <p className="text-base text-zinc-500 leading-relaxed max-w-[65ch]">{project.overview}</p>
             </AnimatedSection>
 
-            {/* Main Image */}
+            {/* Showcase, or the static hero image when a project has no showcase */}
             <AnimatedSection className="mb-20" animation="scale-in" delay={100} immediate>
-              <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)]">
-                <div className="aspect-[16/9] relative m-4">
-                  <Image
-                    src={project.image}
-                    alt={project.title}
-                    fill
-                    className="object-contain rounded-[1.5rem]"
-                  />
+              {hasShowcase(project.id) ? (
+                <ProjectShowcase projectId={project.id} />
+              ) : (
+                <div className="relative overflow-hidden rounded-[2rem] bg-white border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)]">
+                  <div className="aspect-[16/9] relative m-4">
+                    <Image
+                      src={project.image}
+                      alt={project.title}
+                      fill
+                      className="object-contain rounded-[1.5rem]"
+                    />
+                  </div>
                 </div>
-              </div>
+              )}
             </AnimatedSection>
 
             {/* Purpose */}
@@ -265,6 +285,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
       <TopHeader />
       <section className="pt-28 pb-32">
         <div className="max-w-[900px] mx-auto px-6 md:px-10 space-y-10">
+          <AnimatedSection immediate>
+            <BackLink />
+          </AnimatedSection>
           <AnimatedSection animation="scale-in" immediate>
             <div className="relative bg-white rounded-[2rem] overflow-hidden border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] aspect-[6/4] mx-auto max-w-[720px]">
               <div className={`absolute inset-0 flex justify-center ${project.landscape ? 'items-center' : 'items-start pt-16'}`}>

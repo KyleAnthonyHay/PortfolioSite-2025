@@ -13,7 +13,7 @@ const links = [
 
 const Footer = () => {
   return (
-    <footer className="py-24 pb-32">
+    <footer className="pt-20 pb-28">
       <div className="max-w-[680px] mx-auto px-6 md:px-10">
         <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-8">Connect</p>
         <div className="divide-y divide-zinc-200/60">
