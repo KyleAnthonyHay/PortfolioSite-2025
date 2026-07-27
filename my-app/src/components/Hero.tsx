@@ -35,10 +35,15 @@ const Hero = () => {
     'anthropic.png', 'aws.png', 'chromadb.png', 'docker.png', 'openai.png', 'supabase.png'
   ];
 
+  // The hero is sized to the viewport minus the sticky header, so it frames
+  // exactly one screen instead of overflowing by the header's height. Its
+  // bottom padding is deliberately heavier than the top: with items-center
+  // that pulls the content up, trimming the dead space above the avatar while
+  // still leaving a hint of the next section below the fold.
   return (
-    <section className="min-h-[100dvh] flex items-center relative">
+    <section className="min-h-[calc(100dvh-4.5rem)] flex items-center relative">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center py-24 lg:py-0">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center pt-12 pb-20 lg:pt-8 lg:pb-28">
           <div className="order-2 lg:order-1">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -86,7 +91,7 @@ const Hero = () => {
               initial={{ opacity: 0, y: 20 }}
               animate={mounted ? { opacity: 1, y: 0 } : {}}
               transition={{ ...spring, delay: 0.3 }}
-              className="flex flex-wrap gap-3 mb-16"
+              className="flex flex-wrap gap-3 mb-12"
             >
               <button
                 onClick={openResume}

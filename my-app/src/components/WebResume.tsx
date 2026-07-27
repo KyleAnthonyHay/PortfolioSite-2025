@@ -27,7 +27,7 @@ const WebResume = () => {
   const { ref, isInView } = useInView({ threshold: 0.1 });
 
   return (
-    <section id="resume" className="py-24 md:py-32" ref={ref}>
+    <section id="resume" className="py-20 md:py-28" ref={ref}>
       <div className="max-w-[1400px] mx-auto px-6 md:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-12 lg:gap-20">
           {/* Left: Profile */}

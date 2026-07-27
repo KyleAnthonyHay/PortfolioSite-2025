@@ -196,6 +196,13 @@ export default function ChatInterface() {
     }
   }, [messages, isHydrated]);
 
+  // Reclaim focus once a reply lands, in case anything took it mid-request.
+  useEffect(() => {
+    if (isHydrated && !isLoading) {
+      inputRef.current?.focus();
+    }
+  }, [isLoading, isHydrated]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -251,6 +258,9 @@ export default function ChatInterface() {
     if (!input.trim() || isLoading) return;
     const text = input.trim();
     setInput('');
+    // Submitting via the button moves focus to it — put the caret straight back
+    // in the field so you can keep typing without clicking.
+    inputRef.current?.focus();
     sendMessageText(text, messages);
   };
 
@@ -354,7 +364,10 @@ export default function ChatInterface() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about Kyle's projects..."
               className="w-full px-5 py-3.5 pr-14 bg-white text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] text-sm"
-              disabled={isLoading}
+              // Deliberately not disabled while loading: disabling a focused
+              // input blurs it, and re-enabling does not give focus back. The
+              // submit handler and the button already guard against double
+              // sends, so you can keep typing your next question.
             />
             <button
               type="submit"

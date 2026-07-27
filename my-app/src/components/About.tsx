@@ -10,7 +10,7 @@ const About = () => {
   const { ref, isInView } = useInView({ threshold: 0.1 });
 
   return (
-    <section id="about" className="py-32 md:py-40" ref={ref}>
+    <section id="about" className="py-20 md:py-28" ref={ref}>
       <div className="max-w-[1400px] mx-auto px-6 md:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
           <motion.div
@@ -78,7 +78,7 @@ const About = () => {
               className="mt-10 flex gap-8"
             >
               <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">2+</p>
+                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">1</p>
                 <p className="text-xs text-zinc-400 mt-1">Years Experience</p>
               </div>
               <div className="w-px bg-zinc-200" />
