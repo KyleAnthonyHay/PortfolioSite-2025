@@ -67,7 +67,7 @@ const About = () => {
                 <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
                   SelahNote
                 </a>
-                , an AI notetaker for sermons that has grown to over 350 users and 40 paying subscribers.
+                , an AI notetaker for sermons that has grown over 350+ users and 40 paying subscribers.
               </p>
             </motion.div>
 
