@@ -20,7 +20,7 @@ const techIconsRow2 = [
 ];
 
 const experience = [
-  { role: 'AI Engineer', company: 'Cognizant', period: '2024 - Present' },
+  { role: 'AI Engineer', company: 'Cognizant', period: '2026 - Present' },
   { role: 'Software Engineering Intern', company: 'The Difference', period: '2023' },
 ];
 

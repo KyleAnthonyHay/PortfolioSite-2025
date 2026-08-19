@@ -64,10 +64,10 @@ const About = () => {
               </p>
               <p>
                 I also run{' '}
-                <a href="https://annointedproductions.com" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
-                  Annointed Productions
+                <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
+                  SelahNote
                 </a>
-                , where I create media content and collaborate with individuals and businesses to meet their needs.
+                , an AI notetaker for sermons that has grown over 350+ users and 40 paying subscribers.
               </p>
             </motion.div>
 
