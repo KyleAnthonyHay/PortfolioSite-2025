@@ -13,6 +13,8 @@ export interface ProjectCardData {
   image: string;
   /** When set, the card renders this in a phone frame instead of `image`. */
   screen?: ScreenSource;
+  /** Landscape counterpart to `screen`: a looping demo shown in browser chrome. */
+  video?: { src: string; webm?: string; poster?: string; url?: string; ratio?: number };
   link?: string;
   github?: string;
   landscape?: boolean;
@@ -77,13 +79,20 @@ export const projects: ProjectCardData[] = [
     category: 'iOS Apps',
   },
   {
-    id: 5,
-    title: 'OnTract',
-    tagline: 'Contract management system',
+    id: 8,
+    title: 'YarnScript',
+    tagline: 'AI teleprompter that follows your voice',
     description:
-      'Enterprise-grade Contract Management System with AI-powered search, automated metadata extraction, and conversational Q&A.',
-    image: '/projects/ontract.png',
-    link: 'https://www.ontract.app/',
+      'AI-powered teleprompter that follows your voice using live transcription and semantic matching — even when you skip words, ad-lib, or jump ahead.',
+    image: '/demos/yarnscript/demo-poster.jpg',
+    video: {
+      src: '/demos/yarnscript/demo.mp4',
+      webm: '/demos/yarnscript/demo.webm',
+      poster: '/demos/yarnscript/demo-poster.jpg',
+      url: 'yarn-script.vercel.app',
+    },
+    link: 'https://yarn-script.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/yarn-script',
     landscape: true,
     category: 'Web Apps',
     featured: true,
@@ -101,14 +110,13 @@ export const projects: ProjectCardData[] = [
     featured: true,
   },
   {
-    id: 8,
-    title: 'YarnScript',
-    tagline: 'AI teleprompter that follows your voice',
+    id: 5,
+    title: 'OnTract',
+    tagline: 'Contract management system',
     description:
-      'AI-powered teleprompter that follows your voice using live transcription and semantic matching — even when you skip words, ad-lib, or jump ahead.',
-    image: '/demos/yarnscript/demo-poster.jpg',
-    link: 'https://yarn-script.vercel.app',
-    github: 'https://github.com/KyleAnthonyHay/yarn-script',
+      'Enterprise-grade Contract Management System with AI-powered search, automated metadata extraction, and conversational Q&A.',
+    image: '/projects/ontract.png',
+    link: 'https://www.ontract.app/',
     landscape: true,
     category: 'Web Apps',
     featured: true,

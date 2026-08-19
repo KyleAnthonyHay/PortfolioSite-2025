@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { FaGithub } from 'react-icons/fa';
 import PhoneFrame from '@/components/PhoneFrame';
+import BrowserFrame from '@/components/BrowserFrame';
+import { useInView } from '@/hooks/useInView';
 import type { ProjectCardData } from '@/lib/projects';
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
@@ -39,6 +41,9 @@ export default function ProjectCard({
   detailed = false,
 }: ProjectCardProps) {
   const portrait = !project.landscape;
+  // Same play gating as PhoneFrame's lazyVideo — landscape demos only load
+  // and play once the card scrolls near the viewport.
+  const { ref: videoRef, isInView: videoInView } = useInView({ threshold: 0.15, rootMargin: '200px' });
 
   const content = (
     <motion.div
@@ -65,6 +70,28 @@ export default function ProjectCard({
               lazyVideo
               className="h-[82%] w-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             />
+          ) : project.video ? (
+            /* The same browser-framed player the project's detail showcase uses */
+            <div
+              ref={videoRef}
+              className="w-[85%] transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+            >
+              <BrowserFrame url={project.video.url} ratio={project.video.ratio ?? 16 / 9}>
+                <video
+                  className="w-full h-full object-cover object-top"
+                  poster={project.video.poster}
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  preload={videoInView ? 'auto' : 'none'}
+                  aria-hidden="true"
+                >
+                  {videoInView && project.video.webm && <source src={project.video.webm} type="video/webm" />}
+                  {videoInView && <source src={project.video.src} type="video/mp4" />}
+                </video>
+              </BrowserFrame>
+            </div>
           ) : (
             <div
               className={`relative transform transition-transform duration-700 ease-out group-hover:scale-[1.03] ${
