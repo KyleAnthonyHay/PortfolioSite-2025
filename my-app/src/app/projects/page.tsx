@@ -13,6 +13,21 @@ const categories: Filter[] = ['All', 'iOS Apps', 'Web Apps'];
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
+/**
+ * Explicit 7/5 pairs so every row fills the 12-column grid — the old
+ * `index % 3` pattern left some rows two columns short of full width.
+ */
+const spans = [
+  'md:col-span-7',
+  'md:col-span-5',
+  'md:col-span-7',
+  'md:col-span-5',
+  'md:col-span-5',
+  'md:col-span-7',
+  'md:col-span-7',
+  'md:col-span-5',
+];
+
 export default function ProjectsPage() {
   const [activeCategory, setActiveCategory] = useState<Filter>('All');
   const [mounted, setMounted] = useState(false);
@@ -79,7 +94,7 @@ export default function ProjectsPage() {
                 project={project}
                 show={mounted}
                 delay={0.15 + index * 0.07}
-                className={index % 3 === 0 ? 'md:col-span-7' : 'md:col-span-5'}
+                className={spans[index % spans.length]}
                 detailed
               />
             ))}

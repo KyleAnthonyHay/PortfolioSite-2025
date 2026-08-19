@@ -58,27 +58,6 @@ export const projects: ProjectCardData[] = [
     featured: true,
   },
   {
-    id: 3,
-    title: 'The Wall',
-    tagline: 'Social media platform',
-    description:
-      'Social board application displaying user posts to a collective feed. Users can sign up using Gmail.',
-    image: '/demos/the-wall/device.png',
-    github: 'https://github.com/KyleAnthonyHay/socialmedia-appV2.0',
-    category: 'iOS Apps',
-    featured: true,
-  },
-  {
-    id: 4,
-    title: 'Country Viewer',
-    tagline: 'World country reference',
-    description:
-      'Browse all countries and their data. Population is automatically updated via a country data gathering API.',
-    image: '/demos/country-viewer/device.png',
-    github: 'https://github.com/KyleAnthonyHay/Countries-App',
-    category: 'iOS Apps',
-  },
-  {
     id: 8,
     title: 'YarnScript',
     tagline: 'AI teleprompter that follows your voice',
@@ -108,6 +87,27 @@ export const projects: ProjectCardData[] = [
     landscape: true,
     category: 'Web Apps',
     featured: true,
+  },
+  {
+    id: 3,
+    title: 'The Wall',
+    tagline: 'Social media platform',
+    description:
+      'Social board application displaying user posts to a collective feed. Users can sign up using Gmail.',
+    image: '/demos/the-wall/device.png',
+    github: 'https://github.com/KyleAnthonyHay/socialmedia-appV2.0',
+    category: 'iOS Apps',
+    featured: true,
+  },
+  {
+    id: 4,
+    title: 'Country Viewer',
+    tagline: 'World country reference',
+    description:
+      'Browse all countries and their data. Population is automatically updated via a country data gathering API.',
+    image: '/demos/country-viewer/device.png',
+    github: 'https://github.com/KyleAnthonyHay/Countries-App',
+    category: 'iOS Apps',
   },
   {
     id: 5,

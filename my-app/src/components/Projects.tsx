@@ -7,8 +7,8 @@ import { featuredProjects } from '@/lib/projects';
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
-/** Zig-zag 7/5 → 5/7 → 7/5 across three rows. */
-const spans = ['md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:col-span-7', 'md:col-span-7', 'md:col-span-5'];
+/** Zig-zag 7/5 → 7/5 → 5/7 across three rows — YarnScript's video row leads wide. */
+const spans = ['md:col-span-7', 'md:col-span-5', 'md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:col-span-7'];
 
 const Projects = () => {
   const { ref, isInView } = useInView({ threshold: 0.05 });
