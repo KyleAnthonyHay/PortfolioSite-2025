@@ -13,6 +13,8 @@ export interface ProjectCardData {
   image: string;
   /** When set, the card renders this in a phone frame instead of `image`. */
   screen?: ScreenSource;
+  /** Landscape counterpart to `screen`: a looping demo shown in browser chrome. */
+  video?: { src: string; webm?: string; poster?: string; url?: string; ratio?: number };
   link?: string;
   github?: string;
   landscape?: boolean;
@@ -56,6 +58,37 @@ export const projects: ProjectCardData[] = [
     featured: true,
   },
   {
+    id: 8,
+    title: 'YarnScript',
+    tagline: 'AI teleprompter that follows your voice',
+    description:
+      'AI-powered teleprompter that follows your voice using live transcription and semantic matching — even when you skip words, ad-lib, or jump ahead.',
+    image: '/demos/yarnscript/demo-poster.jpg',
+    video: {
+      src: '/demos/yarnscript/demo.mp4',
+      webm: '/demos/yarnscript/demo.webm',
+      poster: '/demos/yarnscript/demo-poster.jpg',
+      url: 'yarn-script.vercel.app',
+    },
+    link: 'https://yarn-script.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/yarn-script',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
+    id: 6,
+    title: 'Sentio+',
+    tagline: 'Sentiment analysis tool',
+    description:
+      'AI-powered decision-support platform transforming customer review data into actionable insights using RAG architecture.',
+    image: '/projects/sentio-1.png',
+    github: 'https://github.com/KyleAnthonyHay/sentio',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
     id: 3,
     title: 'The Wall',
     tagline: 'Social media platform',
@@ -89,18 +122,6 @@ export const projects: ProjectCardData[] = [
     featured: true,
   },
   {
-    id: 6,
-    title: 'Sentio+',
-    tagline: 'Sentiment analysis tool',
-    description:
-      'AI-powered decision-support platform transforming customer review data into actionable insights using RAG architecture.',
-    image: '/projects/sentio-1.png',
-    github: 'https://github.com/KyleAnthonyHay/sentio',
-    landscape: true,
-    category: 'Web Apps',
-    featured: true,
-  },
-  {
     id: 7,
     title: 'ChatGPT Clone',
     tagline: 'AI chat interface',
@@ -110,7 +131,6 @@ export const projects: ProjectCardData[] = [
     link: 'https://chat-gpt-clone-delta-ten.vercel.app/',
     landscape: true,
     category: 'Web Apps',
-    featured: true,
   },
 ];
 

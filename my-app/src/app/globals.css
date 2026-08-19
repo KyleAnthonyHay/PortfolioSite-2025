@@ -166,6 +166,21 @@
   to { transform: translateX(0); }
 }
 
+/*
+  These two classes are what keep the keyframes above alive. Tailwind drops
+  @keyframes nothing in the generated CSS refers to, and an `animation` set
+  through an inline style attribute is invisible to it — so naming the
+  keyframes only from JSX silently pruned them and the marquee sat still.
+  Callers vary the speed through --marquee-duration.
+*/
+.animate-marquee {
+  animation: marquee var(--marquee-duration, 25s) linear infinite;
+}
+
+.animate-marquee-reverse {
+  animation: marquee-reverse var(--marquee-duration, 25s) linear infinite;
+}
+
 .animate-shimmer {
   animation: shimmer 2s ease-in-out infinite;
 }

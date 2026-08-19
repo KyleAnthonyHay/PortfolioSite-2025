@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { motion } from 'motion/react';
 import { useInView } from '@/hooks/useInView';
 import { IconSlider } from '@/components/IconSlider';
+import { IconSliderGroup } from '@/components/IconSliderGroup';
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -84,8 +85,15 @@ const WebResume = () => {
             </div>
           </motion.div>
 
-          {/* Right: Details */}
-          <div>
+          {/*
+            Right: Details
+
+            min-w-0 stops the marquee from blowing out the column. A 1fr track
+            floors at its content's min-content width, and the slider's w-max
+            track has no wrap point, so without this the column stretches to
+            the full width of the icon strip and drags the layout with it.
+          */}
+          <div className="min-w-0">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={isInView ? { opacity: 1, y: 0 } : {}}
@@ -147,10 +155,10 @@ const WebResume = () => {
               transition={{ ...spring, delay: 0.4 }}
             >
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-5">Tech Stack</p>
-              <div className="space-y-4">
+              <IconSliderGroup className="space-y-4" hoverSpeed={0.5}>
                 <IconSlider icons={techIconsRow1} duration={25} gradientColor="#f9fafb" />
                 <IconSlider icons={[...techIconsRow2].reverse()} reverse duration={25} gradientColor="#f9fafb" />
-              </div>
+              </IconSliderGroup>
             </motion.div>
           </div>
         </div>

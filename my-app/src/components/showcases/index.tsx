@@ -201,6 +201,28 @@ const chatgptClone: Showcase = {
   ],
 };
 
+const yarnScript: Showcase = {
+  heading: 'A teleprompter that listens while you speak.',
+  orientation: 'landscape',
+  items: [
+    {
+      label: 'Demo',
+      icon: <Play className={ic} />,
+      title: 'From pasted script to live delivery.',
+      description:
+        'Paste a script, allow microphone access, and start reading. AssemblyAI transcribes your voice over a WebSocket while YarnScript highlights each spoken word — and when you ad-lib, skip, or rephrase, semantic search over OpenAI embeddings recovers your position and keeps the active line centered.',
+      media: {
+        kind: 'browser-video',
+        src: '/demos/yarnscript/demo.mp4',
+        webm: '/demos/yarnscript/demo.webm',
+        poster: '/demos/yarnscript/demo-poster.jpg',
+        url: 'yarn-script.vercel.app',
+        ratio: 16 / 9,
+      },
+    },
+  ],
+};
+
 const showcases: Record<number, Showcase> = {
   1: selahNote,
   2: expenseTracker,
@@ -209,6 +231,7 @@ const showcases: Record<number, Showcase> = {
   5: onTract,
   6: sentio,
   7: chatgptClone,
+  8: yarnScript,
 };
 
 export default function ProjectShowcase({ projectId }: { projectId: number }) {

@@ -18,7 +18,9 @@ export type ShowcaseMedia =
   /** A mockup that already includes the device, trimmed to the device bounds. */
   | { kind: 'phone-image'; src: string; alt: string }
   /** A web screenshot, shown in browser chrome. */
-  | { kind: 'browser'; src: string; alt: string; url?: string; ratio?: number };
+  | { kind: 'browser'; src: string; alt: string; url?: string; ratio?: number }
+  /** A screen recording, shown in browser chrome. Mirrors PhoneScreen's video handling. */
+  | { kind: 'browser-video'; src: string; webm?: string; poster?: string; url?: string; ratio?: number };
 
 export interface ShowcaseItem {
   /** Pill label. Only rendered when a showcase has more than one item. */
@@ -65,6 +67,23 @@ function Media({ media, priority }: { media: ShowcaseMedia; priority?: boolean }
         className="object-contain"
         priority={priority}
       />
+    );
+  }
+  if (media.kind === 'browser-video') {
+    return (
+      <video
+        className="w-full h-full object-cover object-top"
+        poster={media.poster}
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+        aria-hidden="true"
+      >
+        {media.webm && <source src={media.webm} type="video/webm" />}
+        <source src={media.src} type="video/mp4" />
+      </video>
     );
   }
   return (
@@ -181,8 +200,9 @@ export default function ProductShowcase({
 
   if (landscape) {
     const first = items[0].media;
-    const ratio = first.kind === 'browser' ? first.ratio ?? 16 / 9 : 16 / 9;
-    const url = first.kind === 'browser' ? first.url : undefined;
+    const framed = first.kind === 'browser' || first.kind === 'browser-video' ? first : undefined;
+    const ratio = framed?.ratio ?? 16 / 9;
+    const url = framed?.url;
 
     return (
       <div className={panel}>

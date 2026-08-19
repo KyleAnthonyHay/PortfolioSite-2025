@@ -35,6 +35,10 @@ import {
   LayoutGrid,
   Flag,
   Building2,
+  AudioLines,
+  MousePointerClick,
+  ScrollText,
+  Gauge,
 } from 'lucide-react';
 
 const ontractFeatures = [
@@ -112,12 +116,25 @@ const countryViewerFeatures = [
   { icon: <Database className="w-4 h-4" />, title: 'REST API Integration', description: 'REST Countries API v3.1 with network requests and response parsing.' },
 ];
 
+const yarnScriptFeatures = [
+  { icon: <Mic className="w-4 h-4" />, title: 'Real-Time Voice Tracking', description: 'Streams microphone audio to AssemblyAI and receives live transcription updates while the user speaks.' },
+  { icon: <Brain className="w-4 h-4" />, title: 'Hybrid Script Alignment', description: 'Combines low-latency word matching with semantic recovery to keep the teleprompter synchronized.' },
+  { icon: <AudioLines className="w-4 h-4" />, title: 'Skip & Ad-Lib Recovery', description: 'Recognizes when the speaker has rephrased, skipped, or added content and searches ahead for the most likely continuation.' },
+  { icon: <Search className="w-4 h-4" />, title: 'Intelligent Lookahead', description: 'Confidence thresholds and a controlled forward search window prevent isolated future words from pulling the teleprompter off course.' },
+  { icon: <ScrollText className="w-4 h-4" />, title: 'Automatic Scrolling', description: 'Keeps the active line centered with smooth scrolling based on spoken progress rather than a fixed timer.' },
+  { icon: <MousePointerClick className="w-4 h-4" />, title: 'Interactive Seeking', description: 'Click any word to jump forward or backward — tracking resets and resumes from that point.' },
+  { icon: <Upload className="w-4 h-4" />, title: 'Script Input & Upload', description: 'Supports scripts pasted directly into the editor or imported from a .txt file.' },
+  { icon: <Zap className="w-4 h-4" />, title: 'Reading Controls', description: 'Small, medium, and large text options, spoken-word highlighting, manual scrolling, auto-scroll recovery, rewind, and stop.' },
+  { icon: <Database className="w-4 h-4" />, title: 'Prepared Semantic Search', description: 'Creates embeddings for sections of the script and stores them for fast similarity matching during the reading session.' },
+  { icon: <Gauge className="w-4 h-4" />, title: 'Responsive Demo Experience', description: 'Polished browser demo with microphone status, session controls, progress feedback, and a limited live-transcription timer.' },
+];
+
 interface ProjectFeaturesProps {
   projectId: number;
 }
 
 export default function ProjectFeatures({ projectId }: ProjectFeaturesProps) {
-  const features = projectId === 1 ? selahNoteFeatures : projectId === 2 ? expenseTrackerFeatures : projectId === 3 ? theWallFeatures : projectId === 4 ? countryViewerFeatures : projectId === 6 ? sentioFeatures : projectId === 7 ? chatgptCloneFeatures : ontractFeatures;
+  const features = projectId === 1 ? selahNoteFeatures : projectId === 2 ? expenseTrackerFeatures : projectId === 3 ? theWallFeatures : projectId === 4 ? countryViewerFeatures : projectId === 6 ? sentioFeatures : projectId === 7 ? chatgptCloneFeatures : projectId === 8 ? yarnScriptFeatures : ontractFeatures;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

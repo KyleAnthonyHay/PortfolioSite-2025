@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { IconSlider } from '@/components/IconSlider';
+import { IconSliderGroup } from '@/components/IconSliderGroup';
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
@@ -15,19 +16,6 @@ const Hero = () => {
     setMounted(true);
   }, []);
 
-  const openResume = () => {
-    const win = window.open('', '_blank');
-    if (win) {
-      win.document.title = 'Kyle-Anthony Hay | Resume';
-      const style = win.document.createElement('style');
-      style.innerHTML = `html, body { margin:0; padding:0; overflow:hidden; height:100%; width:100%; } embed { position:absolute; top:0; left:0; width:100%; height:100%; }`;
-      win.document.head.appendChild(style);
-      const embed = win.document.createElement('embed');
-      embed.src = '/Kyle-Anthony_Resume.pdf';
-      embed.type = 'application/pdf';
-      win.document.body.appendChild(embed);
-    }
-  };
 
   const techIcons = [
     'c++.svg', 'django.svg', 'figma.svg', 'firebase.svg', 'flutter.svg',
@@ -93,12 +81,21 @@ const Hero = () => {
               transition={{ ...spring, delay: 0.3 }}
               className="flex flex-wrap gap-3 mb-12"
             >
-              <button
-                onClick={openResume}
-                className="bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl h-12 px-7 text-sm font-medium active:scale-[0.98] transition-all duration-200 cursor-pointer"
+              {/*
+                Opens the web résumé, not the PDF — the header already covers
+                the download. A plain link rather than a scripted window.open:
+                the old handler opened an empty tab and wrote markup into
+                about:blank, which popup blockers stop and which the browser
+                replaces out from under the injected content anyway.
+              */}
+              <a
+                href="/resume"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl h-12 px-7 text-sm font-medium active:scale-[0.98] transition-all duration-200 cursor-pointer"
               >
                 View Resume
-              </button>
+              </a>
               <Link href="/chat">
                 <span className="inline-flex items-center gap-2 border border-zinc-200 hover:border-zinc-300 hover:bg-white rounded-xl h-12 px-7 text-sm font-medium text-zinc-600 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -115,7 +112,9 @@ const Hero = () => {
               transition={{ duration: 0.8, delay: 0.5 }}
             >
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">Technologies</p>
-              <IconSlider icons={techIcons} gradientColor="#f9fafb" duration={60} />
+              <IconSliderGroup hoverSpeed={0.5}>
+                <IconSlider icons={techIcons} gradientColor="#f9fafb" duration={60} />
+              </IconSliderGroup>
             </motion.div>
           </div>
 
