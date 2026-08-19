@@ -51,7 +51,7 @@ const projects: Project[] = [
     description: 'SelahNote is an AI notetaker for sermons. It provides file organization, recording summaries, and file upload capabilities to streamline the process of taking notes during sermons.',
     link: 'https://selahnote.app',
     category: 'iOS',
-    overview: 'SelahNote (Lectra) is an AI-powered note-taking application for iOS that transforms live recordings, uploaded audio, and YouTube content into structured, reference-aware notes through a hybrid local-first and cloud-synced architecture. It now combines real-time transcription, agentic note generation, Convex-backed sync workflows, and Pinecone-powered reference retrieval to turn spoken content into searchable, enriched notes.',
+    overview: 'SelahNote is an AI-powered note-taking application for iOS that transforms live recordings, uploaded audio, and YouTube content into structured, reference-aware notes through a hybrid local-first and cloud-synced architecture. It now combines real-time transcription, agentic note generation, Convex-backed sync workflows, and Pinecone-powered reference retrieval to turn spoken content into searchable, enriched notes.',
     purpose: 'Serves as an intelligent audio-to-notes platform that closes the gap between listening and understanding. Users can capture sermons or lectures in real time, upload existing audio, or ingest YouTube transcripts, then receive structured notes, scripture-aware summaries, and synchronized content that stays available across devices.',
     techStack: {
       frontend: ['SwiftUI', 'Swift 5+', 'SwiftData', 'MVVM', 'AVFoundation', 'Starscream WebSockets', 'Firebase Auth', 'RevenueCat'],
@@ -158,6 +158,24 @@ const projects: Project[] = [
       frontend: ['Next.js 14 (App Router)', 'TypeScript', 'Tailwind CSS', 'Motion (Framer Motion)', 'Lucide React', 'React Context API'],
       backend: ['FastAPI (Python 3.12+)', 'LangChain & LangGraph', 'OpenAI GPT-4o-mini', 'PostgreSQL / Supabase', 'LangGraph PostgresSaver'],
       infrastructure: ['Docker & Docker Compose', 'ChromaDB', 'OpenAI Embeddings', 'LangSmith']
+    },
+    hasDetailedView: true
+  },
+  {
+    id: 8,
+    title: 'YarnScript',
+    image: '/demos/yarnscript/demo-poster.jpg',
+    description: 'YarnScript is an AI-powered teleprompter that follows your voice instead of scrolling at a fixed speed, combining live transcription with semantic matching to track where you are in a script.',
+    link: 'https://yarn-script.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/yarn-script',
+    landscape: true,
+    category: 'Web',
+    overview: 'YarnScript is an AI-powered teleprompter that follows your voice instead of scrolling at a fixed speed. It combines live transcription with semantic matching to track where you are in a script — even when you skip words, ad-lib, rephrase a section, or jump ahead. Paste a script or upload a text file, allow microphone access, and begin reading: spoken text is highlighted in real time while the active line stays centered.',
+    purpose: 'Explores a more natural approach to teleprompting. Rather than forcing a speaker to match an arbitrary scrolling speed, YarnScript allows the script to respond to the speaker — reducing the mental effort of keeping pace, recovering after a mistake, and finding the correct line so the reader can focus on delivery. The project was designed, built, and polished as a four-hour product sprint, with particular attention given to latency, speech alignment, and recovery when someone departs from the written script.',
+    techStack: {
+      frontend: ['Next.js 16', 'React 19', 'TypeScript', 'CSS Modules', 'Web Audio API', 'WebSockets'],
+      backend: ['Next.js API Routes', 'AssemblyAI Streaming Speech-to-Text', 'OpenAI text-embedding-3-small', 'Convex database & vector search', 'Server-side script preparation', 'Temporary AssemblyAI auth tokens'],
+      infrastructure: ['Vercel', 'Convex cloud infrastructure', 'Vitest', 'ESLint']
     },
     hasDetailedView: true
   },

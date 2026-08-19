@@ -101,6 +101,19 @@ export const projects: ProjectCardData[] = [
     featured: true,
   },
   {
+    id: 8,
+    title: 'YarnScript',
+    tagline: 'AI teleprompter that follows your voice',
+    description:
+      'AI-powered teleprompter that follows your voice using live transcription and semantic matching — even when you skip words, ad-lib, or jump ahead.',
+    image: '/demos/yarnscript/demo-poster.jpg',
+    link: 'https://yarn-script.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/yarn-script',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
     id: 7,
     title: 'ChatGPT Clone',
     tagline: 'AI chat interface',
@@ -110,7 +123,6 @@ export const projects: ProjectCardData[] = [
     link: 'https://chat-gpt-clone-delta-ten.vercel.app/',
     landscape: true,
     category: 'Web Apps',
-    featured: true,
   },
 ];
 
