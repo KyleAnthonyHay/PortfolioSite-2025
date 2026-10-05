@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import { motion } from 'motion/react';
+import SnapshotFrame from '@/components/SnapshotFrame';
 
 export interface Feature {
   eyebrow: string;
@@ -9,6 +10,10 @@ export interface Feature {
   description: string;
   image: string;
   alt: string;
+  /** Optional HTML snapshot of the screen; rendered live when present. */
+  html?: string;
+  /** CSS selector inside the snapshot to ring. */
+  highlight?: string;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -35,7 +40,11 @@ export default function FeatureGallery({ heading, features }: { heading: string;
           >
             <div className="relative overflow-hidden rounded-[1.5rem] bg-zinc-100/80 border border-slate-200/50 p-4 pb-0 md:p-5 md:pb-0">
               <div className="relative aspect-[16/10] overflow-hidden rounded-t-xl border border-b-0 border-slate-200/70 bg-white shadow-[0_18px_40px_-24px_rgba(0,0,0,0.25)]">
-                <Image src={feature.image} alt={feature.alt} fill sizes="(max-width: 768px) 100vw, 360px" className="object-cover object-top" />
+                {feature.html ? (
+                  <SnapshotFrame html={feature.html} highlight={feature.highlight} fallback={feature.image} alt={feature.alt} />
+                ) : (
+                  <Image src={feature.image} alt={feature.alt} fill sizes="(max-width: 768px) 100vw, 360px" className="object-cover object-top" />
+                )}
               </div>
             </div>
             <figcaption className="mt-5 px-1">
