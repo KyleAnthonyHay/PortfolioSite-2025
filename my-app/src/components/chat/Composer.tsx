@@ -51,8 +51,7 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming,
               className="block w-full resize-none bg-transparent px-5 pb-1 pt-4 text-[15px] leading-6 text-ink placeholder-zinc-400 caret-zinc-900 outline-none"
             />
             <div className="flex items-center justify-between px-2 pb-2 pl-5">
-              <span className="hidden font-mono text-[11px] text-zinc-400 sm:block">↵ send · ⇧↵ new line</span>
-              <span className="sm:hidden" />
+              <span />
               {isStreaming ? (
                 <button
                   type="button"

@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import Link from 'next/link';
 import { motion } from 'motion/react';
 import { IconSlider } from '@/components/IconSlider';
 import { IconSliderGroup } from '@/components/IconSliderGroup';
@@ -106,6 +107,14 @@ const Hero = () => {
               >
                 View Resume
               </a>
+              <Link href="/chat">
+                <span className="inline-flex items-center gap-2 border border-zinc-200 hover:border-zinc-300 hover:bg-white rounded-xl h-12 px-7 text-sm font-medium text-zinc-600 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  </svg>
+                  Talk to my AI Agent
+                </span>
+              </Link>
             </motion.div>
 
             <motion.div
