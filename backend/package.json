@@ -6,7 +6,8 @@
   "scripts": {
     "seed": "npx tsx src/scripts/seed-embeddings.ts",
     "build": "tsc",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "seed:knowledge": "npx tsx src/scripts/seed-knowledge.ts"
   },
   "dependencies": {
     "@pinecone-database/pinecone": "^7.1.0",
