@@ -275,7 +275,7 @@ async function judgeEvidence(questions: string[], perQuestion = 6): Promise<Judg
 
   const blocks = questions.map((question, i) => {
     const lines = hitLists[i].map(
-      (hit, j) => `  [${i}.${j}] project_id=${hit.projectId} "${hit.projectName}" / ${hit.section}: ${excerpt(hit)}`
+      (hit, j) => `  [${i}.${j}] "${hit.projectName}" / ${hit.section}: ${excerpt(hit)}`
     );
     return `ITEM ${i}: ${question}\n${lines.join('\n') || '  (no excerpts)'}`;
   });
@@ -289,22 +289,26 @@ async function judgeEvidence(questions: string[], perQuestion = 6): Promise<Judg
 - "direct": an excerpt shows Kyle-Anthony himself built, used, or did this (on team projects, only the parts the excerpt attributes to him or the team he was on).
 - "related": no direct use, but excerpts show clearly adjacent or transferable work.
 - "none": nothing relevant.
-List each relevant project once, strongest evidence first, with a "why" under 18 words that answers the ITEM itself (not a generic project summary) by stating concretely what he did, plus the section it came from. Leave out projects whose excerpts only loosely touch the ITEM. Never infer beyond the excerpts. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"project_id":1,"section":"...","why":"..."}]}]}`
+List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3") and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","why":"..."}]}]}`
         ),
         new HumanMessage(blocks.join('\n\n')),
       ]);
     const text = typeof response.content === 'string' ? response.content : '';
     const parsed = JSON.parse(text) as {
-      items?: { index?: number; verdict?: string; projects?: { project_id?: number; section?: string; why?: string }[] }[];
+      items?: { index?: number; verdict?: string; projects?: { ref?: string; why?: string }[] }[];
     };
     return questions.map((_, i) => {
       const item = parsed.items?.find((candidate) => candidate.index === i);
       if (!item) return empty;
       const verdict: Verdict = item.verdict === 'direct' || item.verdict === 'related' ? item.verdict : 'none';
       const seen = new Set<number>();
-      const projects = (item.projects ?? [])
-        .filter((p) => typeof p.project_id === 'number' && projectById(p.project_id) && !seen.has(p.project_id) && seen.add(p.project_id))
-        .map((p) => ({ id: p.project_id as number, why: (p.why ?? '').trim(), section: (p.section ?? '').trim() }));
+      const projects = (item.projects ?? []).flatMap((p) => {
+        const j = Number(String(p.ref ?? '').split('.')[1]);
+        const hit = Number.isInteger(j) ? hitLists[i][j] : undefined;
+        if (!hit || !projectById(hit.projectId) || seen.has(hit.projectId)) return [];
+        seen.add(hit.projectId);
+        return [{ id: hit.projectId, why: (p.why ?? '').trim(), section: hit.section }];
+      });
       return { verdict: projects.length === 0 ? 'none' : verdict, projects };
     });
   } catch (error) {
@@ -885,8 +889,9 @@ export const getProjectResource = tool(
       ...(project.github ? [{ type: 'github', title: `${project.title} on GitHub`, url: project.github }] : []),
       ...(await getProjectResources(project.id)),
     ];
-    const unique = [...new Map(raw.map((r) => [r.url.replace(/\/$/, ''), r])).values()].filter(
-      (r) => !type || type === 'any' || r.type === type
+    // Every link comes back; a requested type just goes first.
+    const unique = [...new Map(raw.map((r) => [r.url.replace(/\/$/, ''), r])).values()].sort(
+      (a, b) => Number(b.type === type) - Number(a.type === type)
     );
 
     const resources: ProjectResource[] = (
@@ -917,7 +922,7 @@ export const getProjectResource = tool(
     }
 
     return pack({
-      content: `Links for ${project.title}:\n${resources.map((r) => `- ${r.type}: ${r.url}`).join('\n')}`,
+      content: `Link cards are shown for ${project.title}: ${resources.map((r) => r.type).join(', ')}. Do not list or repeat the links in prose; one short sentence is enough.`,
       citedProjectIds: [project.id],
       widget: { kind: 'resources', project: toCard(project), resources },
     });
@@ -925,7 +930,7 @@ export const getProjectResource = tool(
   {
     name: 'get_project_resource',
     description:
-      "Use when the visitor wants to open, visit, try, watch, or inspect something for a project: 'Can I see SelahNote?', 'What's the website?', 'Is there a GitHub?', 'Show me the demo', 'App Store link?'. Shows link preview cards; don't repeat the URLs in prose.",
+      "Use when the visitor wants to open, visit, try, watch, or inspect something for a project: 'Can I see SelahNote?', 'What's the website?', 'Is there a GitHub?', 'Show me the demo', 'App Store link?'. Call it once per project: it returns every link (website, GitHub, App Store) as preview cards, so don't repeat the URLs in prose.",
     schema: z.object({
       project: z.string().describe("Project name, e.g. 'SelahNote'"),
       type: z.enum(['any', 'website', 'github', 'app-store', 'demo', 'video', 'docs']).optional().describe('A specific kind of link, if asked for'),
@@ -988,7 +993,8 @@ export const getJourney = tool(
     pack({
       content: journey
         .map((node) => `${node.period}: ${node.title}${node.caption ? ` — ${node.caption}` : ''}${node.projects ? ` [${node.projects.map((p) => p.title).join(', ')}]` : ''}`)
-        .join('\n'),
+        .join('\n')
+        .concat('\n\nThe flowchart shows every step, so write at most two sentences: the arc of his path, not the list.'),
       citedProjectIds: [...new Set(journey.flatMap((node) => node.projects?.map((p) => p.id) ?? []))],
       widget: { kind: 'journey', nodes: journey },
     }),

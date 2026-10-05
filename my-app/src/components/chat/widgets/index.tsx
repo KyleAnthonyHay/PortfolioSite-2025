@@ -8,6 +8,10 @@ import { TimelineWidget } from './Timeline';
 import { ContactWidget } from './Contact';
 import { FitReportWidget } from './FitReport';
 import { QuestionCard } from './Question';
+import { RecommendationsWidget } from './Recommendations';
+import { JourneyWidget } from './Journey';
+import { ResourcesWidget } from './Resources';
+import { BookTimeWidget } from './BookTime';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -35,6 +39,14 @@ export default function WidgetRenderer({ widget, active = false, answer, onAnswe
       return <QuestionCard widget={widget} active={active} answer={answer} onAnswer={onAnswer} />;
     case 'fit_report':
       return <FitReportWidget widget={widget} />;
+    case 'recommendations':
+      return <RecommendationsWidget widget={widget} onAsk={active ? onAnswer : undefined} />;
+    case 'journey':
+      return <JourneyWidget widget={widget} />;
+    case 'resources':
+      return <ResourcesWidget widget={widget} />;
+    case 'book_time':
+      return <BookTimeWidget widget={widget} />;
     default:
       return null;
   }

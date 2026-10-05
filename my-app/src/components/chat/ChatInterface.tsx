@@ -439,6 +439,7 @@ export default function ChatInterface() {
         value={input}
         onChange={setInput}
         onSend={handleSend}
+        onCommand={(text) => send(text)}
         onStop={handleStop}
         isStreaming={isStreaming}
         inputRef={inputRef}
