@@ -46,6 +46,10 @@ interface ProductShowcaseProps {
    * unreadable.
    */
   orientation?: 'portrait' | 'landscape';
+  /** Small label above the heading. */
+  eyebrow?: string;
+  /** Smaller heading, for a showcase that sits under a walkthrough video. */
+  compact?: boolean;
 }
 
 /** Shared by the visible copy and the hidden sizers, so both measure alike. */
@@ -119,6 +123,8 @@ export default function ProductShowcase({
   heading,
   items,
   orientation = 'portrait',
+  eyebrow,
+  compact = false,
 }: ProductShowcaseProps) {
   const [active, setActive] = useState(0);
   const current = items[active];
@@ -210,9 +216,16 @@ export default function ProductShowcase({
 
   const panel = 'relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-zinc-100/70 border border-slate-200/50';
   const headingEl = (
-    <h2 className="text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
-      {heading}
-    </h2>
+    <div>
+      {eyebrow && <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">{eyebrow}</p>}
+      <h2
+        className={`font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance ${
+          compact ? 'text-2xl md:text-3xl' : 'text-3xl md:text-[2.75rem]'
+        }`}
+      >
+        {heading}
+      </h2>
+    </div>
   );
 
   if (landscape) {

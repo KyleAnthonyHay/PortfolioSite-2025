@@ -37,7 +37,7 @@ const selahNote: Showcase = {
       media: { kind: 'walkthrough', src: '/products/selahnote/walkthrough.mp4', poster: '/products/selahnote/walkthrough-poster.jpg' },
     },
     {
-      label: 'Walkthrough',
+      label: 'Tour',
       icon: <Play className={ic} />,
       title: 'From spoken word to structured notes.',
       description:
@@ -301,18 +301,32 @@ export default function ProjectShowcase({ projectId }: { projectId: number }) {
   const showcase = showcases[projectId];
   if (!showcase) return null;
 
-  // A narrated walkthrough says it all, so it replaces the tabbed showcase.
+  // The walkthrough video leads; the screenshots follow for anyone who wants a closer look.
   const walkthrough = showcase.items.find((item) => item.media.kind === 'walkthrough');
   if (walkthrough && walkthrough.media.kind === 'walkthrough') {
+    const rest = showcase.items.filter((item) => item !== walkthrough);
     return (
-      <div className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-zinc-100/70 border border-slate-200/50">
-        <div className="px-6 py-12 md:px-14 md:py-16">
-          <h2 className="max-w-[46rem] text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
-            {showcase.heading}
-          </h2>
-          <WalkthroughPlayer src={walkthrough.media.src} poster={walkthrough.media.poster} className="mt-12" />
+      <>
+        <div className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-zinc-100/70 border border-slate-200/50">
+          <div className="px-6 py-12 md:px-14 md:py-16">
+            <h2 className="max-w-[46rem] text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
+              {showcase.heading}
+            </h2>
+            <WalkthroughPlayer src={walkthrough.media.src} poster={walkthrough.media.poster} className="mt-12" />
+          </div>
         </div>
-      </div>
+        {rest.length > 0 && (
+          <div className="mt-6">
+            <ProductShowcase
+              eyebrow="Inside the app"
+              heading="A closer look at the screens."
+              items={rest}
+              orientation={showcase.orientation}
+              compact
+            />
+          </div>
+        )}
+      </>
     );
   }
 
