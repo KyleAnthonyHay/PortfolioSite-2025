@@ -18,6 +18,8 @@ export interface Product {
   loop: string;
   poster: string;
   tour: string;
+  /** End card of the explainer, shown before it plays. */
+  tourPoster: string;
   tourLength: string;
 }
 
@@ -36,6 +38,7 @@ export const products: Product[] = [
     loop: '/products/ontract/loop.mp4',
     poster: '/products/ontract/poster.jpg',
     tour: '/products/ontract/tour.mp4',
+    tourPoster: '/products/ontract/tour-poster.jpg',
     tourLength: '0:47',
   },
   {
@@ -53,6 +56,7 @@ export const products: Product[] = [
     loop: '/products/sentio/loop.mp4',
     poster: '/products/sentio/poster.jpg',
     tour: '/products/sentio/tour.mp4',
+    tourPoster: '/products/sentio/tour-poster.jpg',
     tourLength: '0:51',
   },
   {
@@ -70,6 +74,7 @@ export const products: Product[] = [
     loop: '/products/prodbot/loop.mp4',
     poster: '/products/prodbot/poster.jpg',
     tour: '/products/prodbot/tour.mp4',
+    tourPoster: '/products/prodbot/tour-poster.jpg',
     tourLength: '0:53',
   },
 ];

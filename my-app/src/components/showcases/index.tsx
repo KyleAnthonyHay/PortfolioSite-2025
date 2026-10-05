@@ -10,7 +10,6 @@ import {
   Library,
   MessageSquare,
   Mic,
-  Moon,
   Play,
   Search,
   Sparkles,
@@ -116,19 +115,11 @@ const onTract: Showcase = {
     },
     {
       label: 'Dashboard',
-      icon: <Moon className={ic} />,
+      icon: <Sun className={ic} />,
       title: 'Status, expirations, and obligations in one view.',
       description:
         'Row Level Security scopes every query to the signed-in organization, so the same dashboard serves multiple tenants without a leak. Alerts fire on renewals and expirations before they become someone\'s problem.',
-      media: { kind: 'browser', src: '/demos/ontract/dashboard-dark.jpg', alt: 'OnTract dashboard in dark mode', url: 'ontract.app/dashboard', ratio: 1800 / 1012 },
-    },
-    {
-      label: 'Light mode',
-      icon: <Sun className={ic} />,
-      title: 'The same dashboard, built for daylight.',
-      description:
-        'Theming runs on Tailwind tokens over Radix primitives, so both themes share one component tree and stay accessible without a parallel set of styles to maintain.',
-      media: { kind: 'browser', src: '/demos/ontract/dashboard-light.jpg', alt: 'OnTract dashboard in light mode', url: 'ontract.app/dashboard', ratio: 1800 / 1012 },
+      media: { kind: 'browser', src: '/demos/ontract/dashboard-light.jpg', alt: 'OnTract dashboard', url: 'ontract.app/dashboard', ratio: 1800 / 1012 },
     },
   ],
 };
