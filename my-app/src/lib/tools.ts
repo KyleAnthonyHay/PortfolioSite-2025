@@ -819,16 +819,87 @@ function isPublicUrl(raw: string): URL | null {
   }
 }
 
-async function fetchHtml(url: URL, ms: number): Promise<string | null> {
+interface FetchedPage {
+  status: number;
+  html: string | null;
+  /** Why there is no html, in words the visitor can act on. */
+  problem?: string;
+}
+
+async function fetchPage(url: URL, ms: number): Promise<FetchedPage> {
   try {
     const response = await fetch(url, { headers: FETCH_HEADERS, redirect: 'follow', signal: AbortSignal.timeout(ms) });
-    if (!response.ok) return null;
+    if (response.status === 404 || response.status === 410)
+      return { status: response.status, html: null, problem: 'the page does not exist (404); the link may be wrong or the job may be closed' };
+    if (response.status === 401 || response.status === 403 || response.status === 429)
+      return { status: response.status, html: null, problem: `the site blocked the request (${response.status})` };
+    if (!response.ok) return { status: response.status, html: null, problem: `the site returned an error (${response.status})` };
     const type = response.headers.get('content-type') ?? '';
-    if (!type.includes('html') && !type.includes('text')) return null;
-    return (await response.text()).slice(0, 1_500_000);
+    if (!type.includes('html') && !type.includes('text')) return { status: response.status, html: null, problem: 'the link is not a web page' };
+    return { status: response.status, html: (await response.text()).slice(0, 1_500_000) };
   } catch {
-    return null;
+    return { status: 0, html: null, problem: 'the site did not respond in time' };
   }
+}
+
+async function fetchHtml(url: URL, ms: number): Promise<string | null> {
+  return (await fetchPage(url, ms)).html;
+}
+
+/**
+ * Job boards (Ashby, Greenhouse, Lever, Workday, many careers sites) render
+ * the posting with JavaScript but embed it as schema.org JobPosting JSON-LD
+ * for search engines. Reading that covers most boards without a browser or
+ * a parser per board.
+ */
+function jobPostingFromJsonLd(html: string): string | null {
+  const blocks = [...html.matchAll(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
+  const candidates: Record<string, unknown>[] = [];
+  const collect = (value: unknown) => {
+    if (Array.isArray(value)) value.forEach(collect);
+    else if (value && typeof value === 'object') {
+      const node = value as Record<string, unknown>;
+      if (node['@type'] === 'JobPosting' || (Array.isArray(node['@type']) && node['@type'].includes('JobPosting'))) candidates.push(node);
+      if (node['@graph']) collect(node['@graph']);
+    }
+  };
+  for (const block of blocks) {
+    try {
+      collect(JSON.parse(block[1].trim()));
+    } catch {
+      // Malformed JSON-LD is common; skip it.
+    }
+  }
+  const job = candidates[0];
+  if (!job) return null;
+
+  const str = (value: unknown): string | undefined => (typeof value === 'string' && value.trim() ? value.trim() : undefined);
+  const org = job.hiringOrganization as Record<string, unknown> | undefined;
+  const locations = ([] as unknown[])
+    .concat(job.jobLocation ?? [])
+    .map((loc) => {
+      const address = (loc as Record<string, unknown>)?.address as Record<string, unknown> | undefined;
+      return [str(address?.addressLocality), str(address?.addressRegion), str(address?.addressCountry)].filter(Boolean).join(', ');
+    })
+    .filter(Boolean);
+  const salary = job.baseSalary as Record<string, unknown> | undefined;
+  const salaryValue = salary?.value as Record<string, unknown> | undefined;
+  const pay =
+    salaryValue && (salaryValue.minValue || salaryValue.maxValue)
+      ? `${salaryValue.minValue ?? ''}–${salaryValue.maxValue ?? ''} ${str(salary?.currency) ?? ''} ${str(salaryValue.unitText) ?? ''}`.trim()
+      : undefined;
+  const description = str(job.description);
+
+  const lines = [
+    str(job.title) && `Title: ${str(job.title)}`,
+    str(org?.name) && `Company: ${str(org?.name)}`,
+    locations.length > 0 && `Location: ${locations.join(' / ')}`,
+    str(job.jobLocationType) && `Workplace: ${str(job.jobLocationType)}`,
+    typeof job.employmentType === 'string' && `Employment: ${job.employmentType}`,
+    pay && `Pay: ${pay}`,
+    description && `\n${readableText(decodeEntities(description))}`,
+  ].filter(Boolean);
+  return lines.length > 1 ? lines.join('\n') : null;
 }
 
 function decodeEntities(text: string): string {
@@ -960,17 +1031,21 @@ export const getJobPosting = tool(
     if (!url) {
       return pack({ content: 'That is not a public job posting URL. Ask the visitor to paste the job description instead.', citedProjectIds: [] });
     }
-    const html = await fetchHtml(url, 9000);
-    let text = html ? readableText(html) : '';
+    const page = await fetchPage(url, 9000);
+    const html = page.html;
+    let text = html ? jobPostingFromJsonLd(html) ?? readableText(html) : '';
     // Some boards render the posting only inside <main>-less shells; fall back to the whole page.
-    if (html && text.length < 400) text = readableText(html.replace(/<main[\s\S]*?<\/main>/i, ''));
+    if (html && text.length < 400 && !text.startsWith('Title:')) text = readableText(html.replace(/<main[\s\S]*?<\/main>/i, ''));
     if (!text || text.length < 200) {
+      const reason = page.problem ?? 'the page only loads its content with JavaScript, so the posting text is not in it';
       return pack({
-        content: `Could not read the posting at ${url.hostname} (it may need a login or render with JavaScript). Tell the visitor and ask them to paste the job description.`,
+        content: `Could not read the posting at ${url.hostname}: ${reason}. Tell the visitor this reason in plain words and ask them to paste the job description${
+          page.status === 404 ? ' or check the link' : ''
+        }.`,
         citedProjectIds: [],
       });
     }
-    const title = html ? metaContent(html, 'og:title') ?? /<title[^>]*>([^<]*)/i.exec(html)?.[1]?.trim() : undefined;
+    const title = html && !text.startsWith('Title:') ? metaContent(html, 'og:title') ?? /<title[^>]*>([^<]*)/i.exec(html)?.[1]?.trim() : undefined;
     return pack({
       content: `Job posting from ${url.hostname}${title ? ` — ${decodeEntities(title)}` : ''}:\n\n${text.slice(0, 12000)}${
         text.length > 12000 ? '\n[truncated]' : ''
