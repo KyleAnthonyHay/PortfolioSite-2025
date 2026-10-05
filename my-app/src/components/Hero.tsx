@@ -1,7 +1,6 @@
 'use client';
 
 import Image from 'next/image';
-import Link from 'next/link';
 import { motion } from 'motion/react';
 import { IconSlider } from '@/components/IconSlider';
 import { IconSliderGroup } from '@/components/IconSliderGroup';
@@ -107,16 +106,6 @@ const Hero = () => {
               >
                 View Resume
               </a>
-              <Link href="/chat">
-                <span className="group inline-flex items-center gap-2.5 border border-zinc-300/80 bg-white/60 hover:border-zinc-400 hover:bg-white rounded-xl h-12 px-6 text-sm font-medium text-zinc-700 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200">
-                  <span className="relative flex h-2 w-2">
-                    <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400/60 [animation-duration:2s]" />
-                    <span className="relative h-2 w-2 rounded-full bg-emerald-500" />
-                  </span>
-                  Talk to my AI Agent
-                  <span className="text-zinc-400 transition-transform duration-300 group-hover:translate-x-0.5">→</span>
-                </span>
-              </Link>
             </motion.div>
 
             <motion.div
