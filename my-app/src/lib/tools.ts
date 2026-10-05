@@ -2,6 +2,8 @@ import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
+import fs from 'fs/promises';
+import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
@@ -1100,6 +1102,45 @@ export const bookTime = tool(
   }
 );
 
+/** Page count and size of the résumé PDF in public/, for the card's caption. */
+async function resumeFileFacts(): Promise<{ pages?: number; size?: string }> {
+  try {
+    const file = await fs.readFile(path.join(process.cwd(), 'public', profile.resumePdf.replace(/^\//, '')));
+    // The page tree's root carries the total in /Count; outlines can too, so prefer the /Pages one.
+    const text = file.toString('latin1');
+    const count = text.match(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)/) ?? text.match(/\/Count\s+(\d+)/);
+    const pages = Number(count?.[1]);
+    return { pages: pages > 0 ? pages : undefined, size: `${Math.max(1, Math.round(file.byteLength / 1024))} KB` };
+  } catch {
+    return {};
+  }
+}
+
+export const getResume = tool(
+  async () => {
+    const facts = await resumeFileFacts();
+    return pack({
+      content:
+        "A résumé card is shown with buttons to view his résumé in the browser and download the PDF. Keep the reply to one short sentence; do not paste the links.",
+      citedProjectIds: [],
+      widget: {
+        kind: 'resume',
+        name: profile.name,
+        headline: profile.headline,
+        viewUrl: profile.resumePage,
+        downloadUrl: profile.resumePdf,
+        ...facts,
+      },
+    });
+  },
+  {
+    name: 'get_resume',
+    description:
+      "Use when the visitor asks for Kyle-Anthony's résumé or CV: to see it, view it, download it, or get a copy. Shows a résumé card with view and download links.",
+    schema: z.object({}),
+  }
+);
+
 export const allTools = [
   checkExperience,
   getExperience,
@@ -1113,6 +1154,7 @@ export const allTools = [
   getJobPosting,
   getJourney,
   bookTime,
+  getResume,
 ];
 
 /** Human labels for the activity line while a tool runs and after it finishes. */
@@ -1133,6 +1175,8 @@ export function describeToolCall(name: string, args: Record<string, unknown>): {
       return { running: 'Mapping his journey', done: 'Mapped his journey' };
     case 'book_time':
       return { running: 'Opening his calendar', done: 'Opened his calendar' };
+    case 'get_resume':
+      return { running: 'Fetching his résumé', done: 'Fetched his résumé' };
     case 'list_projects':
       return { running: 'Gathering projects', done: 'Gathered projects' };
     case 'get_background': {

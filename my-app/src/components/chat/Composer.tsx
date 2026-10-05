@@ -22,7 +22,7 @@ const COMMANDS: SlashCommand[] = [
   { name: '/journey', hint: 'Walk through his path so far', action: 'send', text: 'Walk me through how his experience developed.' },
   { name: '/experience', hint: 'Search his experience with…', action: 'fill', text: 'What experience does he have with ' },
   { name: '/links', hint: "Open a project's site or code", action: 'fill', text: 'Show me the links for ' },
-  { name: '/resume', hint: 'Get his résumé and contact', action: 'send', text: 'Can I see his résumé and how to reach him?' },
+  { name: '/resume', hint: 'View or download his résumé', action: 'send', text: "Can I see Kyle-Anthony's résumé?" },
 ];
 
 function CommandMenu({

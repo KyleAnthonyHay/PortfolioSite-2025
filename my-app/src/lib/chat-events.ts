@@ -136,6 +136,7 @@ export type Widget =
   | { kind: 'journey'; nodes: JourneyNode[] }
   | { kind: 'resources'; project: ProjectCardData; resources: ProjectResource[] }
   | { kind: 'book_time'; url?: string; email: string; contactPage: string }
+  | { kind: 'resume'; name: string; headline: string; viewUrl: string; downloadUrl: string; pages?: number; size?: string }
   | {
       kind: 'fit_report';
       role?: string;

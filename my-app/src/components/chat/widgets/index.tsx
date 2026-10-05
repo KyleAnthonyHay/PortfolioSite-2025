@@ -12,6 +12,7 @@ import { RecommendationsWidget } from './Recommendations';
 import { JourneyWidget } from './Journey';
 import { ResourcesWidget } from './Resources';
 import { BookTimeWidget } from './BookTime';
+import { ResumeWidget } from './Resume';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -47,6 +48,8 @@ export default function WidgetRenderer({ widget, active = false, answer, onAnswe
       return <ResourcesWidget widget={widget} />;
     case 'book_time':
       return <BookTimeWidget widget={widget} />;
+    case 'resume':
+      return <ResumeWidget widget={widget} />;
     default:
       return null;
   }
