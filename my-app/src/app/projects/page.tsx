@@ -49,12 +49,11 @@ export default function ProjectsPage() {
             animate={mounted ? { opacity: 1, y: 0 } : {}}
             transition={{ ...spring }}
           >
-            <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-3">Portfolio</p>
-            <h1 className="text-4xl md:text-6xl tracking-tighter leading-none text-zinc-900 mb-4">
-              Projects
+            <h1 className="font-display text-[clamp(2.75rem,6vw,5.5rem)] font-medium tracking-[-0.045em] leading-[0.95] text-ink mb-5">
+              Everything I&apos;ve built.
             </h1>
-            <p className="text-base text-zinc-500 leading-relaxed max-w-[50ch]">
-              A collection of apps and experiences I&apos;ve built, across mobile, desktop, and web.
+            <p className="text-[17px] text-zinc-500 leading-relaxed max-w-[52ch]">
+              Products running today, apps in the App Store, and the tools I made along the way, across web, iOS and macOS.
             </p>
           </motion.div>
         </div>

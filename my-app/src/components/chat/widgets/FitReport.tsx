@@ -15,7 +15,7 @@ export function FitReportWidget({ widget }: { widget: Extract<Widget, { kind: 'f
   const { role, requirements, summary } = widget;
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
+    <div className="overflow-hidden agent-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3">
         <div>
           <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">Fit report</p>

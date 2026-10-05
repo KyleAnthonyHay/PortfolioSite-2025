@@ -32,16 +32,16 @@ function linkifyProjects(markdown: string): string {
     .join('');
 }
 
-export default function Markdown({ content }: { content: string }) {
+export default function Markdown({ content, streaming = false }: { content: string; streaming?: boolean }) {
   return (
-    <div className="chat-prose">
+    <div className="chat-prose" data-streaming={streaming}>
       <ReactMarkdown
         urlTransform={(url) => url}
         components={{
-          p: ({ children }) => <p className="mb-3 last:mb-0 text-[15px] leading-7 text-zinc-800">{children}</p>,
+          p: ({ children }) => <p className="mb-3 last:mb-0 text-[15.5px] leading-[1.7] text-zinc-800">{children}</p>,
           ul: ({ children }) => <ul className="mb-3 last:mb-0 pl-5 list-disc space-y-1 marker:text-zinc-300">{children}</ul>,
           ol: ({ children }) => <ol className="mb-3 last:mb-0 pl-5 list-decimal space-y-1 marker:text-zinc-400">{children}</ol>,
-          li: ({ children }) => <li className="text-[15px] leading-7 text-zinc-800 pl-1">{children}</li>,
+          li: ({ children }) => <li className="text-[15.5px] leading-[1.7] text-zinc-800 pl-1">{children}</li>,
           strong: ({ children }) => <strong className="font-semibold text-zinc-900">{children}</strong>,
           em: ({ children }) => <em className="italic">{children}</em>,
           h1: ({ children }) => <p className="mb-2 text-[15px] font-semibold text-zinc-900">{children}</p>,

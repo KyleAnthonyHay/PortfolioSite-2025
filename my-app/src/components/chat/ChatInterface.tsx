@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeft, Check, Copy, Plus, RefreshCw } from 'lucide-react';
+import { ArrowLeft, Check, Copy, CornerDownRight, Plus, RefreshCw } from 'lucide-react';
 import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
@@ -29,6 +29,9 @@ interface AssistantMessage {
   sources: SourceRef[];
   suggestions: string[];
   status: 'streaming' | 'done' | 'error';
+  /** Client clock: when the turn started and when the answer (or the turn) first landed. */
+  startedAt?: number;
+  endedAt?: number;
 }
 
 type ChatMessage = UserMessage | AssistantMessage;
@@ -65,7 +68,7 @@ function persist(messages: ChatMessage[]) {
 function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessage {
   switch (event.type) {
     case 'text':
-      return { ...message, content: message.content + event.delta };
+      return { ...message, content: message.content + event.delta, endedAt: message.endedAt ?? Date.now() };
     case 'step': {
       const exists = message.steps.some((step) => step.id === event.step.id);
       return {
@@ -84,7 +87,7 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
     case 'error':
       return { ...message, status: 'error', content: message.content || event.message };
     case 'done':
-      return { ...message, status: 'done' };
+      return { ...message, status: 'done', endedAt: message.endedAt ?? Date.now() };
     default:
       return message;
   }
@@ -105,7 +108,7 @@ function CopyButton({ text }: { text: string }) {
         }
       }}
       aria-label="Copy answer"
-      className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+      className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
@@ -155,7 +158,7 @@ export default function ChatInterface() {
 
   useEffect(() => {
     const el = scrollerRef.current;
-    if (el && stickToBottomRef.current) el.scrollTop = el.scrollHeight;
+    if (el && stickToBottomRef.current && messages.length > 0) el.scrollTop = el.scrollHeight;
   }, [messages]);
 
   const send = useCallback(
@@ -168,15 +171,23 @@ export default function ChatInterface() {
         options?.replaceFromIndex !== undefined
           ? messagesRef.current.slice(0, options.replaceFromIndex)
           : messagesRef.current;
+      // A turn that only asked a question has no prose; send the question
+      // itself so the agent knows what the visitor's next message answers.
       const history: ConversationMessage[] = base
-        .filter((m) => m.content.trim().length > 0)
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((m) => {
+          if (m.role === 'assistant' && !m.content.trim()) {
+            const asked = m.widgets.find((w) => w.kind === 'question');
+            if (asked && asked.kind === 'question') return { role: m.role, content: `[Asked the visitor: ${asked.question}]` };
+          }
+          return { role: m.role, content: m.content };
+        })
+        .filter((m) => m.content.trim().length > 0);
 
       const assistantId = newId();
       const next: ChatMessage[] = [
         ...base,
         { id: newId(), role: 'user', content: trimmed },
-        { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming' },
+        { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now() },
       ];
       stickToBottomRef.current = true;
       setMessages(next);
@@ -213,7 +224,7 @@ export default function ChatInterface() {
             update((m) => applyEvent(m, event));
           }
         }
-        update((m) => (m.status === 'streaming' ? { ...m, status: 'done' } : m));
+        update((m) => (m.status === 'streaming' ? { ...m, status: 'done', endedAt: m.endedAt ?? Date.now() } : m));
       } catch (error) {
         if ((error as Error).name === 'AbortError') {
           update((m) => ({ ...m, status: 'done' }));
@@ -264,20 +275,21 @@ export default function ChatInterface() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
-      <header className="sticky top-0 z-30 shrink-0 border-b border-zinc-200/50 bg-[#f9fafb]/85 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 w-full max-w-3xl items-center justify-between px-4">
+      <header className="sticky top-0 z-30 shrink-0 border-b border-zinc-200/70 bg-paper/85 backdrop-blur-md">
+        <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4">
           <Link
             href="/"
-            className="group inline-flex items-center gap-3 rounded-lg py-1 pr-2 text-zinc-500 transition-colors hover:text-zinc-900"
+            className="group -ml-2 inline-flex items-center gap-3 rounded-full py-1 pl-2 pr-3 text-zinc-500 transition-colors hover:text-ink"
           >
-            <ArrowLeft className="h-4 w-4 transition-transform group-hover:-translate-x-0.5" />
+            <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
             <span className="flex items-center gap-2.5">
-              <span className="relative h-7 w-7 overflow-hidden rounded-full ring-1 ring-zinc-200">
-                <Image src="/profile.jpg" alt="" fill sizes="28px" className="object-cover" />
+              <span className="relative h-8 w-8 overflow-hidden rounded-full bg-zinc-200">
+                <Image src="/profile.jpg" alt="" fill sizes="32px" className="object-cover" />
+                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-paper bg-olive" />
               </span>
               <span className="leading-tight">
-                <span className="block text-sm font-medium text-zinc-900">Kyle-Anthony</span>
-                <span className="block text-[11px] text-zinc-400">AI agent · grounded in his work</span>
+                <span className="block font-display text-[14px] font-medium tracking-[-0.01em] text-ink">Kyle-Anthony&apos;s agent</span>
+                <span className="block text-[12px] text-zinc-400">Answers from his projects and résumé</span>
               </span>
             </span>
           </Link>
@@ -285,7 +297,7 @@ export default function ChatInterface() {
             <button
               type="button"
               onClick={handleNewChat}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-200/70 bg-white px-2.5 py-1.5 text-xs font-medium text-zinc-600 transition-all hover:border-zinc-300 hover:text-zinc-900 active:scale-[0.97]"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-300/80 px-3 text-[12px] text-zinc-600 transition-all hover:border-ink hover:text-ink active:scale-[0.97]"
             >
               <Plus className="h-3.5 w-3.5" /> New chat
             </button>
@@ -294,7 +306,7 @@ export default function ChatInterface() {
       </header>
 
       <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-44 pt-6">
+        <div className="mx-auto w-full max-w-3xl px-4 pb-48 pt-8">
           {isHydrated && messages.length === 0 && (
             <EmptyState
               onPick={(prompt, sendNow) => {
@@ -314,18 +326,18 @@ export default function ChatInterface() {
             />
           )}
 
-          <div className="space-y-6">
+          <div className="space-y-8">
             <AnimatePresence initial={false}>
               {messages.map((message, index) =>
                 message.role === 'user' ? (
                   <motion.div
                     key={message.id}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={spring}
+                    initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
+                    animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                    transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                     className="flex justify-end"
                   >
-                    <div className="max-w-[85%] whitespace-pre-wrap rounded-[20px] rounded-br-lg bg-zinc-100 px-4 py-2.5 text-[15px] leading-6 text-zinc-800">
+                    <div className="max-w-[85%] whitespace-pre-wrap rounded-[22px] rounded-br-md bg-zinc-200/70 px-4 py-2.5 text-[15px] leading-6 text-ink">
                       {message.content}
                     </div>
                   </motion.div>
@@ -340,41 +352,51 @@ export default function ChatInterface() {
                     <ActivitySteps
                       steps={message.steps}
                       isStreaming={message.status === 'streaming'}
-                      hasText={message.content.length > 0}
+                      hasText={message.content.length > 0 || message.widgets.length > 0}
+                      startedAt={message.startedAt}
+                      endedAt={message.endedAt}
                     />
 
-                    {message.content && <Markdown content={message.content} />}
+                    {message.content && <Markdown content={message.content} streaming={message.status === 'streaming'} />}
 
                     {message.status === 'done' && !message.content && message.widgets.length === 0 && (
                       <p className="text-sm text-zinc-400">Stopped.</p>
                     )}
 
                     {message.widgets.length > 0 && (
-                      <div className={`space-y-3 ${message.content ? 'mt-4' : ''}`}>
-                        {message.widgets.map((widget, widgetIndex) => (
-                          <motion.div
-                            key={`${message.id}-${widgetIndex}`}
-                            initial={{ opacity: 0, y: 10, scale: 0.985 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            transition={spring}
-                          >
-                            <WidgetRenderer widget={widget} />
-                          </motion.div>
-                        ))}
+                      <div className={`space-y-3 ${message.content ? 'mt-5' : ''}`}>
+                        {message.widgets.map((widget, widgetIndex) => {
+                          const next = messages[index + 1];
+                          return (
+                            <motion.div
+                              key={`${message.id}-${widgetIndex}`}
+                              initial={{ opacity: 0, y: 14, scale: 0.98, filter: 'blur(6px)' }}
+                              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: widgetIndex * 0.06 }}
+                            >
+                              <WidgetRenderer
+                                widget={widget}
+                                active={index === lastAssistantIndex && message.status !== 'streaming' && !isStreaming}
+                                answer={next?.role === 'user' ? next.content : undefined}
+                                onAnswer={(text) => send(text)}
+                              />
+                            </motion.div>
+                          );
+                        })}
                       </div>
                     )}
 
                     <SourcePills sources={message.sources} />
 
-                    {message.status !== 'streaming' && (message.content || message.widgets.length > 0) && (
-                      <div className="mt-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover/message:opacity-100 focus-within:opacity-100">
+                    {message.status !== 'streaming' && message.content && (
+                      <div className="mt-2 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/message:opacity-100 focus-within:opacity-100">
                         <CopyButton text={message.content} />
                         {index === lastAssistantIndex && (
                           <button
                             type="button"
                             onClick={() => regenerate(index)}
                             aria-label="Regenerate answer"
-                            className="flex h-7 w-7 items-center justify-center rounded-lg text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-700"
+                            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
                           </button>
@@ -383,23 +405,25 @@ export default function ChatInterface() {
                     )}
 
                     {index === lastAssistantIndex && message.status === 'done' && message.suggestions.length > 0 && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 6 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ ...spring, delay: 0.1 }}
-                        className="mt-4 flex flex-wrap gap-2"
-                      >
-                        {message.suggestions.map((suggestion) => (
-                          <button
-                            key={suggestion}
-                            type="button"
-                            onClick={() => send(suggestion)}
-                            className="rounded-full border border-zinc-200/70 bg-white px-3.5 py-1.5 text-xs text-zinc-600 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] transition-all hover:border-zinc-300 hover:text-zinc-900 active:scale-[0.97]"
-                          >
-                            {suggestion}
-                          </button>
-                        ))}
-                      </motion.div>
+                      <div className="mt-6">
+                        <p className="label mb-1.5">Follow-ups</p>
+                        <div className="border-t border-zinc-200/80">
+                          {message.suggestions.map((suggestion, i) => (
+                            <motion.button
+                              key={suggestion}
+                              type="button"
+                              initial={{ opacity: 0, x: -6 }}
+                              animate={{ opacity: 1, x: 0 }}
+                              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 + i * 0.06 }}
+                              onClick={() => send(suggestion)}
+                              className="group flex w-full items-center gap-2.5 border-b border-zinc-200/80 py-2.5 text-left text-[14px] text-zinc-600 transition-colors hover:text-ink"
+                            >
+                              <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-zinc-300 transition-colors group-hover:text-clay" />
+                              <span className="transition-transform duration-300 group-hover:translate-x-0.5">{suggestion}</span>
+                            </motion.button>
+                          ))}
+                        </div>
+                      </div>
                     )}
                   </motion.div>
                 )

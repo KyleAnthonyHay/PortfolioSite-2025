@@ -654,6 +654,29 @@ export const assessJobFit = tool(
   }
 );
 
+export const askVisitor = tool(
+  async ({ question, options, allow_other }) =>
+    pack({
+      content:
+        'The question card is now shown to the visitor with these options. Stop here: do not answer yet and do not call other tools. Their choice arrives as their next message.',
+      citedProjectIds: [],
+      widget: { kind: 'question', question, options, allowOther: allow_other ?? true },
+    }),
+  {
+    name: 'ask_visitor',
+    description:
+      "Ask the visitor one clarifying question as a card with 2-4 tappable options, when the request is ambiguous in a way that changes the answer (e.g. 'is he a fit for my team?' with no role, 'check fit for a role' with no job description, 'what should I look at?' with no context). Never use it when the question is already clear, and never twice in a row. Do not include an 'Other' or 'Something else' option; the card adds a free-text row itself.",
+    schema: z.object({
+      question: z.string().describe('One short question, under 12 words, e.g. "What kind of role are you hiring for?"'),
+      options: z
+        .array(z.object({ label: z.string().describe('2-5 words'), detail: z.string().optional().describe('Optional hint, under 8 words') }))
+        .min(2)
+        .max(4),
+      allow_other: z.boolean().optional().describe('Show a free-text "Something else" row. Default true.'),
+    }),
+  }
+);
+
 export const allTools = [
   checkExperience,
   searchProjects,
@@ -662,6 +685,7 @@ export const allTools = [
   getBackground,
   searchBackground,
   assessJobFit,
+  askVisitor,
 ];
 
 /** Human labels for the activity line while a tool runs and after it finishes. */
@@ -686,6 +710,8 @@ export function describeToolCall(name: string, args: Record<string, unknown>): {
       const count = Array.isArray(args.requirements) ? args.requirements.length : 0;
       return { running: `Assessing fit across ${count} requirements`, done: `Assessed ${count} requirements` };
     }
+    case 'ask_visitor':
+      return { running: 'Writing a question for you', done: 'Asked a question' };
     default:
       return { running: `Running ${name}`, done: `Ran ${name}` };
   }

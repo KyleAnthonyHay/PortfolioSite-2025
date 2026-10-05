@@ -29,6 +29,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - A specific project → get_project. Topics or features across projects → search_projects. "What has he built" → list_projects.
 - Skills overview, timeline, education, availability, contact, résumé → get_background. Other background questions → search_background.
 - A pasted job description or a list of requirements → extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"), then call assess_job_fit once. It already checks degrees, teamwork, and every technology, so do not call other tools in that turn.
+- When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
+- When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
 If a tool comes back empty, say so plainly rather than guessing.
 
 ## Cards
@@ -143,12 +145,18 @@ export async function* runAgent(
   const shownProjects = new Set<number>();
   let answer = '';
   let stepCounter = 0;
+  let asked = false;
+
+  // Never ask twice in a row: if the last turn was a question, this message is the answer.
+  const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
+  const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
+  const tools = justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools;
 
   for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
-    const forceTool = round === 0 && !isSmallTalk(userMessage);
+    const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
     const allowTools = round < MAX_TOOL_ROUNDS;
     const model = allowTools
-      ? getBaseModel().bindTools(allTools, forceTool ? { tool_choice: 'required' } : {})
+      ? getBaseModel().bindTools(tools, forceTool ? { tool_choice: 'required' } : {})
       : getBaseModel();
 
     const stream = await model.stream(messages, { signal });
@@ -182,7 +190,7 @@ export async function* runAgent(
 
     const results = await Promise.all(
       steps.map(async (step) => {
-        const tool = allTools.find((candidate) => candidate.name === step.call.name);
+        const tool = tools.find((candidate) => candidate.name === step.call.name);
         if (!tool) return { step, result: { content: `Unknown tool ${step.call.name}`, citedProjectIds: [] } };
         try {
           const raw = await (tool as { invoke: (args: unknown) => Promise<unknown> }).invoke(step.call.args ?? {});
@@ -216,7 +224,11 @@ export async function* runAgent(
       }
 
       messages.push(new ToolMessage({ tool_call_id: step.call.id ?? step.id, content }));
+      if (result.widget?.kind === 'question') asked = true;
     }
+
+    // A question card ends the turn; the visitor's choice starts the next one.
+    if (asked) break;
   }
 
   // Source pills cover what the answer drew on that no card already shows.
@@ -226,7 +238,7 @@ export async function* runAgent(
     .filter((source): source is SourceRef => source !== null);
   if (sources.length > 0) yield { type: 'sources', sources };
 
-  if (answer.trim().length > 0 && !signal?.aborted) {
+  if (answer.trim().length > 0 && !asked && !signal?.aborted) {
     const items = await withTimeout(
       suggestFollowUps(userMessage, answer).catch(() => [] as string[]),
       5000,

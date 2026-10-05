@@ -2,96 +2,57 @@
 
 import Image from 'next/image';
 import { motion } from 'motion/react';
-import { useInView } from '@/hooks/useInView';
 
-const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
+const ease = [0.16, 1, 0.3, 1] as const;
+const rise = (delay = 0) => ({
+  initial: { opacity: 0, y: 24, filter: 'blur(6px)' },
+  whileInView: { opacity: 1, y: 0, filter: 'blur(0px)' },
+  viewport: { once: true, margin: '-12%' },
+  transition: { duration: 1, ease, delay },
+});
+
+const facts = [
+  { value: '350+', label: 'SelahNote users' },
+  { value: '40', label: 'paying subscribers' },
+  { value: '3', label: 'products live today' },
+  { value: 'B.S.', label: 'Computer Science, Hunter' },
+];
 
 const About = () => {
-  const { ref, isInView } = useInView({ threshold: 0.1 });
-
   return (
-    <section id="about" className="py-20 md:py-28" ref={ref}>
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 lg:gap-24 items-center">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={isInView ? { opacity: 1, x: 0 } : {}}
-            transition={{ ...spring }}
-            className="relative aspect-[4/5] rounded-[2rem] overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]"
+    <section id="about" className="border-t border-zinc-300/70 py-24 md:py-36">
+      <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-14 px-6 md:px-10 lg:grid-cols-12 lg:gap-10">
+        <motion.div {...rise()} className="lg:col-span-3">
+          <div className="relative aspect-square w-40 overflow-hidden rounded-[22px] bg-zinc-200 md:w-48">
+            <Image src="/profile.jpg" alt="Portrait of Kyle-Anthony Hay" fill sizes="192px" className="object-cover" />
+          </div>
+          <p className="label mt-4">About</p>
+        </motion.div>
+
+        <div className="lg:col-span-9">
+          <motion.p
+            {...rise(0.05)}
+            className="font-display text-[clamp(1.6rem,2.9vw,2.6rem)] leading-[1.18] tracking-[-0.03em] text-ink"
           >
-            <Image
-              src="/profile-3.jpg"
-              alt="Kyle-Anthony Hay"
-              fill
-              className="object-cover object-center"
-              priority
-            />
-          </motion.div>
+            I&apos;m an AI engineer at{' '}
+            <a href="https://www.cognizant.com/us/en" target="_blank" rel="noopener noreferrer" className="text-clay transition-colors hover:text-ink">
+              Cognizant
+            </a>
+            , building agentic systems for enterprise teams. Outside of work I run{' '}
+            <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-clay transition-colors hover:text-ink">
+              SelahNote
+            </a>
+            , an AI notetaker for sermons, and I build tools for the people around me.{' '}
+            <span className="text-zinc-400">I care about the last ten percent: the loading state, the empty state, the answer that cites its source.</span>
+          </motion.p>
 
-          <div>
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.1 }}
-              className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4"
-            >
-              About
-            </motion.p>
-
-            <motion.h2
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.15 }}
-              className="text-3xl md:text-4xl tracking-tighter leading-none text-zinc-900 mb-8"
-            >
-              Developer & Entrepreneur
-              <br />
-              <span className="text-zinc-400">crafting clean experiences.</span>
-            </motion.h2>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.25 }}
-              className="space-y-5 text-base text-zinc-500 leading-relaxed max-w-[50ch]"
-            >
-              <p>
-                Based in New York, I work as an AI Engineer at{' '}
-                <a href="https://www.cognizant.com/us/en" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
-                  Cognizant
-                </a>
-                , building agentic solutions for enterprise companies and hacking away at personal projects whenever I can.
-              </p>
-              <p>
-                I also run{' '}
-                <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
-                  SelahNote
-                </a>
-                , an AI notetaker for sermons that has grown over 350+ users and 40 paying subscribers.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={isInView ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.35 }}
-              className="mt-10 flex gap-8"
-            >
-              <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">1</p>
-                <p className="text-xs text-zinc-400 mt-1">Years Experience</p>
-              </div>
-              <div className="w-px bg-zinc-200" />
-              <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">6+</p>
-                <p className="text-xs text-zinc-400 mt-1">Projects Shipped</p>
-              </div>
-              <div className="w-px bg-zinc-200" />
-              <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">B.S.</p>
-                <p className="text-xs text-zinc-400 mt-1">Computer Science</p>
-              </div>
-            </motion.div>
+          <div className="mt-16 grid grid-cols-2 gap-x-6 gap-y-10 border-t border-zinc-300/70 pt-8 md:grid-cols-4">
+            {facts.map((fact, i) => (
+              <motion.div key={fact.label} {...rise(0.1 + i * 0.06)}>
+                <p className="font-display text-[clamp(2rem,3.4vw,3rem)] font-medium leading-none tracking-[-0.045em] text-ink">{fact.value}</p>
+                <p className="mt-2 text-[13px] text-zinc-500">{fact.label}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </div>

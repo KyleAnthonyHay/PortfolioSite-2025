@@ -9,12 +9,12 @@ export default function SourcePills({ sources }: { sources: SourceRef[] }) {
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-1.5">
-      <span className="mr-0.5 text-[10px] font-medium uppercase tracking-widest text-zinc-400">Sources</span>
+      <span className="label mr-1">Sources</span>
       {sources.map((source) => (
         <Link
           key={source.id}
           href={source.href}
-          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200/70 bg-white py-0.5 pl-1 pr-2.5 text-xs text-zinc-600 transition-all hover:border-zinc-300 hover:text-zinc-900 active:scale-[0.97]"
+          className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-[3px] pl-1 pr-2.5 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-ink active:scale-[0.97]"
         >
           <span className="relative h-4 w-4 overflow-hidden rounded-full bg-zinc-100">
             <Image src={source.image} alt="" fill sizes="16px" className="object-cover object-top" />

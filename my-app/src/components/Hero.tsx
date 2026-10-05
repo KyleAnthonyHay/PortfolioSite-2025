@@ -1,140 +1,96 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'motion/react';
-import { IconSlider } from '@/components/IconSlider';
-import { IconSliderGroup } from '@/components/IconSliderGroup';
+import { useIntro } from '@/components/home/IntroContext';
+import AskAgentButton from '@/components/home/AskAgentButton';
 
-const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
+const ease = [0.16, 1, 0.3, 1] as const;
+
+function Line({ children, delay, show, className = '' }: { children: React.ReactNode; delay: number; show: boolean; className?: string }) {
+  return (
+    <span className="line-mask">
+      <motion.span
+        className={`block ${className}`}
+        initial={{ y: '110%' }}
+        animate={show ? { y: '0%' } : { y: '110%' }}
+        transition={{ duration: 1, ease, delay }}
+      >
+        {children}
+      </motion.span>
+    </span>
+  );
+}
 
 const Hero = () => {
-  const [mounted, setMounted] = useState(false);
+  const { phase } = useIntro();
+  const show = phase !== 'intro';
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const soft = (delay: number) => ({
+    initial: { opacity: 0, y: 12, filter: 'blur(6px)' },
+    animate: show ? { opacity: 1, y: 0, filter: 'blur(0px)' } : { opacity: 0, y: 12, filter: 'blur(6px)' },
+    transition: { duration: 0.9, ease, delay },
+  });
 
-
-  const techIcons = [
-    'c++.svg', 'django.svg', 'figma.svg', 'firebase.svg', 'flutter.svg',
-    'mongodb.svg', 'python.svg', 'reactjs.svg', 'swift.svg', 'tailwindcss.svg', 'typescript.svg',
-    'anthropic.png', 'aws.png', 'chromadb.png', 'docker.png', 'openai.png', 'supabase.png'
-  ];
-
-  // The hero is sized to the viewport minus the sticky header, so it frames
-  // exactly one screen instead of overflowing by the header's height. Its
-  // bottom padding is deliberately heavier than the top: with items-center
-  // that pulls the content up, trimming the dead space above the avatar while
-  // still leaving a hint of the next section below the fold.
   return (
-    <section className="min-h-[calc(100dvh-4.5rem)] flex items-center relative">
-      <div className="max-w-[1400px] mx-auto px-6 md:px-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center pt-12 pb-20 lg:pt-8 lg:pb-28">
-          <div className="order-2 lg:order-1">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0 }}
-              className="flex items-center gap-3 mb-8"
-            >
-              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-zinc-200/60 ring-offset-2 ring-offset-[#f9fafb]">
-                <Image
-                  src="/profile.jpg"
-                  alt="Kyle-Anthony Hay"
-                  fill
-                  className="object-cover"
-                  priority
-                />
-              </div>
-              <div>
-                <p className="text-zinc-900 text-sm font-medium">Kyle-Anthony Hay</p>
-                <p className="text-zinc-400 text-xs">AI Engineer & Entrepreneur</p>
-              </div>
-            </motion.div>
+    <section className="relative">
+      <div className="mx-auto grid min-h-[calc(100dvh-4rem)] max-w-[1400px] grid-cols-1 items-end gap-12 px-6 pb-14 pt-10 md:px-10 lg:grid-cols-12 lg:gap-10 lg:pb-20 lg:pt-6">
+        <div className="lg:col-span-7 lg:pb-4">
+          <motion.p {...soft(0.05)} className="mb-8 flex items-center gap-2.5 text-[13px] text-zinc-500">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inset-0 animate-ping rounded-full bg-olive/50 [animation-duration:2.4s]" />
+              <span className="relative h-2 w-2 rounded-full bg-olive" />
+            </span>
+            AI Engineer at Cognizant · New York
+          </motion.p>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.1 }}
-              className="text-4xl md:text-6xl tracking-tighter leading-none text-zinc-900 mb-6"
-            >
-              Building intelligent
-              <br />
-              <span className="text-zinc-400">software that ships.</span>
-            </motion.h1>
+          <h1 className="font-display text-[clamp(2.75rem,5.7vw,6.25rem)] lg:whitespace-nowrap font-medium leading-[0.94] tracking-[-0.048em] text-ink">
+            <Line show={show} delay={0}>I build AI products</Line>
+            <Line show={show} delay={0.08} className="text-zinc-400">people actually use.</Line>
+          </h1>
 
-            <motion.p
-              initial={{ opacity: 0, y: 20 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.2 }}
-              className="text-base text-zinc-500 leading-relaxed max-w-[50ch] mb-10"
-            >
-              Software developer crafting AI-powered products and modern web experiences.
-              Currently engineering solutions at Cognizant, always building on the side.
-            </motion.p>
+          <motion.p {...soft(0.25)} className="mt-8 max-w-[52ch] text-[17px] leading-[1.6] text-zinc-600">
+            I ship agentic software for companies and for myself: contract intelligence, review analytics, a
+            production assistant for church tech teams, and an iOS app with paying subscribers.
+          </motion.p>
 
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.3 }}
-              className="flex flex-wrap gap-3 mb-12"
-            >
-              {/*
-                Opens the web résumé, not the PDF — the header already covers
-                the download. A plain link rather than a scripted window.open:
-                the old handler opened an empty tab and wrote markup into
-                about:blank, which popup blockers stop and which the browser
-                replaces out from under the injected content anyway.
-              */}
-              <a
-                href="/resume"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center bg-zinc-900 text-white hover:bg-zinc-800 rounded-xl h-12 px-7 text-sm font-medium active:scale-[0.98] transition-all duration-200 cursor-pointer"
-              >
-                View Resume
-              </a>
-              <Link href="/chat">
-                <span className="inline-flex items-center gap-2 border border-zinc-200 hover:border-zinc-300 hover:bg-white rounded-xl h-12 px-7 text-sm font-medium text-zinc-600 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
-                  Talk to my AI Agent
-                </span>
-              </Link>
-            </motion.div>
+          <motion.div {...soft(0.35)} className="mt-10 flex flex-wrap items-center gap-x-6 gap-y-4">
+            <AskAgentButton />
+            <Link href="/#products" className="group inline-flex items-center gap-2 text-[14px] text-zinc-600 transition-colors hover:text-ink">
+              See what I&apos;ve shipped
+              <span className="inline-block transition-transform duration-300 group-hover:translate-y-0.5">↓</span>
+            </Link>
+          </motion.div>
+        </div>
 
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={mounted ? { opacity: 1 } : {}}
-              transition={{ duration: 0.8, delay: 0.5 }}
-            >
-              <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">Technologies</p>
-              <IconSliderGroup hoverSpeed={0.5}>
-                <IconSlider icons={techIcons} gradientColor="#f9fafb" duration={60} />
-              </IconSliderGroup>
-            </motion.div>
-          </div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, x: 40 }}
-            animate={mounted ? { opacity: 1, scale: 1, x: 0 } : {}}
-            transition={{ ...spring, delay: 0.2 }}
-            className="order-1 lg:order-2 hidden lg:block"
+        <div className="lg:col-span-5">
+          <motion.figure
+            initial={{ clipPath: 'inset(100% 0% 0% 0% round 28px)' }}
+            animate={show ? { clipPath: 'inset(0% 0% 0% 0% round 28px)' } : { clipPath: 'inset(100% 0% 0% 0% round 28px)' }}
+            transition={{ duration: 1.2, ease, delay: 0.1 }}
+            className="relative aspect-[4/5] w-full overflow-hidden rounded-[28px] bg-zinc-200 lg:aspect-[4/5.4]"
           >
-            <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[560px] rounded-[2rem] overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]">
+            <motion.div
+              className="absolute inset-0"
+              initial={{ scale: 1.15 }}
+              animate={show ? { scale: 1 } : { scale: 1.15 }}
+              transition={{ duration: 1.8, ease, delay: 0.1 }}
+            >
               <Image
                 src="/profile-3.jpg"
-                alt="Kyle-Anthony Hay"
+                alt="Kyle-Anthony Hay sitting on a stone bench in New York"
                 fill
-                className="object-cover object-center"
                 priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
+                sizes="(max-width: 1024px) 100vw, 40vw"
+                className="object-cover object-[38%_40%] scale-[1.06]"
               />
-            </div>
-          </motion.div>
+            </motion.div>
+          </motion.figure>
+          <motion.figcaption {...soft(0.5)} className="mt-3 flex justify-between font-mono text-[11px] text-zinc-400">
+            <span>Kyle-Anthony Hay</span>
+            <span>Brooklyn, NY</span>
+          </motion.figcaption>
         </div>
       </div>
     </section>

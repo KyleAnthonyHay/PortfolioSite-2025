@@ -38,6 +38,47 @@ export interface ProjectCardData {
  */
 export const projects: ProjectCardData[] = [
   {
+    id: 5,
+    title: 'OnTract',
+    tagline: 'Contract management, read for you',
+    description:
+      'Contract management platform: every contract on one dashboard, AI-extracted terms, answers that quote the clause they came from, and a client portal for review.',
+    image: '/demos/ontract/overview.jpg',
+    video: { src: '/products/ontract/loop.mp4', poster: '/products/ontract/poster.jpg', ratio: 16 / 9, bare: true },
+    link: 'https://ontract.kyleanthonyhay.com',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
+    id: 6,
+    title: 'Sentio+',
+    tagline: 'App-review intelligence',
+    description:
+      'Customer-intelligence platform that reads thousands of app reviews and answers questions with the numbers and the reviews behind them, using RAG and a fine-tuned sentiment model.',
+    image: '/projects/sentio-1.png',
+    video: { src: '/products/sentio/loop.mp4', poster: '/products/sentio/poster.jpg', ratio: 16 / 9, bare: true },
+    link: 'https://sentio.kyleanthonyhay.com',
+    github: 'https://github.com/KyleAnthonyHay/sentio',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
+    id: 11,
+    title: 'V1 ProdBot',
+    tagline: 'AI assistant for church production teams',
+    description:
+      'Documentation and troubleshooting assistant for V1 Church production volunteers, with grounded answers, an interactive wiring diagram, and AI-drafted docs an admin approves.',
+    image: '/demos/prodbot/demo-poster.jpg',
+    video: { src: '/products/prodbot/loop.mp4', poster: '/products/prodbot/poster.jpg', ratio: 16 / 9, bare: true },
+    link: 'https://prodbot.kyleanthonyhay.com',
+    github: 'https://github.com/KyleAnthonyHay/V1Church-ProdBot',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
     id: 1,
     title: 'SelahNote',
     tagline: 'AI notetaker for sermons',
@@ -68,25 +109,6 @@ export const projects: ProjectCardData[] = [
       ratio: 1440 / 870,
       bare: true,
     },
-    landscape: true,
-    category: 'Web Apps',
-    featured: true,
-  },
-  {
-    id: 11,
-    title: 'V1 ProdBot',
-    tagline: 'AI assistant for church production teams',
-    description:
-      'Documentation and troubleshooting assistant for V1 Church production volunteers, with grounded answers, an interactive wiring diagram, and AI-drafted docs an admin approves.',
-    image: '/demos/prodbot/demo-poster.jpg',
-    video: {
-      src: '/demos/prodbot/demo.mp4',
-      poster: '/demos/prodbot/demo-poster.jpg',
-      ratio: 1280 / 772,
-      bare: true,
-    },
-    link: 'https://v1church-prodbot.vercel.app',
-    github: 'https://github.com/KyleAnthonyHay/V1Church-ProdBot',
     landscape: true,
     category: 'Web Apps',
     featured: true,
@@ -128,17 +150,6 @@ export const projects: ProjectCardData[] = [
     featured: true,
   },
   {
-    id: 6,
-    title: 'Sentio+',
-    tagline: 'Sentiment analysis tool',
-    description:
-      'AI-powered decision-support platform transforming customer review data into actionable insights using RAG architecture.',
-    image: '/projects/sentio-1.png',
-    github: 'https://github.com/KyleAnthonyHay/sentio',
-    landscape: true,
-    category: 'Web Apps',
-  },
-  {
     id: 4,
     title: 'Country Viewer',
     tagline: 'World country reference',
@@ -147,18 +158,6 @@ export const projects: ProjectCardData[] = [
     image: '/demos/country-viewer/device.png',
     github: 'https://github.com/KyleAnthonyHay/Countries-App',
     category: 'iOS Apps',
-  },
-  {
-    id: 5,
-    title: 'OnTract',
-    tagline: 'Contract management system',
-    description:
-      'Enterprise-grade Contract Management System with AI-powered search, automated metadata extraction, and conversational Q&A.',
-    image: '/projects/ontract.png',
-    link: 'https://www.ontract.app/',
-    landscape: true,
-    category: 'Web Apps',
-    featured: true,
   },
   {
     id: 7,

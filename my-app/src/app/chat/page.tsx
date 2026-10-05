@@ -8,7 +8,7 @@ export const metadata = {
 
 export default function ChatPage() {
   return (
-    <main className="fixed inset-0 flex h-[100dvh] flex-col overflow-hidden bg-[#f9fafb]">
+    <main className="fixed inset-0 flex h-[100dvh] flex-col overflow-hidden bg-paper">
       <Suspense>
         <ChatInterface />
       </Suspense>

@@ -1,157 +1,124 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { AnimatePresence, motion } from 'motion/react';
+import Wordmark from '@/components/home/Wordmark';
+import { useIntro } from '@/components/home/IntroContext';
+
+const links = [
+  { href: '/#products', label: 'Products' },
+  { href: '/#about', label: 'About' },
+  { href: '/#experience', label: 'Experience' },
+  { href: 'https://medium.com/@kyleanthonyhay', label: 'Writing', external: true },
+];
 
 const TopHeader = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { phase } = useIntro();
+  const [open, setOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const settled = phase === 'done';
 
-  const closeMenu = () => setIsMenuOpen(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const fade = {
+    initial: { opacity: 0, y: -6 },
+    animate: phase === 'intro' ? { opacity: 0, y: -6 } : { opacity: 1, y: 0 },
+  };
 
   return (
-    <header className="bg-white/60 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-50">
-      <nav className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
-        <Link href="/" className="text-zinc-900 font-semibold text-lg tracking-tight">
-          Kyle-Anthony
+    <header
+      className={`sticky top-0 z-50 transition-[background-color,border-color] duration-500 ${
+        scrolled || open ? 'border-b border-zinc-200/70 bg-paper/85 backdrop-blur-md' : 'border-b border-transparent bg-paper'
+      }`}
+    >
+      <nav className="mx-auto flex h-16 max-w-[1400px] items-center justify-between px-6 md:px-10">
+        <Link href="/" className="-my-2 py-2" aria-label="Kyle-Anthony Hay, home">
+          <Wordmark hidden={!settled} />
         </Link>
 
-        <div className="hidden md:flex items-center gap-1">
-          {[
-            { href: '/', label: 'Home' },
-            { href: '/projects', label: 'Projects' },
-            { href: '/#about', label: 'About' },
-          ].map((link) => (
-            <Link
-              key={link.label}
-              href={link.href}
-              className="text-zinc-500 hover:text-zinc-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-zinc-100/80 transition-all duration-200"
-            >
-              {link.label}
-            </Link>
-          ))}
-          {[
-            { href: 'https://medium.com/@kyleanthonyhay', label: 'Blog' },
-            { href: 'https://github.com/kyleanthonyhay', label: 'GitHub' },
-          ].map((link) => (
-            <a
-              key={link.label}
-              href={link.href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-zinc-500 hover:text-zinc-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-zinc-100/80 transition-all duration-200"
-            >
-              {link.label}
-            </a>
-          ))}
-          <Link
-            href="/chat"
-            className="text-zinc-500 hover:text-zinc-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-zinc-100/80 transition-all duration-200"
-          >
-            Chat
+        <motion.div
+          {...fade}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.15 }}
+          className="hidden items-center gap-7 md:flex"
+        >
+          {links.map((link) =>
+            link.external ? (
+              <a key={link.label} href={link.href} target="_blank" rel="noopener noreferrer" className="text-[13px] text-zinc-500 transition-colors hover:text-ink">
+                {link.label}
+              </a>
+            ) : (
+              <Link key={link.label} href={link.href} className="text-[13px] text-zinc-500 transition-colors hover:text-ink">
+                {link.label}
+              </Link>
+            )
+          )}
+          <Link href="/chat" className="group inline-flex items-center gap-1.5 text-[13px] text-zinc-500 transition-colors hover:text-ink">
+            <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+            Ask my agent
           </Link>
-        </div>
+        </motion.div>
 
-        <div className="hidden md:flex items-center gap-2">
-          <a
-            href="/Kyle-Anthony_Resume.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-200 rounded-xl hover:bg-zinc-50 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
-          >
-            Resume
+        <motion.div
+          {...fade}
+          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1], delay: 0.25 }}
+          className="hidden items-center gap-5 md:flex"
+        >
+          <a href="/resume" target="_blank" rel="noopener noreferrer" className="text-[13px] text-zinc-500 transition-colors hover:text-ink">
+            Résumé
           </a>
           <Link
             href="/contact"
-            className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 active:scale-[0.98] transition-all duration-200"
+            className="inline-flex h-9 items-center rounded-full bg-ink px-4 text-[13px] font-medium text-paper transition-transform duration-200 hover:bg-zinc-800 active:scale-[0.97]"
           >
-            Contact
+            Get in touch
           </Link>
-        </div>
+        </motion.div>
 
         <button
-          onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-2 text-zinc-600 hover:text-zinc-900 active:scale-[0.95] transition-all duration-200"
+          onClick={() => setOpen(!open)}
+          className="-mr-2 p-2 text-zinc-700 md:hidden"
           aria-label="Toggle menu"
+          aria-expanded={open}
         >
-          {isMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
+          <span className="relative block h-3 w-5">
+            <span className={`absolute left-0 block h-[1.5px] w-5 bg-current transition-all duration-300 ${open ? 'top-1.5 rotate-45' : 'top-0'}`} />
+            <span className={`absolute left-0 block h-[1.5px] w-5 bg-current transition-all duration-300 ${open ? 'top-1.5 -rotate-45' : 'top-3'}`} />
+          </span>
         </button>
       </nav>
 
-      {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white/90 backdrop-blur-xl border-b border-slate-200/50 z-50">
-          <div className="flex flex-col px-6 py-4 gap-1">
-            {[
-              { href: '/', label: 'Home' },
-              { href: '/projects', label: 'Projects' },
-              { href: '/#about', label: 'About' },
-            ].map((link) => (
-              <Link
-                key={link.label}
-                href={link.href}
-                onClick={closeMenu}
-                className="text-zinc-600 hover:text-zinc-900 text-sm font-medium py-3 px-3 rounded-lg hover:bg-zinc-100/80 transition-all"
-              >
-                {link.label}
-              </Link>
-            ))}
-            {[
-              { href: 'https://medium.com/@kyleanthonyhay', label: 'Blog' },
-              { href: 'https://github.com/kyleanthonyhay', label: 'GitHub' },
-            ].map((link) => (
-              <a
-                key={link.label}
-                href={link.href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-zinc-600 hover:text-zinc-900 text-sm font-medium py-3 px-3 rounded-lg hover:bg-zinc-100/80 transition-all"
-              >
-                {link.label}
-              </a>
-            ))}
-            <Link
-              href="/chat"
-              onClick={closeMenu}
-              className="text-zinc-600 hover:text-zinc-900 text-sm font-medium py-3 px-3 rounded-lg hover:bg-zinc-100/80 transition-all"
-            >
-              Chat
-            </Link>
-            <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-zinc-200/60">
-              <a
-                href="/Kyle-Anthony_Resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-4 py-2.5 text-sm font-medium text-zinc-600 border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-all text-center"
-              >
-                Resume
-              </a>
-              <Link
-                href="/contact"
-                onClick={closeMenu}
-                className="px-4 py-2.5 text-sm font-medium text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-all text-center"
-              >
-                Contact
-              </Link>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="overflow-hidden md:hidden"
+          >
+            <div className="flex flex-col px-6 pb-6 pt-2">
+              {[...links, { href: '/chat', label: 'Ask my agent' }, { href: '/resume', label: 'Résumé' }, { href: '/contact', label: 'Get in touch' }].map((link) => (
+                <Link
+                  key={link.label}
+                  href={link.href}
+                  onClick={() => setOpen(false)}
+                  className="border-b border-zinc-200/70 py-3.5 font-display text-2xl tracking-tight text-ink"
+                >
+                  {link.label}
+                </Link>
+              ))}
             </div>
-          </div>
-        </div>
-      )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </header>
   );
 };
-
-const HamburgerIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="3" y1="6" x2="21" y2="6" />
-    <line x1="3" y1="12" x2="21" y2="12" />
-    <line x1="3" y1="18" x2="21" y2="18" />
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-    <line x1="18" y1="6" x2="6" y2="18" />
-    <line x1="6" y1="6" x2="18" y2="18" />
-  </svg>
-);
 
 export default TopHeader;
