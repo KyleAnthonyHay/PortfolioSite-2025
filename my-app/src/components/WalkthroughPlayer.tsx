@@ -7,6 +7,8 @@ interface WalkthroughPlayerProps {
   src: string;
   poster: string;
   className?: string;
+  /** Fill the parent instead of drawing the rounded frame; the parent sets the size. */
+  frameless?: boolean;
 }
 
 /**
@@ -14,7 +16,7 @@ interface WalkthroughPlayerProps {
  * controls are two small buttons in the corner that appear on hover: one for
  * sound, one for play/pause. Playback pauses while the video is off screen.
  */
-export default function WalkthroughPlayer({ src, poster, className = '' }: WalkthroughPlayerProps) {
+export default function WalkthroughPlayer({ src, poster, className = '', frameless = false }: WalkthroughPlayerProps) {
   const ref = useRef<HTMLVideoElement>(null);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
@@ -60,8 +62,10 @@ export default function WalkthroughPlayer({ src, poster, className = '' }: Walkt
 
   return (
     <div
-      className={`group relative overflow-hidden rounded-[1.25rem] border border-zinc-200/70 bg-white shadow-[0_12px_40px_-18px_rgba(0,0,0,0.18)] ${className}`}
-      style={{ aspectRatio: 16 / 9 }}
+      className={`group relative overflow-hidden bg-white ${
+        frameless ? 'absolute inset-0' : 'rounded-[1.25rem] border border-zinc-200/70 shadow-[0_12px_40px_-18px_rgba(0,0,0,0.18)]'
+      } ${className}`}
+      style={frameless ? undefined : { aspectRatio: 16 / 9 }}
     >
       <video
         ref={ref}

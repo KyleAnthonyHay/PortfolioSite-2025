@@ -18,6 +18,8 @@ export interface ProjectCardData {
   orientation: 'portrait' | 'landscape';
   /** False when a portrait image is a bare screenshot that needs a drawn device frame. */
   framed: boolean;
+  /** Walkthrough video; the detail card plays it in place of the image. */
+  video?: { src: string; poster: string };
   /** Detail page on this site. */
   href: string;
   link?: string;

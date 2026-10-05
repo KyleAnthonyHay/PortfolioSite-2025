@@ -21,6 +21,10 @@ interface CatalogDetails {
   image: string;
   /** Set when the image is a bare screenshot rather than a framed device render. */
   unframed?: boolean;
+  /** Overrides the home card's orientation for the agent's cards. */
+  landscape?: boolean;
+  /** Walkthrough video, played on the agent's detail card instead of the image. */
+  video?: { src: string; poster: string };
   highlights: string[];
   overview: string;
   techStack: TechStack;
@@ -30,7 +34,9 @@ const details: Record<number, CatalogDetails> = {
   1: {
     aliases: ['SelahNote', 'Selahnote', 'Selah Note', 'Lectra'],
     corpusNames: ['Selahnote'],
-    image: '/demos/selahnote/home.png',
+    image: '/products/selahnote/landing.jpg',
+    video: { src: '/products/selahnote/walkthrough.mp4', poster: '/products/selahnote/walkthrough-poster.jpg' },
+    landscape: true,
     unframed: true,
     highlights: ['SwiftUI', 'Convex', 'AssemblyAI', 'Pinecone'],
     overview:
@@ -57,20 +63,22 @@ const details: Record<number, CatalogDetails> = {
   5: {
     aliases: ['OnTract', 'Ontract'],
     corpusNames: ['Ontract'],
-    image: '/products/ontract/poster.jpg',
-    highlights: ['Next.js', 'pgvector', 'LangGraph', 'Bedrock'],
+    image: '/products/ontract/landing.jpg',
+    video: { src: '/products/ontract/tour.mp4', poster: '/products/ontract/tour-poster.jpg' },
+    highlights: ['Next.js', 'Convex', 'OpenAI', 'Resend'],
     overview:
-      'Enterprise contract management platform with AI-powered search, automated metadata extraction, and conversational Q&A over a contract portfolio. Retrieval-Augmented Generation on PostgreSQL + pgvector, multi-tenant Supabase auth with Row Level Security, and Stripe billing.',
+      'AI contract management for teams with many client agreements. Upload a PDF or Word contract and OnTract confirms it is one, extracts the key terms, and indexes it so anyone can ask questions in plain English and get cited answers. Expiration emails, a read-only client portal, team roles and an audit log. Built with a team during Revature, then rebuilt solo on Convex.',
     techStack: {
-      frontend: ['Next.js 16', 'TypeScript', 'Tailwind CSS 4', 'Radix UI', 'React Hook Form', 'Zod'],
-      backend: ['PostgreSQL + pgvector', 'Supabase Auth', 'FastAPI', 'LangChain & LangGraph', 'AWS Bedrock (Claude 3.5)', 'OpenAI GPT-4o'],
-      infrastructure: ['Supabase', 'Stripe', 'Resend', 'LangSmith'],
+      frontend: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind CSS', 'Radix UI'],
+      backend: ['Convex (database, storage, vector search)', 'Convex Auth', 'OpenAI GPT-4o', 'text-embedding-3-small', 'Convex crons & HTTP streaming', 'unpdf & mammoth'],
+      infrastructure: ['Vercel', 'Convex cloud', 'Resend'],
     },
   },
   6: {
     aliases: ['Sentio+', 'Sentio Plus', 'Sentio', 'SentioPlus'],
     corpusNames: ['Sentio Plus', 'Finetuned Sentiment Analysis'],
-    image: '/products/sentio/poster.jpg',
+    image: '/products/sentio/landing.jpg',
+    video: { src: '/products/sentio/tour.mp4', poster: '/products/sentio/tour-poster.jpg' },
     highlights: ['FastAPI', 'LangGraph', 'ChromaDB', 'RoBERTa'],
     overview:
       'Customer-intelligence platform that turns large volumes of unstructured reviews into decision-ready insights. RAG over ChromaDB for aspect-level reasoning, a fine-tuned RoBERTa sentiment model, and a FastAPI + LangGraph backend behind a Next.js dashboard.',
@@ -96,7 +104,7 @@ const details: Record<number, CatalogDetails> = {
   8: {
     aliases: ['YarnScript', 'Yarnscript', 'Yarn Script'],
     corpusNames: ['Yarnscript'],
-    image: '/demos/yarnscript/demo-poster.jpg',
+    image: '/products/yarnscript/landing.jpg',
     highlights: ['Next.js', 'AssemblyAI', 'Convex', 'Embeddings'],
     overview:
       'AI teleprompter that follows your voice instead of scrolling at a fixed speed. Live AssemblyAI transcription is matched semantically against the script with OpenAI embeddings and Convex vector search, so it keeps up even when you skip words, ad-lib, or jump ahead. Designed, built, and polished as a four-hour product sprint.',
@@ -137,7 +145,8 @@ const details: Record<number, CatalogDetails> = {
   11: {
     aliases: ['V1 ProdBot', 'ProdBot', 'Prod Bot', 'V1Church ProdBot', 'V1 Church ProdBot'],
     corpusNames: ['V1 Prodbot'],
-    image: '/products/prodbot/poster.jpg',
+    image: '/products/prodbot/landing.jpg',
+    video: { src: '/products/prodbot/tour.mp4', poster: '/products/prodbot/tour-poster.jpg' },
     unframed: true,
     highlights: ['React', 'Convex', 'OpenAI', 'React Flow'],
     overview:
@@ -161,8 +170,9 @@ export const catalog: CatalogProject[] = projectCards
       description: card.description,
       category: card.category,
       image: extra.image,
-      orientation: card.landscape ? 'landscape' : 'portrait',
+      orientation: (extra.landscape ?? card.landscape) ? 'landscape' : 'portrait',
       framed: !extra.unframed,
+      video: extra.video,
       href: `/projects/${card.id}`,
       link: card.link,
       github: card.github,
@@ -175,8 +185,8 @@ export const catalog: CatalogProject[] = projectCards
   });
 
 export function toCard(project: CatalogProject): ProjectCardData {
-  const { id, title, tagline, description, category, image, orientation, framed, href, link, github, highlights } = project;
-  return { id, title, tagline, description, category, image, orientation, framed, href, link, github, highlights };
+  const { id, title, tagline, description, category, image, orientation, framed, video, href, link, github, highlights } = project;
+  return { id, title, tagline, description, category, image, orientation, framed, video, href, link, github, highlights };
 }
 
 function squash(value: string): string {

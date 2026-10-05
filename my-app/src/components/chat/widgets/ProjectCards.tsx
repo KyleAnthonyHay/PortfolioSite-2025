@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ArrowUpRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import { FaGithub } from 'react-icons/fa';
 import type { ProjectCardData, TechStack, Widget } from '@/lib/chat-events';
+import WalkthroughPlayer from '@/components/WalkthroughPlayer';
 
 /**
  * Project preview. Framed device renders and landscape shots are shown
@@ -151,11 +152,18 @@ export function ProjectDetailWidget({ widget }: { widget: Extract<Widget, { kind
   return (
     <div className="overflow-hidden agent-card">
       <div className={`grid grid-cols-1 ${portrait ? 'sm:grid-cols-[236px_1fr]' : ''}`}>
-        <Media
-          project={project}
-          contain={false}
-          className={portrait ? 'h-[300px] sm:h-full sm:min-h-[380px] border-b border-zinc-100 sm:border-b-0 sm:border-r' : 'aspect-[16/9] border-b border-zinc-100'}
-        />
+        {project.video ? (
+          /* The walkthrough stands in for the picture: muted, looping, controls on hover. */
+          <div className="relative aspect-[16/9] border-b border-zinc-100 bg-white">
+            <WalkthroughPlayer src={project.video.src} poster={project.video.poster} frameless />
+          </div>
+        ) : (
+          <Media
+            project={project}
+            contain={false}
+            className={portrait ? 'h-[300px] sm:h-full sm:min-h-[380px] border-b border-zinc-100 sm:border-b-0 sm:border-r' : 'aspect-[16/10] border-b border-zinc-100'}
+          />
+        )}
 
         <div className="p-5 sm:p-6">
           <p className="label">{kind}</p>
