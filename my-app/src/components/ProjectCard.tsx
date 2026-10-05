@@ -49,6 +49,9 @@ export default function ProjectCard({
   detailed = false,
 }: ProjectCardProps) {
   const portrait = !project.landscape;
+  // Live products get a real "Open app" link beside the card link; it can't
+  // nest inside the card's own anchor, so it's laid over the footer instead.
+  const openApp = project.live && project.link ? project.link : null;
   // Same play gating as PhoneFrame's lazyVideo — landscape demos only load
   // and play once the card scrolls near the viewport.
   const { ref: videoRef, isInView: videoInView } = useInView({ threshold: 0.15, rootMargin: '200px' });
@@ -136,9 +139,11 @@ export default function ProjectCard({
               Live
             </span>
           )}
-          <span className="ml-auto font-mono text-[11px] text-zinc-400 transition-transform duration-300 group-hover:translate-x-0.5">
-            {categoryLabel[project.category]} →
-          </span>
+          {!openApp && (
+            <span className="ml-auto font-mono text-[11px] text-zinc-400 transition-transform duration-300 group-hover:translate-x-0.5">
+              {categoryLabel[project.category]} →
+            </span>
+          )}
           {detailed && project.link && (
             <span className="inline-flex text-zinc-400">
               <ExternalIcon />
@@ -158,8 +163,20 @@ export default function ProjectCard({
   );
 
   return (
-    <Link href={`/projects/${project.id}`} className={className}>
-      {content}
-    </Link>
+    <div className={`relative ${className}`}>
+      <Link href={`/projects/${project.id}`} className="block h-full">
+        {content}
+      </Link>
+      {openApp && (
+        <a
+          href={openApp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-6 right-6 inline-flex h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 transition-all duration-200 hover:border-zinc-900 hover:text-zinc-900 active:scale-[0.97]"
+        >
+          Open app <span aria-hidden>↗</span>
+        </a>
+      )}
+    </div>
   );
 }

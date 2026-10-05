@@ -114,22 +114,6 @@ const onTract: Showcase = {
   orientation: 'landscape',
   items: [
     {
-      label: 'Overview',
-      icon: <LayoutDashboard className={ic} />,
-      title: 'A single home for the whole contract portfolio.',
-      description:
-        'Documents are parsed, chunked, and embedded into PostgreSQL with pgvector on upload, and metadata is extracted automatically — so a contract becomes searchable the moment it lands rather than after someone tags it.',
-      media: { kind: 'browser', src: '/demos/ontract/overview.jpg', alt: 'OnTract marketing overview', url: 'ontract.app', ratio: 1800 / 1012 },
-    },
-    {
-      label: 'Dashboard',
-      icon: <Sun className={ic} />,
-      title: 'Status, expirations, and obligations in one view.',
-      description:
-        'Row Level Security scopes every query to the signed-in organization, so the same dashboard serves multiple tenants without a leak. Alerts fire on renewals and expirations before they become someone\'s problem.',
-      media: { kind: 'browser', src: '/demos/ontract/dashboard-light.jpg', alt: 'OnTract dashboard', url: 'ontract.app/dashboard', ratio: 1800 / 1012 },
-    },
-    {
       label: 'Walkthrough',
       icon: <Play className={ic} />,
       title: 'A narrated tour of OnTract.',
@@ -144,22 +128,6 @@ const sentio: Showcase = {
   heading: 'Thousands of reviews, reduced to what actually matters.',
   orientation: 'landscape',
   items: [
-    {
-      label: 'Overview',
-      icon: <Search className={ic} />,
-      title: 'Ask a question, get an answer with receipts.',
-      description:
-        'A LangGraph agent runs semantic search over review embeddings in ChromaDB and answers in plain language, citing the specific reviews behind every claim so nothing rests on the model\'s word alone.',
-      media: { kind: 'browser', src: '/demos/sentio/overview.jpg', alt: 'Sentio+ Ask view', ratio: 16 / 9 },
-    },
-    {
-      label: 'Insights',
-      icon: <Gauge className={ic} />,
-      title: 'Sentiment traced back to the aspect driving it.',
-      description:
-        'Rather than one score per review, Sentio+ pulls out the specific aspects customers react to and tracks each across time, category, and rating — turning a pile of feedback into a trend a team can act on.',
-      media: { kind: 'browser', src: '/demos/sentio/insights.jpg', alt: 'Sentio+ analytics view', ratio: 16 / 9 },
-    },
     {
       label: 'Walkthrough',
       icon: <Play className={ic} />,
@@ -254,33 +222,12 @@ const prodBot: Showcase = {
   orientation: 'landscape',
   items: [
     {
-      label: 'Demo',
-      icon: <Play className={ic} />,
-      title: 'Ask, explore the wiring, keep the docs current.',
-      description:
-        'Volunteers ask a question and get a streamed answer grounded in the campus\'s approved documentation, with the model\'s reasoning in a collapsible Thinking block. Explore draws the campus wiring diagram with React Flow, and admins describe a change in chat, let the AI redraw it, and approve it as a new revision.',
-      media: {
-        kind: 'recording',
-        src: '/demos/prodbot/demo.mp4',
-        poster: '/demos/prodbot/demo-poster.jpg',
-        ratio: 1280 / 772,
-      },
-    },
-    {
       label: 'Walkthrough',
       icon: <Play className={ic} />,
       title: 'A narrated tour of ProdBot.',
       description:
         'Under a minute in the real app: a volunteer asks for help, ProdBot starts from the point in the signal chain closest to the problem, and the fix becomes next week’s docs.',
       media: { kind: 'walkthrough', src: '/products/prodbot/tour.mp4', poster: '/products/prodbot/tour-poster.jpg' },
-    },
-    {
-      label: 'Launch',
-      icon: <Sparkles className={ic} />,
-      title: 'The launch film.',
-      description:
-        'ProdBot’s 30-second launch film.',
-      media: { kind: 'walkthrough', src: '/products/prodbot/launch.mp4', poster: '/products/prodbot/launch-poster.jpg' },
     },
   ],
 };
@@ -309,6 +256,7 @@ export default function ProjectShowcase({ projectId }: { projectId: number }) {
       <>
         <div className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-zinc-100/70 border border-slate-200/50">
           <div className="px-6 py-12 md:px-14 md:py-16">
+            <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">Walkthrough</p>
             <h2 className="max-w-[46rem] text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
               {showcase.heading}
             </h2>

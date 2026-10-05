@@ -8,6 +8,8 @@ import ProjectFeatures from '@/components/ProjectFeatures';
 import { AnimatedSection } from '@/components/AnimatedSection';
 import ProjectShowcase from '@/components/showcases';
 import { hasShowcase } from '@/components/showcases/registry';
+import FeatureGallery from '@/components/FeatureGallery';
+import { featureGalleries } from '@/lib/features';
 
 function BackLink() {
   return (
@@ -82,7 +84,7 @@ const projects: Project[] = [
     image: '/projects/ontract.png',
     images: ['/projects/ontract.png', '/projects/ontract-dash-dark.png', '/projects/ontract-dash-light.png'],
     description: 'An enterprise-grade Contract Management System that helps organizations efficiently manage, search, and analyze contracts using AI-powered features.',
-    link: 'https://www.ontract.app/',
+    link: 'https://ontract.kyleanthonyhay.com',
     landscape: true,
     category: 'Web',
     overview: 'A comprehensive, enterprise-grade Contract Management System designed to help organizations efficiently manage, search, and analyze their contract documents using AI-powered features. The platform combines modern web technologies with advanced AI orchestration to provide intelligent contract discovery, automated metadata extraction, and conversational Q&A capabilities.',
@@ -97,6 +99,7 @@ const projects: Project[] = [
   {
     id: 6,
     title: 'Sentio+',
+    link: 'https://sentio.kyleanthonyhay.com',
     image: '/projects/sentio-1.png',
     images: ['/projects/sentio-1.png', '/projects/sentio-2.png'],
     description: 'An AI-powered decision-support platform that transforms customer review data into actionable business insights using RAG architecture.',
@@ -184,7 +187,7 @@ const projects: Project[] = [
     title: 'V1 ProdBot',
     image: '/demos/prodbot/demo-poster.jpg',
     description: 'A documentation and troubleshooting assistant for V1 Church production teams, with grounded chat, an interactive wiring diagram, and AI-drafted docs an admin approves.',
-    link: 'https://v1church-prodbot.vercel.app',
+    link: 'https://prodbot.kyleanthonyhay.com',
     github: 'https://github.com/KyleAnthonyHay/V1Church-ProdBot',
     landscape: true,
     category: 'Web',
@@ -240,8 +243,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
               <div className="flex items-center gap-4 flex-wrap mb-6">
                 <h1 className="text-4xl md:text-5xl tracking-tighter leading-none text-zinc-900">{project.title}</h1>
                 {project.link && (
-                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
-                    <FiArrowUpRight className="w-4 h-4 text-zinc-600" />
+                  <a href={project.link} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 active:scale-[0.98] transition-all duration-200">
+                    Open app <FiArrowUpRight className="w-4 h-4" />
                   </a>
                 )}
                 {project.github && (
@@ -270,6 +273,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </AnimatedSection>
+
+            {/* Three screens, three features */}
+            {featureGalleries[project.id] && (
+              <AnimatedSection className="mb-20">
+                <FeatureGallery heading={featureGalleries[project.id].heading} features={featureGalleries[project.id].features} />
+              </AnimatedSection>
+            )}
 
             {/* Purpose */}
             <AnimatedSection className="mb-20">
@@ -348,8 +358,8 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 </span>
               )}
               {project.link ? (
-                <a href={project.link} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
-                  <FiArrowUpRight className="w-4 h-4 text-zinc-600" />
+                <a href={project.link} target="_blank" rel="noopener noreferrer" className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-zinc-900 px-4 text-sm font-medium text-white hover:bg-zinc-800 active:scale-[0.98] transition-all duration-200">
+                  Open app <FiArrowUpRight className="w-4 h-4" />
                 </a>
               ) : project.github && (
                 <a href={project.github} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-zinc-100 hover:bg-zinc-200 rounded-xl flex items-center justify-center active:scale-[0.95] transition-all duration-200">
