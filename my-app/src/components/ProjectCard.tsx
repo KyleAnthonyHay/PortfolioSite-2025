@@ -6,6 +6,7 @@ import { motion } from 'motion/react';
 import { FaGithub } from 'react-icons/fa';
 import PhoneFrame from '@/components/PhoneFrame';
 import BrowserFrame from '@/components/BrowserFrame';
+import RecordingFrame from '@/components/RecordingFrame';
 import { useInView } from '@/hooks/useInView';
 import type { ProjectCardData } from '@/lib/projects';
 
@@ -45,6 +46,22 @@ export default function ProjectCard({
   // and play once the card scrolls near the viewport.
   const { ref: videoRef, isInView: videoInView } = useInView({ threshold: 0.15, rootMargin: '200px' });
 
+  const cardVideo = project.video && (
+    <video
+      className="w-full h-full object-cover object-top"
+      poster={project.video.poster}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload={videoInView ? 'auto' : 'none'}
+      aria-hidden="true"
+    >
+      {videoInView && project.video.webm && <source src={project.video.webm} type="video/webm" />}
+      {videoInView && <source src={project.video.src} type="video/mp4" />}
+    </video>
+  );
+
   const content = (
     <motion.div
       initial={{ opacity: 0, y: 30 }}
@@ -71,26 +88,19 @@ export default function ProjectCard({
               className="h-[82%] w-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             />
           ) : project.video ? (
-            /* The same browser-framed player the project's detail showcase uses */
+            /* The same player the project's detail showcase uses: in browser
+               chrome, or bare when the recording brings its own window */
             <div
               ref={videoRef}
               className="w-[85%] transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             >
-              <BrowserFrame url={project.video.url} ratio={project.video.ratio ?? 16 / 9}>
-                <video
-                  className="w-full h-full object-cover object-top"
-                  poster={project.video.poster}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload={videoInView ? 'auto' : 'none'}
-                  aria-hidden="true"
-                >
-                  {videoInView && project.video.webm && <source src={project.video.webm} type="video/webm" />}
-                  {videoInView && <source src={project.video.src} type="video/mp4" />}
-                </video>
-              </BrowserFrame>
+              {project.video.bare ? (
+                <RecordingFrame ratio={project.video.ratio}>{cardVideo}</RecordingFrame>
+              ) : (
+                <BrowserFrame url={project.video.url} ratio={project.video.ratio ?? 16 / 9}>
+                  {cardVideo}
+                </BrowserFrame>
+              )}
             </div>
           ) : (
             <div

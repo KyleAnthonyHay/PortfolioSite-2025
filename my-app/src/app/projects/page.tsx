@@ -9,7 +9,7 @@ import { motion } from 'motion/react';
 
 type Filter = 'All' | ProjectCategory;
 
-const categories: Filter[] = ['All', 'iOS Apps', 'Web Apps'];
+const categories: Filter[] = ['All', 'iOS Apps', 'macOS Apps', 'Web Apps'];
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
@@ -54,7 +54,7 @@ export default function ProjectsPage() {
               Projects
             </h1>
             <p className="text-base text-zinc-500 leading-relaxed max-w-[50ch]">
-              A collection of apps and experiences I&apos;ve built — from mobile to web.
+              A collection of apps and experiences I&apos;ve built, across mobile, desktop, and web.
             </p>
           </motion.div>
         </div>

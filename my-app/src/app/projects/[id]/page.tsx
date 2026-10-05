@@ -21,7 +21,7 @@ function BackLink() {
   );
 }
 
-type Category = 'iOS' | 'Web';
+type Category = 'iOS' | 'macOS' | 'Web';
 
 interface Project {
   id: number;
@@ -57,38 +57,6 @@ const projects: Project[] = [
       frontend: ['SwiftUI', 'Swift 5+', 'SwiftData', 'MVVM', 'AVFoundation', 'Starscream WebSockets', 'Firebase Auth', 'RevenueCat'],
       backend: ['Convex', 'AssemblyAI (streaming & batch)', 'OpenAI GPT-4o', 'OpenAI Embeddings', 'Pinecone', 'Google Cloud Run / Functions', 'Supadata API'],
       infrastructure: ['Local-first SwiftData storage', 'Convex cloud sync', 'Google Cloud', 'Firebase token validation', 'StoreKit / RevenueCat']
-    },
-    hasDetailedView: true
-  },
-  {
-    id: 2,
-    title: 'ExpenseTracker',
-    image: '/projects/expense-tracker.png',
-    description: 'ExpenseTracker is a finance analytics tool that gathers data from an API and displays your monthly transactions on a graph. It also allows you to assign transaction categories for organization.',
-    github: 'https://github.com/KyleAnthonyHay/ExpenseTracker/tree/main/ExpenseTracker',
-    category: 'iOS',
-    overview: 'ExpenseTracker is an elegant iOS application built with SwiftUI that provides users with a comprehensive solution for tracking, visualizing, and managing personal financial transactions. The app fetches transaction data from a remote API, processes and organizes it by date and category, and presents it through an intuitive interface featuring interactive charts, detailed transaction views, and hierarchical category management.',
-    purpose: 'Serves as a demonstration of modern iOS development capabilities while providing a functional expense tracking solution. The app transforms raw transaction data into actionable insights by fetching data asynchronously, grouping transactions chronologically, calculating cumulative expenses over time, and visualizing spending patterns through interactive charts.',
-    techStack: {
-      frontend: ['SwiftUI', 'Swift 5.0+', 'MVVM', 'Combine framework', 'SwiftUICharts', 'SwiftUIFontIcon', 'NavigationStack'],
-      backend: ['JSON API endpoint', 'URLSession with Combine'],
-      infrastructure: ['OrderedDictionary', 'DateFormatter extensions', 'Custom data processing']
-    },
-    hasDetailedView: true
-  },
-  {
-    id: 3,
-    title: 'TheWall',
-    image: '/projects/the-wall.png',
-    description: "TheWall is a social board application that displays users' posts to a collective feed called 'The Wall.' Users can sign up using Gmail.",
-    github: 'https://github.com/KyleAnthonyHay/socialmedia-appV2.0',
-    category: 'iOS',
-    overview: 'A cross-platform social media application built with Flutter that enables users to create posts, view a shared feed, and interact with other users. The app provides a simple, real-time social networking experience with user authentication, profile management, and a public message wall where all users can share content.',
-    purpose: 'Serves as a social media platform where users can post messages to a shared feed ("THE WALL") visible to all authenticated users. It provides a streamlined social networking experience focused on text-based posts and user discovery, enabling users to connect, share thoughts, and browse other users\' profiles.',
-    techStack: {
-      frontend: ['Flutter (Dart SDK >=3.3.0)', 'Material Design', 'Custom theme system', 'Reusable component architecture'],
-      backend: ['Firebase Auth', 'Cloud Firestore', 'Real-time streams'],
-      infrastructure: ['Firebase services']
     },
     hasDetailedView: true
   },
@@ -179,6 +147,56 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
+  {
+    id: 9,
+    title: 'SoundSnag',
+    image: '/demos/soundsnag/demo-poster.jpg',
+    description: 'SoundSnag is a native Mac app that saves the audio from YouTube, Instagram, and TikTok links and converts images, PDFs, audio, and video locally.',
+    landscape: true,
+    category: 'macOS',
+    overview: 'SoundSnag is a native SwiftUI app for macOS with two tools. Snag Audio takes a YouTube, Instagram, or TikTok link, previews it, and saves the audio in its original format. Convert Files turns images, PDFs, audio, and video into the formats you need. Everything runs on your Mac with no backend, no accounts, and no paid services.',
+    purpose: 'Replaces the ad-heavy converter sites and sketchy downloaders people reach for when they need a sound or a file format in a hurry. SoundSnag bundles pinned builds of yt-dlp, ffmpeg, and Deno and runs them inside the App Sandbox, staging every download and conversion in the app container before moving it to your chosen folder, so nothing partial is left behind and nothing leaves the machine.',
+    techStack: {
+      frontend: ['SwiftUI', 'Swift 6', 'AppKit menu bar extra', 'Swift Charts', 'Observation', 'UserNotifications'],
+      backend: ['Bundled yt-dlp (onedir)', 'Bundled ffmpeg', 'Deno for yt-dlp challenges', 'ImageIO & CoreGraphics', 'AVFoundation'],
+      infrastructure: ['SwiftData', 'App Sandbox', 'Security-scoped bookmarks', 'XcodeGen', 'Pinned, checksummed binaries']
+    },
+    hasDetailedView: true
+  },
+  {
+    id: 10,
+    title: 'SelahNote Creator Dashboard',
+    image: '/demos/selahnote-ugc/demo-poster.jpg',
+    description: 'An internal dashboard for SelahNote\'s UGC creator program, covering referral performance, subscription outcomes, a content log, and monthly payouts.',
+    landscape: true,
+    category: 'Web',
+    overview: 'The SelahNote Creator Dashboard is an internal web app for running SelahNote\'s user-generated content program. Staff manage creators and their referral codes, watch trials and conversions arrive live from RevenueCat, reconcile subscription events, review a log of each creator\'s posts, and record monthly payouts. It is built with Next.js 16 on top of the same Convex backend as the iOS app.',
+    purpose: 'Gives the team one trustworthy place to answer "who drove which subscriptions, and what do we owe them?" Rewards come from a fixed rule applied when webhook events arrive, money is kept in integer cents, and a payout is one serializable Convex transaction that re-checks every reward before marking it paid, so two admins or a double click can never pay the same reward twice.',
+    techStack: {
+      frontend: ['Next.js 16', 'React 19', 'TypeScript', 'Convex React client', 'Firebase Authentication'],
+      backend: ['Convex queries & mutations', 'RevenueCat webhooks', 'Role-based admin membership', 'Idempotent payout batches', 'Audit log'],
+      infrastructure: ['Convex cloud', 'Firebase', 'Environment-scoped indexes', 'Vitest']
+    },
+    hasDetailedView: true
+  },
+  {
+    id: 11,
+    title: 'V1 ProdBot',
+    image: '/demos/prodbot/demo-poster.jpg',
+    description: 'A documentation and troubleshooting assistant for V1 Church production teams, with grounded chat, an interactive wiring diagram, and AI-drafted docs an admin approves.',
+    link: 'https://v1church-prodbot.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/V1Church-ProdBot',
+    landscape: true,
+    category: 'Web',
+    overview: 'V1 ProdBot is a production-team assistant for V1 Church campuses. Volunteers pick their campus and ask questions in a chat that streams answers grounded in that campus\'s approved documentation. An Explore view renders the full audio and video wiring diagram, and an Admin view turns pasted notes, uploads, and plain-language descriptions into draft docs and diagrams for review.',
+    purpose: 'Sunday-morning problems get solved by whoever is in the booth, and the knowledge of how a campus is wired usually lives in a few people\'s heads. ProdBot captures it as reviewed documentation: every AI draft is compared against the approved version before it is accepted, wiring is approved before the docs that depend on it, and volunteer-reported fixes go through review with their report attached as evidence.',
+    techStack: {
+      frontend: ['Vite', 'React 19', 'TypeScript', 'Tailwind CSS 4', 'shadcn/ui', 'ElevenLabs UI', 'React Flow', 'Streamdown'],
+      backend: ['Convex', 'OpenAI Responses API', 'Structured outputs', 'unpdf PDF extraction', 'Zod', 'YAML wiring documents'],
+      infrastructure: ['Vercel', 'Convex cloud', 'Bun', 'GitHub Actions CI', 'convex-test']
+    },
+    hasDetailedView: true
+  },
 ];
 
 export function generateStaticParams() {
@@ -217,7 +235,7 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
             <AnimatedSection className="mb-16" immediate>
               <BackLink />
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">
-                {project.category === 'iOS' ? 'iOS App' : 'Web App'}
+                {project.category === 'iOS' ? 'iOS App' : project.category === 'macOS' ? 'macOS App' : 'Web App'}
               </p>
               <div className="flex items-center gap-4 flex-wrap mb-6">
                 <h1 className="text-4xl md:text-5xl tracking-tighter leading-none text-zinc-900">{project.title}</h1>

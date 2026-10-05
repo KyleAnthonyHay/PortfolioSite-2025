@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  BarChart3,
   BookOpen,
   Brain,
   FolderTree,
@@ -16,7 +15,6 @@ import {
   Search,
   Sparkles,
   Sun,
-  Users,
 } from 'lucide-react';
 import ProductShowcase, { type ShowcaseItem } from '@/components/ProductShowcase';
 
@@ -86,34 +84,6 @@ const selahNote: Showcase = {
       description:
         'Notes group by month and stay searchable by transcript text, so a half-remembered line is enough to find the sermon it came from.',
       media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/library.png', alt: 'All notes grouped by month' } },
-    },
-  ],
-};
-
-const expenseTracker: Showcase = {
-  heading: 'Every transaction, charted the moment it lands.',
-  items: [
-    {
-      label: 'Overview',
-      icon: <BarChart3 className={ic} />,
-      title: 'Spending that explains itself.',
-      description:
-        'Transactions arrive over URLSession and Combine, group by month, and accumulate into a running total that SwiftUI Charts draws as a single line — so a month of spending reads at a glance before you touch a single row.',
-      media: { kind: 'phone-image', src: '/demos/expense-tracker/device.png', alt: 'ExpenseTracker overview with a cumulative spending chart' },
-    },
-  ],
-};
-
-const theWall: Showcase = {
-  heading: 'One shared wall, updating as people post.',
-  items: [
-    {
-      label: 'The Wall',
-      icon: <Users className={ic} />,
-      title: 'A feed with no algorithm in the way.',
-      description:
-        'Posts write straight to Cloud Firestore and come back through a live stream, so every signed-in user sees the same wall update in real time. One Flutter codebase covers iOS, Android, web, and desktop.',
-      media: { kind: 'phone-image', src: '/demos/the-wall/device.png', alt: 'The Wall shared feed in dark mode' },
     },
   ],
 };
@@ -223,15 +193,77 @@ const yarnScript: Showcase = {
   ],
 };
 
+const soundSnag: Showcase = {
+  heading: 'Save the sound, convert the file, never leave your Mac.',
+  orientation: 'landscape',
+  items: [
+    {
+      label: 'Demo',
+      icon: <Play className={ic} />,
+      title: 'Paste a link, keep the audio.',
+      description:
+        'Paste a YouTube, Instagram, or TikTok link and SoundSnag previews it, then saves the audio in its original format through a bundled, pinned yt-dlp. Drop images, PDFs, audio, or video on Convert Files and ImageIO and ffmpeg handle the rest locally, all inside the App Sandbox with no accounts and no server.',
+      media: {
+        kind: 'recording',
+        src: '/demos/soundsnag/demo.mp4',
+        poster: '/demos/soundsnag/demo-poster.jpg',
+        ratio: 1280 / 820,
+      },
+    },
+  ],
+};
+
+const selahNoteDashboard: Showcase = {
+  heading: 'A creator program, run from one live dashboard.',
+  orientation: 'landscape',
+  items: [
+    {
+      label: 'Demo',
+      icon: <Play className={ic} />,
+      title: 'Referrals, rewards, and payouts as they happen.',
+      description:
+        'Every page is a Convex subscription, so a RevenueCat webhook landing on the backend shows up without a refresh. Staff follow each creator\'s trials and conversions, log their UGC posts, and record a month\'s payout as a single serializable transaction that cannot pay the same reward twice.',
+      media: {
+        kind: 'recording',
+        src: '/demos/selahnote-ugc/demo.mp4',
+        webm: '/demos/selahnote-ugc/demo.webm',
+        poster: '/demos/selahnote-ugc/demo-poster.jpg',
+        ratio: 1440 / 870,
+      },
+    },
+  ],
+};
+
+const prodBot: Showcase = {
+  heading: 'Answers for the production booth before the service starts.',
+  orientation: 'landscape',
+  items: [
+    {
+      label: 'Demo',
+      icon: <Play className={ic} />,
+      title: 'Ask, explore the wiring, keep the docs current.',
+      description:
+        'Volunteers ask a question and get a streamed answer grounded in the campus\'s approved documentation, with the model\'s reasoning in a collapsible Thinking block. Explore draws the campus wiring diagram with React Flow, and admins describe a change in chat, let the AI redraw it, and approve it as a new revision.',
+      media: {
+        kind: 'recording',
+        src: '/demos/prodbot/demo.mp4',
+        poster: '/demos/prodbot/demo-poster.jpg',
+        ratio: 1280 / 772,
+      },
+    },
+  ],
+};
+
 const showcases: Record<number, Showcase> = {
   1: selahNote,
-  2: expenseTracker,
-  3: theWall,
   4: countryApp,
   5: onTract,
   6: sentio,
   7: chatgptClone,
   8: yarnScript,
+  9: soundSnag,
+  10: selahNoteDashboard,
+  11: prodBot,
 };
 
 export default function ProjectShowcase({ projectId }: { projectId: number }) {

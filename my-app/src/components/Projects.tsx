@@ -7,8 +7,11 @@ import { featuredProjects } from '@/lib/projects';
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
-/** Zig-zag 7/5 → 7/5 → 5/7 across three rows — YarnScript's video row leads wide. */
-const spans = ['md:col-span-7', 'md:col-span-5', 'md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:col-span-7'];
+/**
+ * Zig-zag 5/7 → 7/5 → 5/7 across three rows. SelahNote's phone takes the
+ * narrow slot so the recording beside it gets the width it needs.
+ */
+const spans = ['md:col-span-5', 'md:col-span-7', 'md:col-span-7', 'md:col-span-5', 'md:col-span-5', 'md:col-span-7'];
 
 const Projects = () => {
   const { ref, isInView } = useInView({ threshold: 0.05 });
