@@ -29,6 +29,8 @@ export interface ProjectCardData {
   category: ProjectCategory;
   /** Included in the home page's curated grid. */
   featured?: boolean;
+  /** Running today, for real users. */
+  live?: boolean;
 }
 
 /**
@@ -37,33 +39,6 @@ export interface ProjectCardData {
  * previously the two pages kept separate lists and drifted apart.
  */
 export const projects: ProjectCardData[] = [
-  {
-    id: 5,
-    title: 'OnTract',
-    tagline: 'Contract management, read for you',
-    description:
-      'Contract management platform: every contract on one dashboard, AI-extracted terms, answers that quote the clause they came from, and a client portal for review.',
-    image: '/demos/ontract/overview.jpg',
-    video: { src: '/products/ontract/loop.mp4', poster: '/products/ontract/poster.jpg', ratio: 16 / 9, bare: true },
-    link: 'https://ontract.kyleanthonyhay.com',
-    landscape: true,
-    category: 'Web Apps',
-    featured: true,
-  },
-  {
-    id: 6,
-    title: 'Sentio+',
-    tagline: 'App-review intelligence',
-    description:
-      'Customer-intelligence platform that reads thousands of app reviews and answers questions with the numbers and the reviews behind them, using RAG and a fine-tuned sentiment model.',
-    image: '/projects/sentio-1.png',
-    video: { src: '/products/sentio/loop.mp4', poster: '/products/sentio/poster.jpg', ratio: 16 / 9, bare: true },
-    link: 'https://sentio.kyleanthonyhay.com',
-    github: 'https://github.com/KyleAnthonyHay/sentio',
-    landscape: true,
-    category: 'Web Apps',
-    featured: true,
-  },
   {
     id: 11,
     title: 'V1 ProdBot',
@@ -77,6 +52,7 @@ export const projects: ProjectCardData[] = [
     landscape: true,
     category: 'Web Apps',
     featured: true,
+    live: true,
   },
   {
     id: 1,
@@ -94,6 +70,36 @@ export const projects: ProjectCardData[] = [
     link: 'https://selahnote.app',
     category: 'iOS Apps',
     featured: true,
+    live: true,
+  },
+  {
+    id: 5,
+    title: 'OnTract',
+    tagline: 'Contract management, read for you',
+    description:
+      'Contract management platform: every contract on one dashboard, AI-extracted terms, answers that quote the clause they came from, and a client portal for review.',
+    image: '/demos/ontract/overview.jpg',
+    video: { src: '/products/ontract/loop.mp4', poster: '/products/ontract/poster.jpg', ratio: 16 / 9, bare: true },
+    link: 'https://ontract.kyleanthonyhay.com',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+    live: true,
+  },
+  {
+    id: 6,
+    title: 'Sentio+',
+    tagline: 'App-review intelligence',
+    description:
+      'Customer-intelligence platform that reads thousands of app reviews and answers questions with the numbers and the reviews behind them, using RAG and a fine-tuned sentiment model.',
+    image: '/projects/sentio-1.png',
+    video: { src: '/products/sentio/loop.mp4', poster: '/products/sentio/poster.jpg', ratio: 16 / 9, bare: true },
+    link: 'https://sentio.kyleanthonyhay.com',
+    github: 'https://github.com/KyleAnthonyHay/sentio',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+    live: true,
   },
   {
     id: 10,
@@ -112,6 +118,7 @@ export const projects: ProjectCardData[] = [
     landscape: true,
     category: 'Web Apps',
     featured: true,
+    live: true,
   },
   {
     id: 9,
@@ -148,6 +155,7 @@ export const projects: ProjectCardData[] = [
     landscape: true,
     category: 'Web Apps',
     featured: true,
+    live: true,
   },
   {
     id: 4,

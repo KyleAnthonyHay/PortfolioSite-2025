@@ -13,10 +13,13 @@ export default function SmoothScroll() {
   const pathname = usePathname();
 
   useEffect(() => {
+    // Lenis would otherwise carry the previous page's scroll position over.
+    if (!window.location.hash) window.scrollTo(0, 0);
     if (pathname?.startsWith('/chat')) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const lenis = new Lenis({ duration: 1.1, easing: (t) => 1 - Math.pow(1 - t, 4) });
+    if (!window.location.hash) lenis.scrollTo(0, { immediate: true });
     (window as unknown as { __lenis?: Lenis }).__lenis = lenis;
     let frame = 0;
     const raf = (time: number) => {

@@ -16,6 +16,7 @@ import {
   Sun,
 } from 'lucide-react';
 import ProductShowcase, { type ShowcaseItem } from '@/components/ProductShowcase';
+import WalkthroughPlayer from '@/components/WalkthroughPlayer';
 
 const ic = 'w-4 h-4';
 
@@ -292,6 +293,22 @@ const showcases: Record<number, Showcase> = {
 export default function ProjectShowcase({ projectId }: { projectId: number }) {
   const showcase = showcases[projectId];
   if (!showcase) return null;
+
+  // A narrated walkthrough says it all, so it replaces the tabbed showcase.
+  const walkthrough = showcase.items.find((item) => item.media.kind === 'walkthrough');
+  if (walkthrough && walkthrough.media.kind === 'walkthrough') {
+    return (
+      <div className="relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-zinc-100/70 border border-slate-200/50">
+        <div className="px-6 py-12 md:px-14 md:py-16">
+          <h2 className="max-w-[46rem] text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
+            {showcase.heading}
+          </h2>
+          <WalkthroughPlayer src={walkthrough.media.src} poster={walkthrough.media.poster} className="mt-12" />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <ProductShowcase
       heading={showcase.heading}

@@ -78,7 +78,7 @@ const About = () => {
               className="mt-10 flex gap-8"
             >
               {[
-                { value: '3', label: 'Products live' },
+                { value: '6', label: 'Products live' },
                 { value: '400+', label: 'SelahNote users' },
                 { value: 'B.S.', label: 'Computer Science' },
               ].map((stat, i) => (

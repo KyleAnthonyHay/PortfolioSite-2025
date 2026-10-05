@@ -18,8 +18,6 @@ const categoryLabel: Record<ProjectCardData['category'], string> = {
   'Web Apps': 'Web',
 };
 
-/** Products running on their own domain today. */
-const isLive = (link?: string) => !!link && /kyleanthonyhay\.com|selahnote\.app/.test(link);
 
 interface ProjectCardProps {
   project: ProjectCardData;
@@ -132,7 +130,7 @@ export default function ProjectCard({
       <div className="p-6 border-t border-zinc-200/60">
         <div className="flex items-center gap-3 mb-1">
           <h3 className="text-zinc-900 font-medium text-base">{project.title}</h3>
-          {isLive(project.link) && (
+          {project.live && (
             <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
               Live

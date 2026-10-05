@@ -8,12 +8,11 @@ import { featuredProjects } from '@/lib/projects';
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
 /**
- * Three tiers: OnTract and Sentio+ share the first row at half width each,
- * ProdBot takes two thirds beside SelahNote's phone, and the smaller tools
- * close out in thirds. Every landscape well keeps the recording's own
- * proportions, so the whole app window is always in view.
+ * ProdBot leads beside SelahNote's phone, OnTract and Sentio+ share the next
+ * row, and the smaller tools close out in thirds. Every landscape well keeps
+ * the recording's own proportions, so the whole app window is always in view.
  */
-const spans = ['md:col-span-6', 'md:col-span-6', 'md:col-span-8', 'md:col-span-4', 'md:col-span-4', 'md:col-span-4', 'md:col-span-4'];
+const spans = ['md:col-span-8', 'md:col-span-4', 'md:col-span-6', 'md:col-span-6', 'md:col-span-4', 'md:col-span-4', 'md:col-span-4'];
 
 const Projects = () => {
   const { ref, isInView } = useInView({ threshold: 0.05 });
