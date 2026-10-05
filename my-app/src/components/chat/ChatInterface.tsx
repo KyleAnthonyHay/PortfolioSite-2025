@@ -275,32 +275,34 @@ export default function ChatInterface() {
 
   return (
     <div className="flex h-full min-h-0 flex-col">
+      {/* Like a Messages thread: the agent's avatar and name centred, controls either side. */}
       <header className="sticky top-0 z-30 shrink-0 border-b border-zinc-200/70 bg-paper/85 backdrop-blur-md">
-        <div className="mx-auto flex h-16 w-full max-w-3xl items-center justify-between px-4">
+        <div className="relative mx-auto flex h-[92px] w-full max-w-3xl items-center justify-between px-4">
           <Link
             href="/"
-            className="group -ml-2 inline-flex items-center gap-3 rounded-full py-1 pl-2 pr-3 text-zinc-500 transition-colors hover:text-ink"
+            aria-label="Back to the portfolio"
+            className="group flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
           >
             <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
-            <span className="flex items-center gap-2.5">
-              <span className="relative h-8 w-8 overflow-hidden rounded-full bg-zinc-200">
-                <Image src="/profile.jpg" alt="" fill sizes="32px" className="object-cover" />
-                <span className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-paper bg-olive" />
-              </span>
-              <span className="leading-tight">
-                <span className="block font-display text-[14px] font-medium tracking-[-0.01em] text-ink">Kyle-Anthony&apos;s agent</span>
-                <span className="block text-[12px] text-zinc-400">Answers from his projects and résumé</span>
-              </span>
-            </span>
           </Link>
-          {messages.length > 0 && (
+
+          <div className="pointer-events-none absolute left-1/2 top-1/2 flex -translate-x-1/2 -translate-y-1/2 flex-col items-center">
+            <Image src="/agent.png" alt="" width={56} height={56} priority className="h-14 w-14 object-contain drop-shadow-[0_6px_10px_rgba(0,0,0,0.12)]" />
+            <span className="-mt-2 rounded-full border border-zinc-200/80 bg-white px-3 py-0.5 text-[13px] font-medium text-zinc-900 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.12)]">
+              Kyle&apos;s Agent
+            </span>
+          </div>
+
+          {messages.length > 0 ? (
             <button
               type="button"
               onClick={handleNewChat}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-300/80 px-3 text-[12px] text-zinc-600 transition-all hover:border-ink hover:text-ink active:scale-[0.97]"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 px-3 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-zinc-900 active:scale-[0.97]"
             >
               <Plus className="h-3.5 w-3.5" /> New chat
             </button>
+          ) : (
+            <span className="w-9" />
           )}
         </div>
       </header>

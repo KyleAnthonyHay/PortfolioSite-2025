@@ -18,7 +18,7 @@ const starters = [
   {
     icon: Users,
     title: 'Is he a fit for my team?',
-    subtitle: 'He will ask what you are hiring for',
+    subtitle: "I'll ask what you're hiring for",
     prompt: 'Is Kyle-Anthony a fit for my team?',
     send: true,
   },
@@ -50,12 +50,9 @@ export default function EmptyState({ onPick }: EmptyStateProps) {
         initial={{ opacity: 0, scale: 0.92, filter: 'blur(8px)' }}
         animate={{ opacity: 1, scale: 1, filter: 'blur(0px)' }}
         transition={{ duration: 0.8, ease }}
-        className="relative mb-7 h-[72px] w-[72px]"
+        className="relative mb-6 h-24 w-24"
       >
-        <div className="h-full w-full overflow-hidden rounded-full bg-zinc-200">
-          <Image src="/profile.jpg" alt="Kyle-Anthony" width={72} height={72} className="h-full w-full object-cover" priority />
-        </div>
-        <span className="absolute bottom-0.5 right-0.5 h-3.5 w-3.5 rounded-full border-[2.5px] border-paper bg-olive" />
+        <Image src="/agent.png" alt="Kyle's Agent" width={96} height={96} className="h-full w-full object-contain drop-shadow-[0_10px_16px_rgba(0,0,0,0.12)]" priority />
       </motion.div>
       <motion.h1
         initial={{ opacity: 0, y: 14 }}
@@ -63,7 +60,7 @@ export default function EmptyState({ onPick }: EmptyStateProps) {
         transition={{ duration: 0.8, ease, delay: 0.06 }}
         className="mb-3 font-display text-[clamp(1.9rem,4vw,2.6rem)] font-medium leading-[1.02] tracking-[-0.04em] text-ink"
       >
-        Ask me about Kyle-Anthony.
+        Hi, I&apos;m Kyle&apos;s Agent.
       </motion.h1>
       <motion.p
         initial={{ opacity: 0, y: 14 }}
@@ -71,7 +68,7 @@ export default function EmptyState({ onPick }: EmptyStateProps) {
         transition={{ duration: 0.8, ease, delay: 0.12 }}
         className="mb-10 max-w-[44ch] text-[15px] leading-relaxed text-zinc-500"
       >
-        I search his products and résumé, show you cards and sources, and ask when I need more to go on.
+        Ask me about Kyle-Anthony&apos;s products, skills, or fit for a role. I search his work, show you cards and sources, and ask when I need more to go on.
       </motion.p>
       <motion.div
         initial={{ opacity: 0, y: 16 }}
