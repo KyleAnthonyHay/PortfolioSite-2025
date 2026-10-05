@@ -30,6 +30,13 @@ const selahNote: Showcase = {
   heading: 'Everything a sermon leaves behind, in one app.',
   items: [
     {
+      label: 'Film',
+      icon: <Play className={ic} />,
+      title: 'This is SelahNote.',
+      description: 'The SelahNote film: what the app is for, and what it looks like in a service.',
+      media: { kind: 'walkthrough', src: '/products/selahnote/walkthrough.mp4', poster: '/products/selahnote/walkthrough-poster.jpg' },
+    },
+    {
       label: 'Walkthrough',
       icon: <Play className={ic} />,
       title: 'From spoken word to structured notes.',
