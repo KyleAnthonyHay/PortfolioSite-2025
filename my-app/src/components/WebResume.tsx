@@ -21,6 +21,7 @@ const techIconsRow2 = [
 
 const experience = [
   { role: 'AI Engineer', company: 'Cognizant', period: '2026 - Present' },
+  { role: 'Founder & iOS Engineer', company: 'SelahNote', period: '2025 - Present' },
   { role: 'Software Engineering Intern', company: 'The Difference', period: '2023' },
 ];
 

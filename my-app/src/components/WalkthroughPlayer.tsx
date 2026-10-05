@@ -18,6 +18,9 @@ interface WalkthroughPlayerProps {
  */
 export default function WalkthroughPlayer({ src, poster, className = '', frameless = false }: WalkthroughPlayerProps) {
   const ref = useRef<HTMLVideoElement>(null);
+  // Whether the visitor wants it playing. Off-screen pauses must not count as
+  // a choice, or a card that mounts below the fold would never start.
+  const wantsPlay = useRef(true);
   const [muted, setMuted] = useState(true);
   const [playing, setPlaying] = useState(true);
 
@@ -27,7 +30,7 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          if (playing) video.play().catch(() => {});
+          if (wantsPlay.current) video.play().catch(() => {});
         } else {
           video.pause();
         }
@@ -36,17 +39,17 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
     );
     observer.observe(video);
     return () => observer.disconnect();
-  }, [playing]);
+  }, []);
 
   const togglePlay = () => {
     const video = ref.current;
     if (!video) return;
     if (video.paused) {
+      wantsPlay.current = true;
       video.play().catch(() => {});
-      setPlaying(true);
     } else {
+      wantsPlay.current = false;
       video.pause();
-      setPlaying(false);
     }
   };
 
@@ -62,8 +65,8 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
 
   return (
     <div
-      className={`group relative overflow-hidden bg-white ${
-        frameless ? 'absolute inset-0' : 'rounded-[1.25rem] border border-zinc-200/70 shadow-[0_12px_40px_-18px_rgba(0,0,0,0.18)]'
+      className={`group overflow-hidden bg-white ${
+        frameless ? 'absolute inset-0' : 'relative rounded-[1.25rem] border border-zinc-200/70 shadow-[0_12px_40px_-18px_rgba(0,0,0,0.18)]'
       } ${className}`}
       style={frameless ? undefined : { aspectRatio: 16 / 9 }}
     >
