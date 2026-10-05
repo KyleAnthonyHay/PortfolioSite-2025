@@ -1,4 +1,4 @@
-import type { ContactLink, SkillGroup, TimelineItem } from './chat-events';
+import type { ContactLink, JourneyNode, SkillGroup, TimelineItem } from './chat-events';
 
 /**
  * Structured facts about Kyle-Anthony that the agent answers from directly.
@@ -49,6 +49,98 @@ export const timeline: TimelineItem[] = [
     title: 'Software Engineering Intern',
     org: 'The Difference',
     period: '2023',
+  },
+];
+
+/**
+ * Development journey for the flowchart card: work, school, and the projects
+ * that mark each step, oldest first. Project dates come from their git
+ * history and App Store records.
+ */
+export const journey: JourneyNode[] = [
+  {
+    id: 'start',
+    kind: 'start',
+    period: '2022',
+    title: 'Started building software',
+    caption: 'JavaScript, React and Next.js on the web; Python and Java.',
+  },
+  {
+    id: 'intern',
+    kind: 'work',
+    period: '2023',
+    title: 'Software Engineering Intern, The Difference',
+  },
+  {
+    id: 'ios',
+    kind: 'project',
+    period: '2023',
+    title: 'First native iOS app',
+    caption: 'UIKit fundamentals, networking, and Swift Concurrency.',
+    projects: [{ id: 4, title: 'Country Viewer', href: '/projects/4' }],
+  },
+  {
+    id: 'degree',
+    kind: 'education',
+    period: '2024',
+    title: 'B.S. Computer Science, CUNY Hunter College',
+  },
+  {
+    id: 'selahnote',
+    kind: 'launch',
+    period: 'Aug 2025',
+    title: 'Launched SelahNote on the App Store',
+    caption: 'Solo AI product: live transcription, scripture detection, structured notes. 400+ users.',
+    projects: [{ id: 1, title: 'SelahNote', href: '/projects/1' }],
+  },
+  {
+    id: 'revature',
+    kind: 'education',
+    period: 'Jan 2026',
+    title: 'Revature AI Engineering program',
+    caption: 'Team-built RAG and agent products: AI and front-end on Sentio+, backend on OnTract.',
+    projects: [
+      { id: 6, title: 'Sentio+', href: '/projects/6' },
+      { id: 5, title: 'OnTract', href: '/projects/5' },
+    ],
+  },
+  {
+    id: 'cognizant',
+    kind: 'work',
+    period: '2026',
+    title: 'AI Engineer, Cognizant',
+    caption: 'Engineering AI-powered solutions with modern LLM tooling.',
+  },
+  {
+    id: 'yarnscript',
+    kind: 'project',
+    period: 'Mar 2026',
+    title: 'Four-hour product sprint',
+    caption: 'Voice-following AI teleprompter with live transcription and vector search.',
+    projects: [{ id: 8, title: 'YarnScript', href: '/projects/8' }],
+  },
+  {
+    id: 'fall-2026',
+    kind: 'launch',
+    period: 'Sep 2026',
+    title: 'Shipped tools for real users',
+    caption: 'A production assistant requested by V1 Church, a creator-program dashboard, and a native Mac app.',
+    projects: [
+      { id: 11, title: 'V1 ProdBot', href: '/projects/11' },
+      { id: 10, title: 'SelahNote Creator Dashboard', href: '/projects/10' },
+      { id: 9, title: 'SoundSnag', href: '/projects/9' },
+    ],
+  },
+  {
+    id: 'rebuilds',
+    kind: 'project',
+    period: 'Oct 2026',
+    title: 'Rebuilt Sentio+ and OnTract solo on Convex',
+    caption: 'New interfaces, Convex backends, and live demos.',
+    projects: [
+      { id: 6, title: 'Sentio+', href: '/projects/6' },
+      { id: 5, title: 'OnTract', href: '/projects/5' },
+    ],
   },
 ];
 

@@ -8,7 +8,7 @@ import {
   type BaseMessage,
 } from '@langchain/core/messages';
 import { concat } from '@langchain/core/utils/stream';
-import { allTools, describeToolCall, parseToolResult } from './tools';
+import { allTools, describeToolCall, parseToolResult, type ToolResult } from './tools';
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, Widget } from './chat-events';
 
@@ -25,16 +25,21 @@ Today is ${today}.
 
 ## Ground every answer in tools
 Never answer from memory about Kyle-Anthony. Call a tool first, then answer from what it returns.
-- Technology or "does he know / has he used / how long" questions → check_experience (one call per technology).
-- A specific project → get_project. Topics or features across projects → search_projects. "What has he built" → list_projects.
-- Skills overview, timeline, education, availability, contact, résumé → get_background. Other background questions → search_background.
-- A pasted job description or a list of requirements → extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"), then call assess_job_fit once. It already checks degrees, teamwork, and every technology, so do not call other tools in that turn.
+- One named technology ("does he know / has he used / how long has he used X") → check_experience (one call per technology).
+- One specific project, including follow-ups about "it" → get_project, passing the visitor's question as query.
+- A capability, domain, or kind of work across projects ("AI experience", "backend work", "worked with clients?", "anything with payments?") → get_experience. "What has he built" → list_projects.
+- Wanting to open, try, or see something (website, GitHub, App Store, demo) → get_project_resource.
+- How his experience developed over time, his path or story → get_journey.
+- Wanting to talk to him, book a call, or schedule an interview → book_time.
+- Skills overview, education, availability, contact, résumé → get_background. Other background questions → search_background.
+- A job posting URL → get_job_posting, then assess_job_fit with the requirements it lists and the role title.
+- A pasted job description or a list of requirements → extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"), then call assess_job_fit once. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
 - When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
 If a tool comes back empty, say so plainly rather than guessing.
 
 ## Cards
-Some tool results are also rendered to the visitor as visual cards (project cards, an experience card, a skills grid, a timeline, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
+Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a booking card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
 
 ## Writing style
 - Concise and direct: one to three short paragraphs. Bullets only for genuinely parallel items. No headings.
@@ -79,6 +84,10 @@ function widgetKey(widget: Widget): string {
       return `experience:${widget.technology.toLowerCase()}`;
     case 'fit_report':
       return `fit:${widget.role ?? ''}:${widget.requirements.length}`;
+    case 'recommendations':
+      return `recommendations:${widget.items.map((item) => item.project.id).join(',')}`;
+    case 'resources':
+      return `resources:${widget.project.id}`;
     default:
       return widget.kind;
   }
@@ -94,9 +103,45 @@ function projectIdsIn(widget: Widget): number[] {
       return widget.projects.map((p) => p.project.id);
     case 'fit_report':
       return widget.requirements.flatMap((r) => r.projects.map((p) => p.id));
+    case 'recommendations':
+      return widget.items.map((item) => item.project.id);
+    case 'resources':
+      return [widget.project.id];
+    case 'journey':
+      return widget.nodes.flatMap((node) => node.projects?.map((p) => p.id) ?? []);
     default:
       return [];
   }
+}
+
+/** The argument worth showing beside a step's label. */
+function stepChip(args: Record<string, unknown>): string | undefined {
+  for (const key of ['query', 'technology', 'url', 'section', 'role']) {
+    const value = args[key];
+    if (typeof value === 'string' && value.trim()) return value.trim().slice(0, 80);
+  }
+  if (Array.isArray(args.requirements)) return `${args.requirements.length} requirements`;
+  return undefined;
+}
+
+/** Two or three short lines on what a tool found, for the expanded step row. */
+function stepDetail(result: ToolResult): string[] {
+  const widget = result.widget;
+  if (widget?.kind === 'recommendations') return widget.items.slice(0, 3).map((item) => `${item.project.title}: ${item.why}`);
+  if (widget?.kind === 'fit_report') {
+    const { match, related, gap } = widget.summary;
+    return [`${match} match · ${related} related · ${gap} gap`, ...widget.requirements.slice(0, 2).map((r) => `${r.requirement}: ${r.status}`)];
+  }
+  if (widget?.kind === 'experience_check')
+    return [widget.hasExperience ? `Found in ${widget.projects.length} project${widget.projects.length === 1 ? '' : 's'}` : 'No direct evidence', ...widget.projects.slice(0, 2).map((p) => p.project.title)];
+  if (widget?.kind === 'projects') return [widget.projects.map((p) => p.title).join(', ')];
+  if (widget?.kind === 'resources') return widget.resources.map((r) => r.domain);
+  return result.content
+    .split('\n')
+    .map((line) => line.replace(/^[#\-\s]+/, '').trim())
+    .filter((line) => line.length > 0)
+    .slice(0, 2)
+    .map((line) => (line.length > 110 ? `${line.slice(0, 110)}…` : line));
 }
 
 function toSource(id: number): SourceRef | null {
@@ -181,11 +226,14 @@ export async function* runAgent(
     const steps = toolCalls.map((call) => {
       stepCounter += 1;
       const labels = describeToolCall(call.name, call.args ?? {});
-      return { id: `step-${stepCounter}`, call, labels };
+      return { id: `step-${stepCounter}`, call, labels, chip: stepChip(call.args ?? {}) };
     });
 
     for (const step of steps) {
-      yield { type: 'step', step: { id: step.id, tool: step.call.name, label: step.labels.running, status: 'running' } };
+      yield {
+        type: 'step',
+        step: { id: step.id, tool: step.call.name, label: step.labels.running, status: 'running', chip: step.chip },
+      };
     }
 
     const results = await Promise.all(
@@ -207,7 +255,10 @@ export async function* runAgent(
     const fitInRound = results.some(({ result }) => result.widget?.kind === 'fit_report');
 
     for (const { step, result } of results) {
-      yield { type: 'step', step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done' } };
+      yield {
+        type: 'step',
+        step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done', chip: step.chip, detail: stepDetail(result) },
+      };
       result.citedProjectIds.forEach((id) => cited.add(id));
 
       let content = result.content;
@@ -231,9 +282,12 @@ export async function* runAgent(
     if (asked) break;
   }
 
-  // Source pills cover what the answer drew on that no card already shows.
-  const sources = [...cited]
-    .filter((id) => !shownProjects.has(id))
+  // Sources list every project the answer rests on: the ones it names first,
+  // then the ones its cards show. Projects a tool touched but nothing on
+  // screen uses (a check hidden behind a fit report) are left out.
+  const named = catalog.filter((project) => [...cited, ...shownProjects].includes(project.id) && answer.includes(project.title)).map((p) => p.id);
+  const sources = [...new Set([...named, ...[...cited].filter((id) => shownProjects.has(id))])]
+    .slice(0, 6)
     .map(toSource)
     .filter((source): source is SourceRef => source !== null);
   if (sources.length > 0) yield { type: 'sources', sources };

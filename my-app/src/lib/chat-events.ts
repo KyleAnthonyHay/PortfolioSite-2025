@@ -74,6 +74,33 @@ export interface FitRequirement {
   projects: ProjectCardData[];
 }
 
+export interface Recommendation {
+  project: ProjectCardData;
+  /** One line on why this project is relevant to what the visitor asked. */
+  why: string;
+  /** The write-up section the evidence came from. */
+  section?: string;
+  confidence: 'high' | 'medium' | 'low';
+}
+
+export interface JourneyNode {
+  id: string;
+  kind: 'start' | 'work' | 'education' | 'project' | 'launch';
+  period: string;
+  title: string;
+  caption?: string;
+  projects?: { id: number; title: string; href: string }[];
+}
+
+export interface ProjectResource {
+  type: 'website' | 'github' | 'app-store' | 'demo' | 'video' | 'docs' | 'case-study';
+  title: string;
+  url: string;
+  description?: string;
+  image?: string;
+  domain: string;
+}
+
 export type Widget =
   | { kind: 'projects'; title?: string; projects: ProjectCardData[] }
   | { kind: 'project'; project: ProjectCardData; overview: string; techStack: TechStack }
@@ -103,6 +130,10 @@ export type Widget =
       options: { label: string; detail?: string }[];
       allowOther: boolean;
     }
+  | { kind: 'recommendations'; query: string; items: Recommendation[] }
+  | { kind: 'journey'; nodes: JourneyNode[] }
+  | { kind: 'resources'; project: ProjectCardData; resources: ProjectResource[] }
+  | { kind: 'book_time'; url?: string; email: string; contactPage: string }
   | {
       kind: 'fit_report';
       role?: string;
@@ -122,6 +153,10 @@ export interface ActivityStep {
   tool: string;
   label: string;
   status: 'running' | 'done';
+  /** The main argument, shown as a chip beside the label (a query, a project, a URL). */
+  chip?: string;
+  /** A few lines on what the tool found, shown when the row is expanded. */
+  detail?: string[];
 }
 
 export type ChatEvent =
