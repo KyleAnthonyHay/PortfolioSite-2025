@@ -34,7 +34,7 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming,
           }}
           className="pointer-events-auto mx-auto w-full max-w-3xl"
         >
-          <div className="rounded-[24px] border border-zinc-300/70 bg-white shadow-[0_18px_44px_-24px_rgba(26,22,19,0.35)] transition-[border-color,box-shadow] duration-300 focus-within:border-zinc-400 focus-within:shadow-[0_22px_50px_-22px_rgba(26,22,19,0.42)]">
+          <div className="rounded-[24px] border border-zinc-300/70 bg-white shadow-[0_18px_44px_-24px_rgba(0,0,0,0.35)] transition-[border-color,box-shadow] duration-300 focus-within:border-zinc-400 focus-within:shadow-[0_22px_50px_-22px_rgba(0,0,0,0.42)]">
             <textarea
               ref={inputRef}
               value={value}
@@ -48,7 +48,7 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming,
               }}
               placeholder="Ask about his products, skills, or fit for a role…"
               aria-label="Message"
-              className="block w-full resize-none bg-transparent px-5 pb-1 pt-4 text-[15px] leading-6 text-ink placeholder-zinc-400 caret-[#a95b31] outline-none"
+              className="block w-full resize-none bg-transparent px-5 pb-1 pt-4 text-[15px] leading-6 text-ink placeholder-zinc-400 caret-zinc-900 outline-none"
             />
             <div className="flex items-center justify-between px-2 pb-2 pl-5">
               <span className="hidden font-mono text-[11px] text-zinc-400 sm:block">↵ send · ⇧↵ new line</span>
@@ -61,7 +61,7 @@ export default function Composer({ value, onChange, onSend, onStop, isStreaming,
                   className="relative flex h-9 w-9 items-center justify-center rounded-full bg-ink text-paper transition-all active:scale-[0.95]"
                 >
                   <svg viewBox="0 0 36 36" className="absolute inset-0 h-9 w-9" aria-hidden>
-                    <circle cx="18" cy="18" r="16.5" fill="none" stroke="#c98a5f" strokeWidth="1.5" strokeDasharray="22 82" strokeLinecap="round" className="arc-spin" />
+                    <circle cx="18" cy="18" r="16.5" fill="none" stroke="#a1a1aa" strokeWidth="1.5" strokeDasharray="22 82" strokeLinecap="round" className="arc-spin" />
                   </svg>
                   <Square className="h-2.5 w-2.5 fill-current" />
                 </button>

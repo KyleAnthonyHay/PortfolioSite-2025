@@ -49,36 +49,7 @@
   --radius-xl: calc(var(--radius) + 4px);
 }
 
-/*
-  Palette drawn from the portrait: the oat sweater (paper), espresso shadows
-  (ink), sunlit skin (clay) and the park foliage behind him (olive). Tailwind's
-  zinc scale is remapped to the same warm neutrals so every existing zinc
-  class on the site picks up the palette without a rewrite.
-*/
-@theme {
-  --color-white: #fcfaf7;
-  --color-zinc-50: #f7f4ef;
-  --color-zinc-100: #eee9e1;
-  --color-zinc-200: #e1d9ce;
-  --color-zinc-300: #cbc1b4;
-  --color-zinc-400: #9f9488;
-  --color-zinc-500: #776d62;
-  --color-zinc-600: #5a5149;
-  --color-zinc-700: #433b34;
-  --color-zinc-800: #2a241f;
-  --color-zinc-900: #1a1613;
-  --color-zinc-950: #110e0c;
-  --color-slate-200: #e1d9ce;
-  --color-emerald-50: #eef0e3;
-  --color-emerald-400: #8d9658;
-  --color-emerald-500: #717c40;
-  --color-emerald-600: #5e6834;
-  --color-emerald-700: #4c542a;
-  --color-amber-50: #f7ebe1;
-  --color-amber-500: #b86d3c;
-  --color-amber-700: #8e4b25;
-  --color-blue-500: #4f6b72;
-}
+
 
 :root {
   --radius: 0.625rem;
@@ -113,13 +84,13 @@
   --sidebar-accent-foreground: oklch(0.205 0 0);
   --sidebar-border: oklch(0.922 0 0);
   --sidebar-ring: oklch(0.708 0 0);
-  --foreground-rgb: 26, 22, 19;
-  --background-rgb: 243, 239, 232;
-  --paper: #f3efe8;
-  --ink: #1a1613;
-  --clay: #a95b31;
-  --olive: #6b733c;
-  --stage: #15110e;
+  --foreground-rgb: 24, 24, 27;
+  --background-rgb: 249, 250, 251;
+  --paper: #f9fafb;
+  --ink: #18181b;
+  --clay: #18181b;
+  --olive: #10b981;
+  --stage: #09090b;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);
 }
@@ -166,8 +137,8 @@
     text-rendering: optimizeLegibility;
   }
   ::selection {
-    background: #1a1613;
-    color: #f3efe8;
+    background: #18181b;
+    color: #fafafa;
   }
   * {
     @apply border-border outline-ring/50;
@@ -328,7 +299,7 @@
   font-family: var(--font-mono);
   font-size: 11px;
   letter-spacing: 0.02em;
-  color: #9f9488;
+  color: #a1a1aa;
 }
 
 /* Lenis */
@@ -350,7 +321,7 @@ html.lenis, html.lenis body { height: auto; }
   to { background-position: 0% 50%; }
 }
 .text-shimmer {
-  background: linear-gradient(90deg, #9f9488 0%, #9f9488 35%, #1a1613 50%, #9f9488 65%, #9f9488 100%);
+  background: linear-gradient(90deg, #a1a1aa 0%, #a1a1aa 35%, #18181b 50%, #a1a1aa 65%, #a1a1aa 100%);
   background-size: 300% 100%;
   -webkit-background-clip: text;
   background-clip: text;
@@ -379,15 +350,15 @@ html.lenis, html.lenis body { height: auto; }
 
 @media (prefers-reduced-motion: reduce) {
   .caret, .text-shimmer, .pixel-grid > span, .arc-spin { animation: none !important; }
-  .text-shimmer { color: #776d62; background: none; }
+  .text-shimmer { color: #71717a; background: none; }
 }
 
 /* Agent surfaces: one card recipe for every widget. */
 .agent-card {
   border-radius: 20px;
-  border: 1px solid rgb(225 217 206 / 0.9);
-  background: #fcfaf7;
-  box-shadow: 0 1px 0 rgb(26 22 19 / 0.03), 0 14px 34px -22px rgb(26 22 19 / 0.22);
+  border: 1px solid rgb(228 228 231 / 0.8);
+  background: #ffffff;
+  box-shadow: 0 2px 8px -4px rgb(0 0 0 / 0.04), 0 14px 34px -22px rgb(0 0 0 / 0.14);
 }
 
 /* Streaming caret at the end of the answer. */

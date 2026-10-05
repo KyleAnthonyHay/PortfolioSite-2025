@@ -41,7 +41,7 @@ function CompactCard({ project }: { project: ProjectCardData }) {
   return (
     <Link
       href={project.href}
-      className="group block h-full overflow-hidden agent-card transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-[0_20px_40px_-22px_rgba(26,22,19,0.35)] active:scale-[0.99]"
+      className="group block h-full overflow-hidden agent-card transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-[0_20px_40px_-22px_rgba(0,0,0,0.35)] active:scale-[0.99]"
     >
       <Media project={project} className="h-[160px]" />
       <div className="p-3">

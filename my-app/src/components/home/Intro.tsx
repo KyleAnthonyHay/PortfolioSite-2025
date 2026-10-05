@@ -11,7 +11,7 @@ const easeInOut = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t 
 const easeOut = (t: number) => 1 - Math.pow(1 - t, 4);
 
 /**
- * Opening sequence. "KA" appears large and slightly slanted in the middle of
+ * Opening sequence. "Kyle" appears large and slightly slanted in the middle of
  * the page, the rest of the name types in between the initials, and the whole
  * word glides up and shrinks until it sits exactly on the nav wordmark, which
  * takes over on the same frame. Shown once per session; `?intro=1` replays it.
@@ -59,7 +59,7 @@ export default function Intro() {
     const vw = window.innerWidth;
     const vh = window.innerHeight;
     const initialsWidth = widths.reduce((sum, w, i) => sum + (INITIALS.has(i) ? w : 0), 0);
-    const startScale = Math.min((vw * (vw < 640 ? 0.42 : 0.24)) / initialsWidth, (vh * 0.34) / height);
+    const startScale = Math.min((vw * (vw < 640 ? 0.5 : 0.3)) / initialsWidth, (vh * 0.34) / height);
 
     const typed = [...Array(WORDMARK.length).keys()].filter((i) => !INITIALS.has(i));
     const T = { fadeIn: 520, typeStart: 540, perChar: 40, charDur: 120, moveStart: 900, moveEnd: 1680, reveal: 1420, done: 1680, fade: 2100 };

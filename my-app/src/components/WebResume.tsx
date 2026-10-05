@@ -37,7 +37,7 @@ const WebResume = () => {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ ...spring }}
           >
-            <div className="bg-white rounded-[2rem] p-8 border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(26,22,19,0.06)] text-center">
+            <div className="bg-white rounded-[2rem] p-8 border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] text-center">
               <div className="w-full aspect-[4/5] relative rounded-[1.5rem] overflow-hidden mb-6">
                 <Image
                   src="/profile-2.jpg"
@@ -156,8 +156,8 @@ const WebResume = () => {
             >
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-5">Tech Stack</p>
               <IconSliderGroup className="space-y-4" hoverSpeed={0.5}>
-                <IconSlider icons={techIconsRow1} duration={25} gradientColor="#f3efe8" />
-                <IconSlider icons={[...techIconsRow2].reverse()} reverse duration={25} gradientColor="#f3efe8" />
+                <IconSlider icons={techIconsRow1} duration={25} gradientColor="#f9fafb" />
+                <IconSlider icons={[...techIconsRow2].reverse()} reverse duration={25} gradientColor="#f9fafb" />
               </IconSliderGroup>
             </motion.div>
           </div>

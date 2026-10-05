@@ -79,7 +79,7 @@ export default function ProjectCard({
       // h-full + column flex makes the card fill its grid row, and the media
       // area absorbs the slack — so paired cards line up instead of leaving a
       // ragged gap under the shorter one. The aspect ratio stays the minimum.
-      className="group relative h-full flex flex-col bg-white rounded-[1.5rem] overflow-hidden border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(26,22,19,0.06)] hover:border-zinc-300 hover:shadow-[0_28px_50px_-24px_rgba(26,22,19,0.28)] transition-[box-shadow,border-color] duration-500"
+      className="group relative h-full flex flex-col bg-white rounded-[1.5rem] overflow-hidden border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] hover:border-zinc-300 hover:shadow-[0_28px_50px_-24px_rgba(0,0,0,0.28)] transition-[box-shadow,border-color] duration-500"
     >
       <div className={`relative w-full grow ${portrait ? 'aspect-[4/5]' : 'aspect-[16/10]'} overflow-hidden bg-gradient-to-b from-zinc-50 to-zinc-100/80`}>
         <div className="absolute inset-0 flex items-center justify-center">

@@ -1,6 +1,6 @@
 export const WORDMARK = 'Kyle-Anthony';
 /** Characters on screen from the loader's first frame; the rest type in between them. */
-export const INITIALS = new Set([0, 5]);
+export const INITIALS = new Set([0, 1, 2, 3]);
 export const wordmarkClass = 'whitespace-pre text-lg font-semibold leading-none tracking-tight text-zinc-900';
 
 /**

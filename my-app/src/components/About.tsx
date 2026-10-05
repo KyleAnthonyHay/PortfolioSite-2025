@@ -17,7 +17,7 @@ const About = () => {
             initial={{ opacity: 0, x: -40 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ ...spring }}
-            className="relative aspect-[4/5] rounded-[2rem] overflow-hidden shadow-[0_24px_48px_-20px_rgba(26,22,19,0.25)]"
+            className="relative aspect-[4/5] rounded-[2rem] overflow-hidden shadow-[0_24px_48px_-20px_rgba(0,0,0,0.25)]"
           >
             <Image
               src="/profile.jpg"
@@ -67,7 +67,7 @@ const About = () => {
                 <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium underline decoration-zinc-300 underline-offset-4 hover:text-clay hover:decoration-clay transition-colors">
                   SelahNote
                 </a>
-                , an AI notetaker for sermons that has grown over 350+ users and 40 paying subscribers.
+                , an AI notetaker for sermons that has grown to over 400 users and 40 paying subscribers.
               </p>
             </motion.div>
 
@@ -79,7 +79,7 @@ const About = () => {
             >
               {[
                 { value: '3', label: 'Products live' },
-                { value: '350+', label: 'SelahNote users' },
+                { value: '400+', label: 'SelahNote users' },
                 { value: 'B.S.', label: 'Computer Science' },
               ].map((stat, i) => (
                 <div key={stat.label} className="flex gap-8">

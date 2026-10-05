@@ -76,7 +76,7 @@ export const products: Product[] = [
 
 /** Smaller things that also shipped, listed below the flagships. */
 export const alsoShipped = [
-  { projectId: 1, name: 'SelahNote', kind: 'iOS app', note: 'AI sermon notes · 350+ users, 40 paying', image: '/demos/selahnote/onboarding-poster.jpg', href: 'https://selahnote.app' },
+  { projectId: 1, name: 'SelahNote', kind: 'iOS app', note: 'AI sermon notes · 400+ users, 40 paying', image: '/demos/selahnote/onboarding-poster.jpg', href: 'https://selahnote.app' },
   { projectId: 10, name: 'SelahNote Creator Dashboard', kind: 'Internal tool', note: 'UGC referrals and monthly payouts', image: '/demos/selahnote-ugc/demo-poster.jpg' },
   { projectId: 9, name: 'SoundSnag', kind: 'macOS app', note: 'Audio saving and local file conversion', image: '/demos/soundsnag/demo-poster.jpg' },
   { projectId: 8, name: 'YarnScript', kind: 'Web app', note: 'A teleprompter that follows your voice', image: '/demos/yarnscript/demo-poster.jpg', href: 'https://yarn-script.vercel.app' },

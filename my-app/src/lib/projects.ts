@@ -159,17 +159,6 @@ export const projects: ProjectCardData[] = [
     github: 'https://github.com/KyleAnthonyHay/Countries-App',
     category: 'iOS Apps',
   },
-  {
-    id: 7,
-    title: 'ChatGPT Clone',
-    tagline: 'AI chat interface',
-    description:
-      'Specialized AI Assistant for institutional policies using RAG architecture to ground responses in actual policy documents.',
-    image: '/projects/chatgpt-clone.png',
-    link: 'https://chat-gpt-clone-delta-ten.vercel.app/',
-    landscape: true,
-    category: 'Web Apps',
-  },
 ];
 
 export const featuredProjects = projects.filter((p) => p.featured);
