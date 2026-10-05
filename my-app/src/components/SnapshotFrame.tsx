@@ -34,7 +34,7 @@ export default function SnapshotFrame({ html, highlight, fallback, alt }: Snapsh
       .then((text) => {
         if (cancelled) return;
         const ring = highlight
-          ? `${highlight} { outline: 3px solid #18181b; outline-offset: 6px; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(24,24,27,0.06); position: relative; z-index: 1; }`
+          ? `${highlight} { outline: 3px solid #18181b; outline-offset: 6px; border-radius: 10px; box-shadow: 0 0 0 9999px rgba(24,24,27,0.06); }`
           : '';
         const style = `<style>html,body{margin:0;overflow:hidden;width:${SNAPSHOT_WIDTH}px;height:${SNAPSHOT_HEIGHT}px;} *{cursor:default!important;} ${ring}</style>`;
         setDoc(text.includes('</head>') ? text.replace('</head>', `${style}</head>`) : style + text);
