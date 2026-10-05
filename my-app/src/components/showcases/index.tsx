@@ -121,6 +121,14 @@ const onTract: Showcase = {
         'Row Level Security scopes every query to the signed-in organization, so the same dashboard serves multiple tenants without a leak. Alerts fire on renewals and expirations before they become someone\'s problem.',
       media: { kind: 'browser', src: '/demos/ontract/dashboard-light.jpg', alt: 'OnTract dashboard', url: 'ontract.app/dashboard', ratio: 1800 / 1012 },
     },
+    {
+      label: 'Walkthrough',
+      icon: <Play className={ic} />,
+      title: 'A narrated tour of OnTract.',
+      description:
+        'Under a minute in the real app: the dashboard, the terms OnTract reads for you, an answer that quotes its clause, and the client portal.',
+      media: { kind: 'walkthrough', src: '/products/ontract/tour.mp4', poster: '/products/ontract/tour-poster.jpg' },
+    },
   ],
 };
 
@@ -143,6 +151,14 @@ const sentio: Showcase = {
       description:
         'Rather than one score per review, Sentio+ pulls out the specific aspects customers react to and tracks each across time, category, and rating — turning a pile of feedback into a trend a team can act on.',
       media: { kind: 'browser', src: '/demos/sentio/insights.jpg', alt: 'Sentio+ analytics view', ratio: 16 / 9 },
+    },
+    {
+      label: 'Walkthrough',
+      icon: <Play className={ic} />,
+      title: 'A narrated tour of Sentio+.',
+      description:
+        'Under a minute in the real app: the analytics, a question answered with the numbers and the reviews behind them, and the live customer map.',
+      media: { kind: 'walkthrough', src: '/products/sentio/tour.mp4', poster: '/products/sentio/tour-poster.jpg' },
     },
   ],
 };
@@ -241,6 +257,22 @@ const prodBot: Showcase = {
         poster: '/demos/prodbot/demo-poster.jpg',
         ratio: 1280 / 772,
       },
+    },
+    {
+      label: 'Walkthrough',
+      icon: <Play className={ic} />,
+      title: 'A narrated tour of ProdBot.',
+      description:
+        'Under a minute in the real app: a volunteer asks for help, ProdBot starts from the point in the signal chain closest to the problem, and the fix becomes next week’s docs.',
+      media: { kind: 'walkthrough', src: '/products/prodbot/tour.mp4', poster: '/products/prodbot/tour-poster.jpg' },
+    },
+    {
+      label: 'Launch',
+      icon: <Sparkles className={ic} />,
+      title: 'The launch film.',
+      description:
+        'ProdBot’s 30-second launch film.',
+      media: { kind: 'walkthrough', src: '/products/prodbot/launch.mp4', poster: '/products/prodbot/launch-poster.jpg' },
     },
   ],
 };

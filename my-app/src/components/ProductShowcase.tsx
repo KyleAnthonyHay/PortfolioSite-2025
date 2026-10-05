@@ -23,7 +23,9 @@ export type ShowcaseMedia =
   /** A screen recording, shown in browser chrome. Mirrors PhoneScreen's video handling. */
   | { kind: 'browser-video'; src: string; webm?: string; poster?: string; url?: string; ratio?: number }
   /** A screen recording that already includes its own window chrome, shown bare. */
-  | { kind: 'recording'; src: string; webm?: string; poster?: string; ratio?: number };
+  | { kind: 'recording'; src: string; webm?: string; poster?: string; ratio?: number }
+  /** A narrated walkthrough with sound: native controls, nothing loads until play. */
+  | { kind: 'walkthrough'; src: string; poster: string };
 
 export interface ShowcaseItem {
   /** Pill label. Only rendered when a showcase has more than one item. */
@@ -69,6 +71,18 @@ function Media({ media, priority }: { media: ShowcaseMedia; priority?: boolean }
         sizes="(max-width: 768px) 240px, 300px"
         className="object-contain"
         priority={priority}
+      />
+    );
+  }
+  if (media.kind === 'walkthrough') {
+    return (
+      <video
+        className="w-full h-full object-contain bg-white"
+        src={media.src}
+        poster={media.poster}
+        controls
+        playsInline
+        preload="none"
       />
     );
   }
