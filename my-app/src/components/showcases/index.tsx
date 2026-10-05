@@ -134,7 +134,7 @@ const sentio: Showcase = {
       title: 'Ask a question, get an answer with receipts.',
       description:
         'A LangGraph agent runs semantic search over review embeddings in ChromaDB and answers in plain language, citing the specific reviews behind every claim so nothing rests on the model\'s word alone.',
-      media: { kind: 'browser', src: '/demos/sentio/overview.jpg', alt: 'Sentio+ landing view', ratio: 1800 / 973 },
+      media: { kind: 'browser', src: '/demos/sentio/overview.jpg', alt: 'Sentio+ Ask view', ratio: 16 / 9 },
     },
     {
       label: 'Insights',
@@ -142,7 +142,7 @@ const sentio: Showcase = {
       title: 'Sentiment traced back to the aspect driving it.',
       description:
         'Rather than one score per review, Sentio+ pulls out the specific aspects customers react to and tracks each across time, category, and rating — turning a pile of feedback into a trend a team can act on.',
-      media: { kind: 'browser', src: '/demos/sentio/insights.jpg', alt: 'Sentio+ insights view', ratio: 1800 / 974 },
+      media: { kind: 'browser', src: '/demos/sentio/insights.jpg', alt: 'Sentio+ analytics view', ratio: 16 / 9 },
     },
   ],
 };
