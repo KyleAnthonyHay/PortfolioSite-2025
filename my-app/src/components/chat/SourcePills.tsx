@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 import type { SourceRef } from '@/lib/chat-events';
 
@@ -16,8 +15,9 @@ export default function SourcePills({ sources }: { sources: SourceRef[] }) {
           href={source.href}
           className="inline-flex items-center gap-1.5 rounded-full border border-zinc-200 bg-white py-[3px] pl-1 pr-2.5 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-ink active:scale-[0.97]"
         >
-          <span className="relative h-4 w-4 overflow-hidden rounded-full bg-zinc-100">
-            <Image src={source.image} alt="" fill sizes="16px" className="object-cover object-top" />
+          {/* A monogram reads at this size; a 16px screenshot thumbnail doesn't. */}
+          <span aria-hidden className="flex h-4 w-4 items-center justify-center rounded-full bg-zinc-900 text-[9px] font-semibold text-white">
+            {source.title.charAt(0)}
           </span>
           {source.title}
         </Link>
