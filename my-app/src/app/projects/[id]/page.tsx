@@ -8,8 +8,6 @@ import ProjectFeatures from '@/components/ProjectFeatures';
 import { AnimatedSection } from '@/components/AnimatedSection';
 import ProjectShowcase from '@/components/showcases';
 import { hasShowcase } from '@/components/showcases/registry';
-import ExplainerVideo from '@/components/ExplainerVideo';
-import { products } from '@/lib/products';
 
 function BackLink() {
   return (
@@ -272,16 +270,6 @@ export default async function ProjectPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </AnimatedSection>
-
-            {/* Narrated explainer, for the products that have one */}
-            {(() => {
-              const product = products.find((p) => p.projectId === project.id);
-              return product ? (
-                <AnimatedSection className="mb-20">
-                  <ExplainerVideo product={product} />
-                </AnimatedSection>
-              ) : null;
-            })()}
 
             {/* Purpose */}
             <AnimatedSection className="mb-20">
