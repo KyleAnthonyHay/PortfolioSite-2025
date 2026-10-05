@@ -12,6 +12,15 @@ import type { ProjectCardData } from '@/lib/projects';
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
+const categoryLabel: Record<ProjectCardData['category'], string> = {
+  'iOS Apps': 'iOS',
+  'macOS Apps': 'macOS',
+  'Web Apps': 'Web',
+};
+
+/** Products running on their own domain today. */
+const isLive = (link?: string) => !!link && /kyleanthonyhay\.com|selahnote\.app/.test(link);
+
 interface ProjectCardProps {
   project: ProjectCardData;
   /** Drives the entrance animation — in-view on the home grid, mounted on the index. */
@@ -48,7 +57,7 @@ export default function ProjectCard({
 
   const cardVideo = project.video && (
     <video
-      className="w-full h-full object-cover object-top"
+      className="w-full h-full object-contain"
       poster={project.video.poster}
       autoPlay
       loop
@@ -70,9 +79,9 @@ export default function ProjectCard({
       // h-full + column flex makes the card fill its grid row, and the media
       // area absorbs the slack — so paired cards line up instead of leaving a
       // ragged gap under the shorter one. The aspect ratio stays the minimum.
-      className="group relative h-full flex flex-col bg-white rounded-[1.5rem] overflow-hidden border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] transition-shadow duration-500"
+      className="group relative h-full flex flex-col bg-white rounded-[1.5rem] overflow-hidden border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(26,22,19,0.06)] hover:border-zinc-300 hover:shadow-[0_28px_50px_-24px_rgba(26,22,19,0.28)] transition-[box-shadow,border-color] duration-500"
     >
-      <div className={`relative w-full grow ${portrait ? 'aspect-[4/5]' : 'aspect-[16/10]'} overflow-hidden`}>
+      <div className={`relative w-full grow ${portrait ? 'aspect-[4/5]' : 'aspect-[16/10]'} overflow-hidden bg-gradient-to-b from-zinc-50 to-zinc-100/80`}>
         <div className="absolute inset-0 flex items-center justify-center">
           {/*
             Portrait devices are sized off the well's height, not its width.
@@ -92,7 +101,7 @@ export default function ProjectCard({
                chrome, or bare when the recording brings its own window */
             <div
               ref={videoRef}
-              className="w-[85%] transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              className="w-[90%] transform transition-transform duration-700 ease-out group-hover:scale-[1.02]"
             >
               {project.video.bare ? (
                 <RecordingFrame ratio={project.video.ratio}>{cardVideo}</RecordingFrame>
@@ -120,9 +129,18 @@ export default function ProjectCard({
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 border-t border-zinc-200/60">
         <div className="flex items-center gap-3 mb-1">
           <h3 className="text-zinc-900 font-medium text-base">{project.title}</h3>
+          {isLive(project.link) && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Live
+            </span>
+          )}
+          <span className="ml-auto font-mono text-[11px] text-zinc-400 transition-transform duration-300 group-hover:translate-x-0.5">
+            {categoryLabel[project.category]} →
+          </span>
           {detailed && project.link && (
             <span className="inline-flex text-zinc-400">
               <ExternalIcon />

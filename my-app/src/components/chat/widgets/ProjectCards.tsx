@@ -18,7 +18,7 @@ export function Media({ project, className = '', contain = true }: { project: Pr
     <div className={`relative bg-gradient-to-b from-zinc-50 to-zinc-100/70 ${className}`}>
       {portrait && !project.framed ? (
         <div className="absolute inset-[7%] flex items-center justify-center">
-          <div className="relative h-full aspect-[9/19] overflow-hidden rounded-[12%/6%] bg-zinc-900 p-[3px] shadow-[0_6px_16px_-8px_rgba(0,0,0,0.35)]">
+          <div className="relative h-full aspect-[9/19] overflow-hidden rounded-[12%/6%] bg-ink p-[3px] shadow-[0_6px_16px_-8px_rgba(0,0,0,0.35)]">
             <div className="relative h-full w-full overflow-hidden rounded-[11%/5.5%] bg-white">
               <Image src={project.image} alt={project.title} fill sizes="120px" className="object-cover object-top" />
             </div>
@@ -41,7 +41,7 @@ function CompactCard({ project }: { project: ProjectCardData }) {
   return (
     <Link
       href={project.href}
-      className="group block h-full overflow-hidden rounded-2xl border border-zinc-200/60 bg-white transition-all hover:border-zinc-300 hover:shadow-[0_14px_30px_-14px_rgba(0,0,0,0.16)] active:scale-[0.99]"
+      className="group block h-full overflow-hidden agent-card transition-all hover:-translate-y-0.5 hover:border-zinc-300 hover:shadow-[0_20px_40px_-22px_rgba(26,22,19,0.35)] active:scale-[0.99]"
     >
       <Media project={project} className="h-[160px]" />
       <div className="p-3">
@@ -138,7 +138,7 @@ export function ProjectDetailWidget({ widget }: { widget: Extract<Widget, { kind
   const portrait = project.orientation === 'portrait';
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
+    <div className="overflow-hidden agent-card">
       <div className={`grid grid-cols-1 ${portrait ? 'sm:grid-cols-[180px_1fr]' : ''}`}>
         <Media project={project} contain={false} className={portrait ? 'h-[240px] sm:h-full sm:min-h-[280px]' : 'aspect-[16/9]'} />
         <div className="p-5">
@@ -177,7 +177,7 @@ export function ProjectDetailWidget({ widget }: { widget: Extract<Widget, { kind
           <div className="flex flex-wrap items-center gap-2">
             <Link
               href={project.href}
-              className="inline-flex h-9 items-center rounded-xl bg-zinc-900 px-4 text-xs font-medium text-white transition-all hover:bg-zinc-800 active:scale-[0.98]"
+              className="inline-flex h-9 items-center rounded-xl bg-ink px-4 text-xs font-medium text-white transition-all hover:bg-zinc-800 active:scale-[0.98]"
             >
               View project
             </Link>

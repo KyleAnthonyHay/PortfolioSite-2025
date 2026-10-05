@@ -16,7 +16,7 @@ export function ExperienceCheckWidget({ widget }: { widget: Extract<Widget, { ki
   ].filter(Boolean);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-zinc-200/60 bg-white shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
+    <div className="overflow-hidden agent-card">
       <div className="flex items-center gap-3 px-4 py-3.5">
         <span
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl ${

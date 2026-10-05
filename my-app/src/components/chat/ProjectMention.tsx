@@ -51,7 +51,7 @@ export default function ProjectMention({ id, children }: { id: number; children:
           <div className="flex items-center gap-1.5">
             <Link
               href={project.href}
-              className="inline-flex h-8 flex-1 items-center justify-center rounded-lg bg-zinc-900 px-3 text-xs font-medium text-white transition-colors hover:bg-zinc-800"
+              className="inline-flex h-8 flex-1 items-center justify-center rounded-lg bg-ink px-3 text-xs font-medium text-white transition-colors hover:bg-zinc-800"
             >
               View project
             </Link>

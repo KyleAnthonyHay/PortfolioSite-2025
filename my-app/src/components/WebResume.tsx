@@ -28,7 +28,7 @@ const WebResume = () => {
   const { ref, isInView } = useInView({ threshold: 0.1 });
 
   return (
-    <section id="resume" className="py-20 md:py-28" ref={ref}>
+    <section id="experience" className="scroll-mt-20 py-20 md:py-28" ref={ref}>
       <div className="max-w-[1400px] mx-auto px-6 md:px-10">
         <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-12 lg:gap-20">
           {/* Left: Profile */}
@@ -37,20 +37,20 @@ const WebResume = () => {
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ ...spring }}
           >
-            <div className="bg-white rounded-[2rem] p-8 border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] text-center">
+            <div className="bg-white rounded-[2rem] p-8 border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(26,22,19,0.06)] text-center">
               <div className="w-full aspect-[4/5] relative rounded-[1.5rem] overflow-hidden mb-6">
                 <Image
                   src="/profile-2.jpg"
                   alt="Kyle-Anthony Hay"
                   fill
                   className="object-cover object-top"
-                  priority
+                  sizes="340px"
                 />
               </div>
 
               <div className="flex items-center justify-center gap-2 mb-4">
-                <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
-                <span className="text-emerald-500 text-xs font-medium">working at cognizant</span>
+                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
+                <span className="text-emerald-600 text-xs font-medium">AI Engineer at Cognizant</span>
               </div>
 
               <h3 className="text-zinc-900 text-xl font-semibold mb-1 tracking-tight">Kyle-Anthony Hay</h3>
@@ -63,7 +63,7 @@ const WebResume = () => {
                 {[
                   { href: 'https://github.com/KyleAnthonyHay', icon: 'github' },
                   { href: 'https://linkedin.com/in/kyle-anthonyhay', icon: 'linkedin' },
-                  { href: 'mailto:kyleanthonyhay@gmail.com', icon: 'email' },
+                  { href: 'mailto:haykyle917@gmail.com', icon: 'email' },
                 ].map((social) => (
                   <Link
                     key={social.icon}
@@ -118,7 +118,7 @@ const WebResume = () => {
               className="mb-10"
             >
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-5">Experience</p>
-              <div className="divide-y divide-zinc-100">
+              <div className="divide-y divide-zinc-200/70 border-y border-zinc-200/70">
                 {experience.map((exp, index) => (
                   <div key={index} className="flex items-center justify-between py-4">
                     <div>
@@ -139,7 +139,7 @@ const WebResume = () => {
               className="mb-10"
             >
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-5">Education</p>
-              <div className="flex items-center justify-between py-4 border-t border-zinc-100">
+              <div className="flex items-center justify-between py-4 border-y border-zinc-200/70">
                 <div>
                   <p className="text-zinc-900 font-medium text-sm">B.S. Computer Science</p>
                   <p className="text-zinc-400 text-sm">CUNY Hunter College</p>
@@ -156,8 +156,8 @@ const WebResume = () => {
             >
               <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-5">Tech Stack</p>
               <IconSliderGroup className="space-y-4" hoverSpeed={0.5}>
-                <IconSlider icons={techIconsRow1} duration={25} gradientColor="#f9fafb" />
-                <IconSlider icons={[...techIconsRow2].reverse()} reverse duration={25} gradientColor="#f9fafb" />
+                <IconSlider icons={techIconsRow1} duration={25} gradientColor="#f3efe8" />
+                <IconSlider icons={[...techIconsRow2].reverse()} reverse duration={25} gradientColor="#f3efe8" />
               </IconSliderGroup>
             </motion.div>
           </div>

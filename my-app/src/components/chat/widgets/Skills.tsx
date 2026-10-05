@@ -5,7 +5,7 @@ import type { Widget } from '@/lib/chat-events';
 export function SkillsWidget({ widget }: { widget: Extract<Widget, { kind: 'skills' }> }) {
   const currentYear = new Date().getFullYear();
   return (
-    <div className="rounded-2xl border border-zinc-200/60 bg-white p-4 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
+    <div className="agent-card p-4">
       <div className="space-y-4">
         {widget.groups.map((group) => (
           <div key={group.name}>

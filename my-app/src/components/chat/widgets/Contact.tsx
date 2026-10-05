@@ -19,7 +19,7 @@ const icons: Record<ContactLink['kind'], React.ComponentType<{ className?: strin
 
 export function ContactWidget({ widget }: { widget: Extract<Widget, { kind: 'contact' }> }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/60 bg-white p-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
+    <div className="agent-card p-5">
       <div className="mb-4 flex items-center gap-3">
         <div className="h-12 w-12 shrink-0 overflow-hidden rounded-full ring-2 ring-zinc-100">
           <Image src="/profile.jpg" alt={widget.name} width={48} height={48} className="h-full w-full object-cover" />
@@ -53,7 +53,7 @@ export function ContactWidget({ widget }: { widget: Extract<Widget, { kind: 'con
             'group flex items-center gap-3 rounded-xl border border-zinc-100 px-3 py-2.5 transition-all hover:border-zinc-300 hover:bg-zinc-50 active:scale-[0.99]';
           const inner = (
             <>
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-zinc-900 group-hover:text-white">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-zinc-100 text-zinc-500 transition-colors group-hover:bg-ink group-hover:text-white">
                 <Icon className="h-3.5 w-3.5" />
               </span>
               <span className="min-w-0 flex-1">

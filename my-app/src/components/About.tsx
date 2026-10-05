@@ -17,14 +17,14 @@ const About = () => {
             initial={{ opacity: 0, x: -40 }}
             animate={isInView ? { opacity: 1, x: 0 } : {}}
             transition={{ ...spring }}
-            className="relative aspect-[4/5] rounded-[2rem] overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]"
+            className="relative aspect-[4/5] rounded-[2rem] overflow-hidden shadow-[0_24px_48px_-20px_rgba(26,22,19,0.25)]"
           >
             <Image
-              src="/profile-3.jpg"
+              src="/profile.jpg"
               alt="Kyle-Anthony Hay"
               fill
-              className="object-cover object-center"
-              priority
+              className="object-cover object-[50%_30%]"
+              sizes="(max-width: 1024px) 100vw, 50vw"
             />
           </motion.div>
 
@@ -57,14 +57,14 @@ const About = () => {
             >
               <p>
                 Based in New York, I work as an AI Engineer at{' '}
-                <a href="https://www.cognizant.com/us/en" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
+                <a href="https://www.cognizant.com/us/en" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium underline decoration-zinc-300 underline-offset-4 hover:text-clay hover:decoration-clay transition-colors">
                   Cognizant
                 </a>
                 , building agentic solutions for enterprise companies and hacking away at personal projects whenever I can.
               </p>
               <p>
                 I also run{' '}
-                <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium hover:text-zinc-600 transition-colors">
+                <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium underline decoration-zinc-300 underline-offset-4 hover:text-clay hover:decoration-clay transition-colors">
                   SelahNote
                 </a>
                 , an AI notetaker for sermons that has grown over 350+ users and 40 paying subscribers.
@@ -77,20 +77,19 @@ const About = () => {
               transition={{ ...spring, delay: 0.35 }}
               className="mt-10 flex gap-8"
             >
-              <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">1</p>
-                <p className="text-xs text-zinc-400 mt-1">Years Experience</p>
-              </div>
-              <div className="w-px bg-zinc-200" />
-              <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">6+</p>
-                <p className="text-xs text-zinc-400 mt-1">Projects Shipped</p>
-              </div>
-              <div className="w-px bg-zinc-200" />
-              <div>
-                <p className="text-2xl font-semibold text-zinc-900 tracking-tight">B.S.</p>
-                <p className="text-xs text-zinc-400 mt-1">Computer Science</p>
-              </div>
+              {[
+                { value: '3', label: 'Products live' },
+                { value: '350+', label: 'SelahNote users' },
+                { value: 'B.S.', label: 'Computer Science' },
+              ].map((stat, i) => (
+                <div key={stat.label} className="flex gap-8">
+                  {i > 0 && <div className="w-px bg-zinc-300/70" />}
+                  <div>
+                    <p className="text-2xl font-semibold text-zinc-900 tracking-tight">{stat.value}</p>
+                    <p className="text-xs text-zinc-400 mt-1">{stat.label}</p>
+                  </div>
+                </div>
+              ))}
             </motion.div>
           </div>
         </div>

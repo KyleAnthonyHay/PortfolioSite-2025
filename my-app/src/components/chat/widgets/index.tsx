@@ -7,8 +7,17 @@ import { SkillsWidget } from './Skills';
 import { TimelineWidget } from './Timeline';
 import { ContactWidget } from './Contact';
 import { FitReportWidget } from './FitReport';
+import { QuestionCard } from './Question';
 
-export default function WidgetRenderer({ widget }: { widget: Widget }) {
+interface WidgetRendererProps {
+  widget: Widget;
+  /** For question cards: whether the visitor can still answer, what they picked, and how to send it. */
+  active?: boolean;
+  answer?: string;
+  onAnswer?: (text: string) => void;
+}
+
+export default function WidgetRenderer({ widget, active = false, answer, onAnswer }: WidgetRendererProps) {
   switch (widget.kind) {
     case 'projects':
       return <ProjectsWidget widget={widget} />;
@@ -22,6 +31,8 @@ export default function WidgetRenderer({ widget }: { widget: Widget }) {
       return <TimelineWidget widget={widget} />;
     case 'contact':
       return <ContactWidget widget={widget} />;
+    case 'question':
+      return <QuestionCard widget={widget} active={active} answer={answer} onAnswer={onAnswer} />;
     case 'fit_report':
       return <FitReportWidget widget={widget} />;
     default:

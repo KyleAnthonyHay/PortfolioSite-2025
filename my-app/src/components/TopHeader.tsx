@@ -1,24 +1,47 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { motion } from 'motion/react';
+import Wordmark from '@/components/home/Wordmark';
+import { useIntro } from '@/components/home/IntroContext';
 
 const TopHeader = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const { phase } = useIntro();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  // Everything but the wordmark waits for the loader to hand over.
+  const reveal = (delay: number) => ({
+    initial: { opacity: 0, y: -4 },
+    animate: phase === 'intro' ? { opacity: 0, y: -4 } : { opacity: 1, y: 0 },
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const, delay },
+  });
 
   const closeMenu = () => setIsMenuOpen(false);
 
   return (
-    <header className="bg-white/60 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-50">
+    <header
+      className={`sticky top-0 z-50 border-b backdrop-blur-xl transition-colors duration-500 ${
+        scrolled || isMenuOpen ? 'border-zinc-200/70 bg-paper/80' : 'border-transparent bg-paper/0'
+      }`}
+    >
       <nav className="max-w-[1400px] mx-auto px-6 md:px-10 py-4 flex items-center justify-between">
-        <Link href="/" className="text-zinc-900 font-semibold text-lg tracking-tight">
-          Kyle-Anthony
+        <Link href="/" aria-label="Kyle-Anthony Hay, home">
+          <Wordmark hidden={phase !== 'done'} />
         </Link>
 
-        <div className="hidden md:flex items-center gap-1">
+        <motion.div {...reveal(0.1)} className="hidden md:flex items-center gap-1">
           {[
             { href: '/', label: 'Home' },
-            { href: '/projects', label: 'Projects' },
+            { href: '/#products', label: 'Products' },
             { href: '/#about', label: 'About' },
           ].map((link) => (
             <Link
@@ -45,18 +68,19 @@ const TopHeader = () => {
           ))}
           <Link
             href="/chat"
-            className="text-zinc-500 hover:text-zinc-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-zinc-100/80 transition-all duration-200"
+            className="inline-flex items-center gap-2 text-zinc-500 hover:text-zinc-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-zinc-100/80 transition-all duration-200"
           >
-            Chat
+            <span className="h-1.5 w-1.5 rounded-full bg-clay" />
+            Ask my agent
           </Link>
-        </div>
+        </motion.div>
 
-        <div className="hidden md:flex items-center gap-2">
+        <motion.div {...reveal(0.2)} className="hidden md:flex items-center gap-2">
           <a
             href="/Kyle-Anthony_Resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-200 rounded-xl hover:bg-zinc-50 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
+            className="px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-300/80 rounded-xl hover:bg-zinc-100 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
           >
             Resume
           </a>
@@ -66,7 +90,7 @@ const TopHeader = () => {
           >
             Contact
           </Link>
-        </div>
+        </motion.div>
 
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -78,11 +102,11 @@ const TopHeader = () => {
       </nav>
 
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-white/90 backdrop-blur-xl border-b border-slate-200/50 z-50">
+        <div className="md:hidden absolute top-full left-0 right-0 bg-paper/95 backdrop-blur-xl border-b border-slate-200/50 z-50">
           <div className="flex flex-col px-6 py-4 gap-1">
             {[
               { href: '/', label: 'Home' },
-              { href: '/projects', label: 'Projects' },
+              { href: '/#products', label: 'Products' },
               { href: '/#about', label: 'About' },
             ].map((link) => (
               <Link
@@ -113,7 +137,7 @@ const TopHeader = () => {
               onClick={closeMenu}
               className="text-zinc-600 hover:text-zinc-900 text-sm font-medium py-3 px-3 rounded-lg hover:bg-zinc-100/80 transition-all"
             >
-              Chat
+              Ask my agent
             </Link>
             <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-zinc-200/60">
               <a

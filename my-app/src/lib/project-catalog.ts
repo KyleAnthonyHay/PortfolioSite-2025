@@ -57,7 +57,7 @@ const details: Record<number, CatalogDetails> = {
   5: {
     aliases: ['OnTract', 'Ontract'],
     corpusNames: ['Ontract'],
-    image: '/demos/ontract/overview.jpg',
+    image: '/products/ontract/poster.jpg',
     highlights: ['Next.js', 'pgvector', 'LangGraph', 'Bedrock'],
     overview:
       'Enterprise contract management platform with AI-powered search, automated metadata extraction, and conversational Q&A over a contract portfolio. Retrieval-Augmented Generation on PostgreSQL + pgvector, multi-tenant Supabase auth with Row Level Security, and Stripe billing.',
@@ -70,7 +70,7 @@ const details: Record<number, CatalogDetails> = {
   6: {
     aliases: ['Sentio+', 'Sentio Plus', 'Sentio', 'SentioPlus'],
     corpusNames: ['Sentio Plus', 'Finetuned Sentiment Analysis'],
-    image: '/demos/sentio/overview.jpg',
+    image: '/products/sentio/poster.jpg',
     highlights: ['FastAPI', 'LangGraph', 'ChromaDB', 'RoBERTa'],
     overview:
       'Customer-intelligence platform that turns large volumes of unstructured reviews into decision-ready insights. RAG over ChromaDB for aspect-level reasoning, a fine-tuned RoBERTa sentiment model, and a FastAPI + LangGraph backend behind a Next.js dashboard.',
@@ -137,7 +137,7 @@ const details: Record<number, CatalogDetails> = {
   11: {
     aliases: ['V1 ProdBot', 'ProdBot', 'Prod Bot', 'V1Church ProdBot', 'V1 Church ProdBot'],
     corpusNames: ['V1 Prodbot'],
-    image: '/demos/prodbot/demo-poster.jpg',
+    image: '/products/prodbot/poster.jpg',
     unframed: true,
     highlights: ['React', 'Convex', 'OpenAI', 'React Flow'],
     overview:

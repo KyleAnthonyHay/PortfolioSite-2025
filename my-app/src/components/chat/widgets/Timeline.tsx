@@ -5,7 +5,7 @@ import type { Widget } from '@/lib/chat-events';
 
 export function TimelineWidget({ widget }: { widget: Extract<Widget, { kind: 'timeline' }> }) {
   return (
-    <div className="rounded-2xl border border-zinc-200/60 bg-white px-5 py-4 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)]">
+    <div className="agent-card px-5 py-4">
       <ol className="relative">
         {widget.items.map((item, index) => {
           const Icon = item.kind === 'work' ? Briefcase : GraduationCap;

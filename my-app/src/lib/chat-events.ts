@@ -98,6 +98,12 @@ export type Widget =
       links: ContactLink[];
     }
   | {
+      kind: 'question';
+      question: string;
+      options: { label: string; detail?: string }[];
+      allowOther: boolean;
+    }
+  | {
       kind: 'fit_report';
       role?: string;
       requirements: FitRequirement[];
