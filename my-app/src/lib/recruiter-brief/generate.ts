@@ -1,3 +1,4 @@
+import { CAREER_FACTS } from '../facts';
 import fs from 'fs/promises';
 import path from 'path';
 import { ChatOpenAI } from '@langchain/openai';
@@ -37,7 +38,7 @@ export const REQUIREMENT_RULES =
  * out of the evidence and out of the brief. The Cognizant role is listed on
  * the site but unconfirmed as of October 2026.
  */
-const UNCONFIRMED = [/cognizant/i];
+const UNCONFIRMED: RegExp[] = [];
 const DRAFT_MARKER = /\[NEEDS KYLE/i;
 
 function scrub(text: string): string {
@@ -85,7 +86,7 @@ async function extractRequirements(jobDescription: string): Promise<ExtractedPos
   }>(
     `You read a job posting for a recruiter. ${REQUIREMENT_RULES}
 Mark each one required or nice-to-have, as the posting does (preferred, bonus, plus = nice-to-have). Return at most 11, required ones first; when the posting lists more, merge closely related ones into one row rather than dropping any. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
-"coreFunction" is the job itself as one experience requirement, with the seniority and domain the posting implies (e.g. "Senior-level experience as a finance analytics / BI data scientist", "Experience as a full-stack engineer building AI products"). It is always required.
+"coreFunction" is the job itself as one experience requirement: the kind of engineer or specialist and the seniority the posting implies (e.g. "Senior-level experience as a site reliability engineer", "Experience as a data scientist in finance", "Experience as a full-stack engineer building AI products"). Name a domain only when the job is a specialist in it (a finance data scientist); the company's product area (fintech, health, education) is not part of the job itself. It is always required.
 Return the role title and the hiring company exactly as the posting states them, or null.
 JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": string, "requirements": [{"text": string, "required": boolean}], "logistics": [string]}`,
     jobDescription.slice(0, 14000),
@@ -145,7 +146,7 @@ function profileFacts(): EvidenceReference[] {
       id: 'P2',
       kind: 'profile',
       section: 'Experience to date',
-      excerpt: `Building software since 2022 (about ${year - 2022} years), mostly through personal and team projects. Software Engineering Intern at The Difference in 2023. Revature AI Engineering training program in January 2026, where OnTract and Sentio+ were built as team projects. No other employment is confirmed for this brief.`,
+      excerpt: `Building software since 2022 (about ${year - 2022} years), mostly through personal and team projects. AI Engineer at Cognizant since November 2025 (synthetic-data testbed for a global data warehouse, a DistilBERT fine-tune that raised sentiment-analysis accuracy by 25 points, ETL regression testing across millions of records). Software Engineering Intern at The Difference, July to September 2023. Revature AI Engineering training program in January 2026, where OnTract and Sentio+ were built as team projects. Professional tenure is about one year.`,
     },
     { id: 'P3', kind: 'profile', section: 'Location and availability', excerpt: `Based in ${profile.location}. ${profile.availability.join('. ')}.` },
     { id: 'P4', kind: 'profile', section: 'Listed skills with start years', excerpt: skills },
@@ -319,12 +320,7 @@ interface Draft {
   recommendation?: { level?: string; nextStep?: string; rationale?: string };
 }
 
-const FACTS = `Fixed facts (never contradict):
-- OnTract was a team project. Kyle-Anthony was a backend engineer on the database migrations and design; teammates built the AI agent. He later rebuilt the backend solo on Convex.
-- Sentio+ was a team project. He did the AI and front-end work. The fine-tuned RoBERTa model was trained but never wired into the live app.
-- SelahNote, SelahNote Creator Dashboard, SoundSnag, V1 ProdBot, YarnScript and Country Viewer are solo projects.
-- OnTract and Sentio+ were built in a training program (Revature), not at an employer.
-- His only confirmed employment is a 2023 software engineering internship at The Difference. Do not mention any current employer or job.`;
+const FACTS = CAREER_FACTS;
 
 function writerPrompt(ceiling: RecommendationLevel, hasPosting: boolean): string {
   const allowed = (Object.keys(RANK) as RecommendationLevel[]).filter((level) => RANK[level] <= RANK[ceiling]);
@@ -482,16 +478,37 @@ JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"
 /* Entry point                                                               */
 /* ------------------------------------------------------------------------ */
 
-export interface BriefInput {
+export interface FitInput {
   jobDescription?: string;
   roleTitle?: string;
   companyName?: string;
   recruiterContext?: string;
-  /** Requirements from a fit check already shown in this chat, so the brief agrees with it. */
+  /** A requirement list with no posting (typed by the visitor, or rows already shown). */
   knownRequirements?: string[];
 }
 
-export async function generateRecruiterBrief(input: BriefInput): Promise<StoredBrief> {
+/** One fit evaluation: what the chat's fit card shows and what a brief made from it builds on. */
+export interface FitEvaluation {
+  roleTitle?: string;
+  companyName?: string;
+  requirements: { text: string; required: boolean }[];
+  coreIndex?: number;
+  logistics: string[];
+  fit: FitAssessment | null;
+  evidence: EvidenceSet;
+  roleMatches: RoleMatch[];
+  read?: FitAssessment['read'];
+  ceiling: RecommendationLevel;
+  broadQuery: string;
+}
+
+/**
+ * The whole fit pipeline, shared by the chat's assess_job_fit and the brief so
+ * they can never disagree: requirements from the posting (with the job itself
+ * as the first row), the evidence check, the skeptical audit, and the bound on
+ * how positive the recommendation may be.
+ */
+export async function evaluateFit(input: FitInput): Promise<FitEvaluation> {
   const jobDescription = input.jobDescription?.trim() || undefined;
 
   // 1. Requirements: the ones the chat's fit check used when there was one,
@@ -546,6 +563,9 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
       console.error('recruiter brief: role match audit failed', error);
     }
     read = readFor(roleMatches);
+    // Not having done the job itself caps the read, as it caps the recommendation.
+    const coreRow = coreIndex !== undefined ? roleMatches[coreIndex] : undefined;
+    if (coreRow?.assessment === 'gap' && (read === 'strong fit' || read === 'good fit with some gaps')) read = 'partial fit: real gaps to weigh';
     // The writer and the claim check see the audited rows, not the raw fit check.
     roleMatches.forEach((match, i) => {
       const item = evidence.items.find((candidate) => candidate.id === evidence.fitIds.get(i));
@@ -553,6 +573,36 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
     });
   }
   const ceiling = ceilingFor(fit && read ? { ...fit, read } : null, roleMatches, coreIndex);
+
+  return { roleTitle, companyName, requirements, coreIndex, logistics, fit, evidence, roleMatches, read, ceiling, broadQuery };
+}
+
+/** How the chat's fit card reads the brief's levels. */
+export const STATUS_FOR: Record<MatchLevel, FitStatus> = { strong: 'match', relevant: 'related', gap: 'gap' };
+
+/** The recommendation level in plain words, for the chat answer. */
+export function describeCeiling(evaluation: FitEvaluation): string {
+  return defaultRecommendation(evaluation.ceiling, evaluation.roleMatches).nextStep;
+}
+
+export interface BriefInput {
+  jobDescription?: string;
+  roleTitle?: string;
+  companyName?: string;
+  recruiterContext?: string;
+  /** Requirements from a fit check already shown in this chat, so the brief agrees with it. */
+  knownRequirements?: string[];
+  /** The chat's own fit evaluation for this posting, reused as-is. */
+  evaluation?: FitEvaluation;
+}
+
+export async function generateRecruiterBrief(input: BriefInput): Promise<StoredBrief> {
+  const jobDescription = input.jobDescription?.trim() || undefined;
+
+  // 1-2. Requirements, fit check, audit and bounds: reused from the chat's fit check when there was one.
+  const evaluation = input.evaluation ?? (await evaluateFit({ ...input, jobDescription }));
+  const { roleTitle, companyName, fit, evidence, roleMatches, read, ceiling, logistics } = evaluation;
+  void logistics;
 
   // 3. Write.
   const projectList = catalog.map((p) => `${p.id}: ${p.title} (${p.category}) — ${p.tagline}`).join('\n');

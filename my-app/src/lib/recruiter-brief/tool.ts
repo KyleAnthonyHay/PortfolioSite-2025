@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { readJobPosting } from '../tools';
 import type { ConversationMessage, VisitorContext } from '../chat-events';
 import { generateRecruiterBrief } from './generate';
+import { lastEvaluation } from '../fit-tool';
 import { MATCH_LABEL, briefTitle, toBriefView } from './view';
 
 /**
@@ -22,11 +23,11 @@ export function rememberFitRequirements(conversationId: string | undefined, requ
 const URL_PATTERN = /https?:\/\/[^\s<>"')]+/gi;
 
 /** A pasted posting: long, and reads like one. */
-function looksLikePosting(text: string): boolean {
+export function looksLikePosting(text: string): boolean {
   return text.length >= 500 && /(requirements|qualifications|responsibilities|you will|you'll|experience|about the role|what you)/i.test(text);
 }
 
-async function findPosting(
+export async function findPosting(
   args: { jobDescription?: string; jobUrl?: string },
   userMessage: string,
   history: ConversationMessage[],
@@ -67,6 +68,10 @@ export function makeRecruiterBriefTool(options: {
     async ({ jobDescription, jobUrl, roleTitle, companyName, recruiterContext }) => {
       const posting = await findPosting({ jobDescription, jobUrl }, options.userMessage, options.history, options.context);
       const known = options.conversationId ? fitRequirements.get(options.conversationId) : undefined;
+      // The fit card already shown in this chat, unless this message brings a new posting.
+      const shown = lastEvaluation(options.conversationId);
+      const newPosting = Boolean(jobDescription || jobUrl) || /https?:\/\//i.test(options.userMessage) || looksLikePosting(options.userMessage);
+      const evaluation = shown && !newPosting ? shown : undefined;
 
       const record = await generateRecruiterBrief({
         jobDescription: posting.text,
@@ -74,6 +79,7 @@ export function makeRecruiterBriefTool(options: {
         companyName,
         recruiterContext,
         knownRequirements: known,
+        evaluation,
       });
       const view = toBriefView(record);
       const { brief } = view;

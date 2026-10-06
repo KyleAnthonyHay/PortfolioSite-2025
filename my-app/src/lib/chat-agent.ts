@@ -12,8 +12,10 @@ import { allTools, describeToolCall, parseToolResult, readJobPosting, type ToolR
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
 import { notifyFitCheck } from './notify';
-import { makeRecruiterBriefTool, rememberFitRequirements } from './recruiter-brief/tool';
+import { makeRecruiterBriefTool } from './recruiter-brief/tool';
+import { makeFitTool, sameRole } from './fit-tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
+import { CAREER_FACTS } from './facts';
 
 const MAX_TOOL_ROUNDS = 4;
 const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini';
@@ -40,7 +42,7 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
       }
       const text = posting.text.length > 6000 ? `${posting.text.slice(0, 6000)}\n[truncated]` : posting.text;
       lines.push(
-        `They shared the job posting (${context.jobUrl}); it is below, so you do not need get_job_posting for this link. For a fit check, extract its requirements and call assess_job_fit.\n<job_posting>\n${text}\n</job_posting>`
+        `They shared the job posting (${context.jobUrl}); it is below, so you do not need get_job_posting for this link. For a fit check, call assess_job_fit with no requirements: it reads this posting itself.\n<job_posting>\n${text}\n</job_posting>`
       );
     } else {
       lines.push(
@@ -50,17 +52,6 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
   }
   lines.push('If they share a different posting later in the chat, judge fit against that newer one.');
   return { text: lines.join('\n'), postingTitle };
-}
-
-function normalizeRole(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\b(senior|sr|junior|jr|staff|lead|principal|the|role)\b/g, '').trim();
-}
-
-/** Loose match, so "Full Stack Engineer" and "Full-Stack Engineer, Growth" count as the same role. */
-function sameRole(a: string, b: string): boolean {
-  const x = normalizeRole(a);
-  const y = normalizeRole(b);
-  return x === y || x.includes(y) || y.includes(x);
 }
 
 function systemPrompt(visitor = ''): string {
@@ -73,7 +64,7 @@ Today is ${today}.
 
 ## Ground every answer in tools
 Never answer from memory about Kyle-Anthony. Call a tool first, then answer from what it returns.
-- One named technology ("does he know / has he used / how long has he used X", "what did he build with X", "which projects use X") → check_experience (one call per technology). Never pass a technology to get_project.
+- One named technology ("does he know / has he used / how long has he used X", "what did he build with X", "which projects use X") → check_experience (one call per technology). Never pass a technology to get_project, or a project name (YarnScript, SelahNote…) to check_experience.
 - One specific project, including follow-ups about "it" → get_project, passing the visitor's question as query.
 - A capability, domain, or kind of work across projects ("AI experience", "backend work", "worked with clients?", "anything with payments?") → get_experience. "What has he built" → list_projects.
 - Wanting to watch or try a product (a demo, the walkthrough, "let me try it", "open the app") → show_demo, with view 'live' when they want to use the app itself.
@@ -84,11 +75,18 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
 - Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief, even when the same message shares a posting link or description: pass the link as jobUrl and call nothing else in that turn. It finds a posting shared earlier in the chat by itself; do not paste one into the call. Never say a brief was made unless this tool ran.
-- A job posting URL → get_job_posting, then assess_job_fit with the requirements it lists and the role title.
-- A pasted job description or a list of requirements → ${REQUIREMENT_RULES} Include location, relocation and work-authorization requirements as their own rows. Then call assess_job_fit once. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
+- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → assess_job_fit with no requirements and nothing else in that turn. It finds the posting (the newest one), reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
+- A list of requirements the visitor typed, with no posting → assess_job_fit with that list. ${REQUIREMENT_RULES} Do not call other tools in that turn.
+- To read a posting's contents without judging fit → get_job_posting with the visitor's link.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
-- When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
-If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates), say it is not stated and suggest asking him; never infer it from nearby facts.
+- When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type with no posting, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
+- Questions about SelahNote's users, paying subscribers, App Store rating or reviews → get_project for SelahNote with the question as query, not the links tool.
+If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates, an employer's details, big-tech experience, weaknesses), say it is not stated and suggest asking him; never infer it from nearby facts, and never state a negative you can't source either.
+- A leading question ("he has led teams, right?", "he built X, right?") gets the answer the tools support, not a yes. Correct the premise plainly when it is wrong.
+- Only link URLs a tool returned. Pages on this site are relative paths such as /projects/10; never invent a domain or a link.
+
+## Facts
+${CAREER_FACTS}
 
 ## Cards
 Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a demo player, a booking card, a note card, a résumé card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
@@ -212,12 +210,14 @@ function toSource(id: number): SourceRef | null {
 }
 
 async function suggestFollowUps(userMessage: string, answer: string): Promise<string[]> {
-  const model = new ChatOpenAI({ model: MODEL_NAME, temperature: 0.8, maxTokens: 150 }).bind({
+  const model = new ChatOpenAI({ model: MODEL_NAME, temperature: 0.5, maxTokens: 150 }).bind({
     response_format: { type: 'json_object' },
   });
   const response = await model.invoke([
     new SystemMessage(
-      'You write follow-up questions a recruiter or engineer might ask an AI agent about a software developer named Kyle-Anthony, given the last exchange. Return JSON: {"suggestions": [three strings]}. Each under 9 words, specific, phrased as the visitor would type it, no duplicates of the original question, no generic "tell me more".'
+      `You write follow-up questions a recruiter or engineer might ask an AI agent about a software developer named Kyle-Anthony, given the last exchange. Return JSON: {"suggestions": [three strings]}. Each under 9 words, specific, phrased as the visitor would type it, no duplicates of the original question, no generic "tell me more".
+Every question must be answerable from his portfolio and must not presuppose anything the answer did not state: no "what projects did he lead", "list his clients", "how will he improve it", pricing, trials, roadmaps, availability schedules or other people's opinions unless the answer said they exist. Prefer questions about his projects, the technical decisions in them, his role on them, or seeing a demo.
+${CAREER_FACTS}`
     ),
     new HumanMessage(`Visitor asked: ${userMessage}\n\nAgent answered: ${answer.slice(0, 1500)}`),
   ]);
@@ -262,7 +262,10 @@ export async function* runAgent(
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
   const briefTool = makeRecruiterBriefTool({ userMessage, history, context, conversationId });
-  const tools = [...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), briefTool];
+  const fitTool = makeFitTool({ userMessage, history, context, conversationId });
+  const tools = [...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool, briefTool];
+  // Links the visitor actually shared; the model must not fetch any other.
+  const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
   for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
     const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
@@ -314,6 +317,15 @@ export async function* runAgent(
     const results = await Promise.all(
       steps.map(async (step) => {
         const tool = tools.find((candidate) => candidate.name === step.call.name);
+        if (step.call.name === 'get_job_posting' && typeof step.call.args?.url === 'string' && !sharedText.includes(step.call.args.url.replace(/\/$/, ''))) {
+          return {
+            step,
+            result: {
+              content: 'The visitor did not share that link; never invent one. If they pasted a description, call assess_job_fit with no requirements: it reads the pasted text itself.',
+              citedProjectIds: [],
+            },
+          };
+        }
         if (!tool) return { step, result: { content: `Unknown tool ${step.call.name}`, citedProjectIds: [] } };
         try {
           const raw = await (tool as { invoke: (args: unknown) => Promise<unknown> }).invoke(step.call.args ?? {});
@@ -324,29 +336,6 @@ export async function* runAgent(
         }
       })
     );
-
-    // A brief made later in this chat judges the same requirements as this fit check.
-    for (const { step } of results) {
-      if (step.call.name === 'assess_job_fit') rememberFitRequirements(conversationId, step.call.args?.requirements);
-    }
-
-    // The report is titled from the posting, not from what the visitor typed.
-    for (const { step } of results) {
-      if (step.call.name === 'get_job_posting' && typeof step.call.args?.url === 'string') {
-        const posting = await readJobPosting(step.call.args.url).catch(() => null);
-        if (posting?.ok && posting.title) postingTitle = posting.title;
-      }
-    }
-    for (const { result } of results) {
-      const widget = result.widget;
-      if (widget?.kind === 'fit_report' && postingTitle) {
-        const typed = [widget.role, context?.role].find((role) => role && !sameRole(role, postingTitle!));
-        if (typed) {
-          result.content += `\n\nThe visitor called the role "${typed}", but the posting is for "${postingTitle}"; the report is judged against the posting. Open your answer by saying so in one short clause.`;
-        }
-        widget.role = postingTitle;
-      }
-    }
 
     // A fit report already summarises everything; extra cards in the same
     // round (a timeline, per-technology checks) would just crowd it.

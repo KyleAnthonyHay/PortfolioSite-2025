@@ -7,6 +7,7 @@ import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
+import { RESUME_EVIDENCE } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -428,17 +429,23 @@ export const checkExperience = tool(
     // tools teammates built. The judge has to see his own use.
     const evidence = await gatherEvidence(technology);
     const [judged] = await judgeEvidence([`Kyle-Anthony's own hands-on use of ${technology}`], 6, 'evidence', [variantsFor(technology, evidence.skill).map(termPattern)]);
-    const verdict = judged?.verdict ?? 'none';
+    // Work on his résumé with no write-up (Cognizant, the internship, the hackathon) counts too.
+    const patterns = variantsFor(technology, evidence.skill).map(termPattern);
+    const resume = RESUME_EVIDENCE.filter((item) => patterns.some((pattern) => pattern.test(item.text)));
+    const verdict = resume.length > 0 && judged?.verdict !== 'direct' ? 'direct' : judged?.verdict ?? 'none';
     const hasExperience = verdict === 'direct';
     const projects: EvidenceProject[] = (judged?.projects ?? []).slice(0, 4).map(({ id, why }) => ({ project: toCard(projectById(id)!), usage: why }));
     const name = evidence.displayName;
     const listed = evidence.skill && evidence.skill.group !== 'Discipline';
 
     let content: string;
-    if (hasExperience) {
+    if (resume.length > 0 && projects.length === 0) {
+      content = [`His résumé shows him using ${name} (no project write-up covers this work):`, ...resume.map((item) => `- ${item.where}: ${item.text}`)].join('\n');
+    } else if (hasExperience) {
       content = [
         `Kyle-Anthony has used ${name}${evidence.since ? ` (listed since ${evidence.since}, about ${evidence.years} year${evidence.years === 1 ? '' : 's'}, mostly on personal and training projects)` : ''}:`,
         ...projects.map((p) => `- ${p.project.title}: ${p.usage}`),
+        ...resume.map((item) => `- ${item.where} (from his résumé): ${item.text}`),
       ].join('\n');
     } else if (verdict === 'related') {
       content = [`No project shows him using ${name} itself. Related work only:`, ...projects.map((p) => `- ${p.project.title}: ${p.usage}`)].join('\n');
@@ -635,7 +642,7 @@ export const getBackground = tool(
           .map((item) => `${item.period}: ${item.title} at ${item.org}${item.detail ? ` — ${item.detail}` : ''}`)
           .join('\n');
         return pack({
-          content: `${content}\n\nExperience includes professional work, freelance projects, hackathons, and production-level personal apps. Has worked on teams of 15+ developers and led small teams.`,
+          content: `${content}\n\n${PROFESSIONAL_TENURE} Describe the Cognizant work only with the timeline's words; none of his portfolio projects were built there.`,
           citedProjectIds: [],
           widget: { kind: 'timeline', items: timeline },
         });
@@ -716,11 +723,11 @@ export const searchBackground = tool(
   }
 );
 
-const YEARS_PATTERN = /(\d+)\s*\+?\s*(?:-\s*\d+\s*)?(?:years?|yrs?)/i;
+const YEARS_PATTERN = /(\d+)\s*\+?\s*(?:(?:-|–|—|to)\s*\d+\s*)?(?:years?|yrs?)/i;
 
 /** His only confirmed professional role, for tenure questions. Side projects are not professional years. */
 const PROFESSIONAL_TENURE =
-  'Professional tenure isn’t established in his portfolio: one software engineering internship (2023); the rest is personal, freelance-style and training-program work. Validate in a screen.';
+  'About one year of professional experience: AI Engineer at Cognizant since November 2025, plus a three-month internship in 2023. His other years are personal and training-program work.';
 
 type Shortcut = FitRequirement | { judge: true; requirement: string; requiredYears: number | null };
 
@@ -771,7 +778,7 @@ function shortcut(requirement: string): Shortcut {
     const skills = findSkillsInText(text).filter((match) => termPattern(match.skill.name).test(text));
     const professional = /\b(professional|industry|industrial|full[- ]time|commercial)\b|\bas an? [a-z]/i.test(lower);
     if (skills.length === 0 || professional) {
-      return { requirement: text, status: requiredYears <= 1 ? 'related' : 'gap', evidence: PROFESSIONAL_TENURE, projects: [] };
+      return { requirement: text, status: requiredYears <= 1 ? 'match' : 'gap', evidence: PROFESSIONAL_TENURE, projects: [] };
     }
   }
 
@@ -1107,7 +1114,7 @@ export const getProjectResource = tool(
       return pack({
         content: `${project.title} has no public ${type && type !== 'any' ? type : 'link'}${
           project.category === 'macOS Apps' ? ' (it is a personal-use Mac app)' : ''
-        }. Its page on this site is ${project.href}.`,
+        }. Link its page on this site exactly as [its project page](${project.href}), a relative link with no domain.`,
         citedProjectIds: [project.id],
       });
     }
@@ -1237,7 +1244,7 @@ export const showDemo = tool(
     const appStoreUrl = (await getProjectResources(project.id).catch(() => [])).find((r) => r.type === 'app-store')?.url;
     if (!video && !liveUrl) {
       return pack({
-        content: `${project.title} has no walkthrough recording or live version to show${project.category === 'macOS Apps' ? ' (it is a personal-use Mac app)' : ''}. Its page on this site is ${project.href}.`,
+        content: `${project.title} has no walkthrough recording or live version to show${project.category === 'macOS Apps' ? ' (it is a personal-use Mac app)' : ''}. Link its page on this site exactly as [its project page](${project.href}), a relative link with no domain.`,
         citedProjectIds: [project.id],
       });
     }
@@ -1381,7 +1388,6 @@ export const allTools = [
   listProjects,
   getBackground,
   searchBackground,
-  assessJobFit,
   askVisitor,
   getProjectResource,
   showDemo,
@@ -1430,7 +1436,9 @@ export function describeToolCall(name: string, args: Record<string, unknown>): {
       return { running: `Searching background for “${str('query')}”`, done: `Searched background for “${str('query')}”` };
     case 'assess_job_fit': {
       const count = Array.isArray(args.requirements) ? args.requirements.length : 0;
-      return { running: `Assessing fit across ${count} requirements`, done: `Assessed ${count} requirements` };
+      return count > 0
+        ? { running: `Assessing fit across ${count} requirements`, done: `Assessed ${count} requirements` }
+        : { running: 'Reading the posting and checking fit', done: 'Checked fit against the posting' };
     }
     case 'ask_visitor':
       return { running: 'Writing a question for you', done: 'Asked a question' };
