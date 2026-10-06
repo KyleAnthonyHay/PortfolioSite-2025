@@ -175,7 +175,7 @@ V1 ProdBot is designed to create value for a church production team in a few con
 - Trust and control: nothing the AI writes reaches volunteers without approval, every change keeps a revision, and approved docs export as plain files.
 - Multi-campus reuse: each campus has its own documentation and chats, with shared links and glossary, and later work made the app usable by other churches through accounts and a public demo.
 
-Result: the head global audio engineer and floor manager who requested ProdBot was very impressed with it and plans to integrate it across V1 Church's campuses nationwide. This is a forward-deployed style engagement: a real stakeholder with an operational problem, a tool built around their workflow, and a path to rollout across a multi-campus organization. The public demo uses fictional sample content so real campus documentation stays private.
+Result: the head global audio engineer and floor manager who requested ProdBot was very impressed with it and plans to integrate it across V1 Church's campuses nationwide. As of October 2026 that rollout is planned, not done: ProdBot is not yet in use across the campuses, and the production team still has to add each campus's real sources. This is a forward-deployed style engagement: a real stakeholder with an operational problem, a tool built around their workflow, and a path to rollout across a multi-campus organization. The public demo uses fictional sample content so real campus documentation stays private.
 
 ## Status and next steps
 <!-- meta: {"type":"project","project":"V1 ProdBot","category":"status","technologies":["Vercel","Convex","OpenAI Responses API"]} -->

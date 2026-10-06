@@ -210,7 +210,7 @@ Natural next steps, suggested by the code and README rather than announced plans
 
 ## Skills demonstrated
 <!-- meta: {"type":"project","project":"Sentio+","category":"skills","technologies":["Next.js","React","TypeScript","Tailwind CSS","Framer Motion","Convex","Convex Auth","LangGraph","LangChain","OpenAI","Zod","FastAPI","ChromaDB","AWS Bedrock","RoBERTa","TensorFlow","Keras","Python","pandas","Docker"]} -->
-Sentio+ demonstrates these skills for Kyle-Anthony Hay:
+Sentio+ demonstrates these skills for Kyle-Anthony Hay. Sentio+ has no user, usage or revenue figures; it is a deployed demo product, not a product with a known user base.
 
 **AI engineering:** LLM agents, tool calling, function calling, ReAct agents, LangGraph, LangChain (Python and JavaScript), retrieval-augmented generation (RAG), grounded answers with citations, prompt engineering and system prompts, semantic search, vector search, vector databases, embeddings, ChromaDB, similarity thresholds, full-text search, conversation memory, OpenAI API, AWS Bedrock, LLM cost controls and rate limiting, graceful degradation when a model is unavailable, agent observability (tool traces).
 
@@ -220,6 +220,6 @@ Sentio+ demonstrates these skills for Kyle-Anthony Hay:
 
 **Full-stack web development:** Next.js App Router, React 19, TypeScript, Tailwind CSS, responsive dashboards, data visualization and charts, animation with Framer Motion, accessible reduced-motion design, CSV upload and parsing, geocoding by lookup, canvas rendering, Three.js and react-three-fiber prototyping, marketing site and pricing page design.
 
-**Backend and cloud:** Convex (serverless functions, queries, mutations, actions, indexes, search indexes, schema design), FastAPI REST APIs, authentication and authorization with Convex Auth, per-user data isolation, input validation, environment and secrets management, Docker and Docker Compose, deployment to a custom domain.
+**Backend and cloud:** Convex (serverless functions, queries, mutations, actions, indexes, search indexes, schema design), authentication and authorization with Convex Auth, per-user data isolation, input validation, environment and secrets management, deployment to a custom domain. (The original version's FastAPI service and its Docker and Docker Compose setup were built by his teammates, not by Kyle.)
 
 **Forward deployed and product relevance:** taking a team prototype to a production deployment alone (end-to-end ownership), migrating an architecture to cut operational burden, designing AI features business users can audit, building demo-ready experiences (sandbox mode, seeded demo account) for stakeholders, and working inside a six-person engineering team on a shared codebase.

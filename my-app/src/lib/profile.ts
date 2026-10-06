@@ -35,20 +35,21 @@ export const timeline: TimelineItem[] = [
     kind: 'work',
     title: 'AI Engineer',
     org: 'Cognizant',
-    period: '2026 – Present',
-    detail: 'Engineering AI-powered solutions that blend modern LLM tooling with solid software engineering.',
+    period: 'Nov 2025 – Present',
+    detail: 'AI-assisted synthetic-data testbed for a global data warehouse, a DistilBERT sentiment fine-tune, and ETL regression testing across millions of records.',
   },
   {
     kind: 'education',
     title: 'B.S. Computer Science',
     org: 'CUNY Hunter College',
-    period: '2024',
+    period: 'Jun 2024',
   },
   {
     kind: 'work',
     title: 'Software Engineering Intern',
     org: 'The Difference',
-    period: '2023',
+    period: 'Jul – Sep 2023',
+    detail: 'Built a web version of a fitness app from Figma designs and evaluated web technologies for an app-to-web migration.',
   },
 ];
 
@@ -68,7 +69,7 @@ export const journey: JourneyNode[] = [
   {
     id: 'intern',
     kind: 'work',
-    period: '2023',
+    period: 'Jul 2023',
     title: 'Software Engineering Intern, The Difference',
   },
   {
@@ -80,9 +81,16 @@ export const journey: JourneyNode[] = [
     projects: [{ id: 4, title: 'Country Viewer', href: '/projects/4' }],
   },
   {
+    id: 'munchmap',
+    kind: 'project',
+    period: 'Feb 2024',
+    title: '1st place, Headstarter Hackathon',
+    caption: 'MunchMap: a role-based React food-donation workflow, built with a three-person team.',
+  },
+  {
     id: 'degree',
     kind: 'education',
-    period: '2024',
+    period: 'Jun 2024',
     title: 'B.S. Computer Science, CUNY Hunter College',
   },
   {
@@ -94,6 +102,13 @@ export const journey: JourneyNode[] = [
     projects: [{ id: 1, title: 'SelahNote', href: '/projects/1' }],
   },
   {
+    id: 'cognizant',
+    kind: 'work',
+    period: 'Nov 2025',
+    title: 'AI Engineer, Cognizant',
+    caption: 'Synthetic-data testbed for a global data warehouse, a DistilBERT fine-tune, ETL regression testing.',
+  },
+  {
     id: 'revature',
     kind: 'education',
     period: 'Jan 2026',
@@ -103,13 +118,6 @@ export const journey: JourneyNode[] = [
       { id: 6, title: 'Sentio+', href: '/projects/6' },
       { id: 5, title: 'OnTract', href: '/projects/5' },
     ],
-  },
-  {
-    id: 'cognizant',
-    kind: 'work',
-    period: '2026',
-    title: 'AI Engineer, Cognizant',
-    caption: 'Engineering AI-powered solutions with modern LLM tooling.',
   },
   {
     id: 'yarnscript',
@@ -226,8 +234,7 @@ export const skillGroups: SkillGroupDefinition[] = [
       { name: 'pgvector', aliases: ['pg vector'] },
       { name: 'Supabase', since: 2024 },
       { name: 'Firebase', since: 2023, aliases: ['firestore', 'cloud firestore', 'firebase auth'] },
-      { name: 'Convex' },
-      { name: 'MongoDB', aliases: ['mongo'] },
+      { name: 'Convex', since: 2025 },
       { name: 'WebSockets', aliases: ['websocket', 'web sockets', 'realtime', 'real-time'] },
     ],
   },
