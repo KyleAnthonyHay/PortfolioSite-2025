@@ -80,6 +80,16 @@ function variantsFor(term: string, skill: SkillMatch | null): string[] {
   return [...variants].filter((value) => value.length >= 2);
 }
 
+/**
+ * Aliases too generic to stand for a skill inside a requirement: "APIs" is not
+ * REST, "real-time" is not WebSockets, "next" is not Next.js.
+ */
+const LOOSE_ALIASES = new Set(['api', 'apis', 'rest', 'real-time', 'realtime', 'real time', 'next', 'payments', 'payment', 'claude', 'anthropic', 'motion', 'containers', 'container', 'subscriptions', 'in-app purchases', 'in app purchases', 'ai', 'ml']);
+
+function safeVariants(match: SkillMatch): string[] {
+  return [match.skill.name, ...(match.skill.aliases ?? [])].filter((name) => name.length >= 2 && !LOOSE_ALIASES.has(name.toLowerCase()));
+}
+
 function containsAny(text: string, patterns: RegExp[]): boolean {
   return patterns.some((pattern) => pattern.test(text));
 }
@@ -198,30 +208,6 @@ async function gatherEvidence(term: string): Promise<Evidence> {
   };
 }
 
-function describeEvidence(evidence: Evidence): string {
-  const lines: string[] = [];
-  const { displayName, since, years, projects, backgroundSnippets, related, skill } = evidence;
-
-  if (!evidence.hasExperience) {
-    lines.push(`No direct evidence of ${displayName} in Kyle-Anthony's projects or background.`);
-    if (related.length > 0) lines.push(`Closest related strengths: ${related.join(', ')}.`);
-    return lines.join('\n');
-  }
-
-  lines.push(
-    `Kyle-Anthony has experience with ${displayName}${since ? ` since ${since} (about ${years} year${years === 1 ? '' : 's'})` : ''}${skill ? ` [${skill.group}]` : ''}.`
-  );
-  if (projects.length > 0) {
-    lines.push('Projects where it appears:');
-    projects.forEach(({ project, usage }) => lines.push(`- ${project.title}: ${usage}`));
-  }
-  if (backgroundSnippets.length > 0) {
-    lines.push('Background notes:');
-    backgroundSnippets.forEach((snippet) => lines.push(`- ${snippet}`));
-  }
-  return lines.join('\n');
-}
-
 /* ------------------------------------------------------------------------ */
 /* Semantic evidence                                                         */
 /* ------------------------------------------------------------------------ */
@@ -270,24 +256,68 @@ These ITEMs are requirements from a job posting. Judge them the way a hiring man
 - A requirement that names a profession or job function (data scientist, analyst, designer, product manager, sales, finance) is "direct" only if the excerpts show him working in that function; otherwise "related" at most.
 - Analytical methods (forecasting, statistical modeling, experimentation or A/B testing, causal inference, pricing analysis) need an excerpt showing him doing that analysis, not building a feature next to it.
 - Examples: "finance fluency" is not met by building a payments ledger; "pricing experimentation" is not met by building subscription tiers; "revenue forecasting" is not met by tracking subscriptions. Those are "related".
+- Infrastructure and SRE work (large-scale distributed systems, incident response, on-call, database reliability at scale, container orchestration) needs an excerpt showing him operating production infrastructure at that scale; apps with a few hundred users, demo datasets or multi-tenant isolation do not qualify.
+- Calling LLM APIs or building agents is not training or deploying ML models.
 - When unsure between two verdicts, choose the lower one.`;
 
-async function judgeEvidence(questions: string[], perQuestion = 6, mode: 'evidence' | 'fit' = 'evidence'): Promise<JudgedItem[]> {
+/** Team projects, where a write-up's stack lists describe the team's system rather than his part. */
+const TEAM_PROJECT_IDS = new Set([5, 6]);
+const ATTRIBUTION = /\b(kyle|he|his|him|himself|solo|alone|rebuil\w*|redesign\w*)\b/i;
+const REJECTED = /chosen over|instead of|rather than|alternatives?\b|\bvs\.?\b|versus|would (make|have|need)|teammates?|the team built|was not (used|wired)|never (wired|deployed|shipped)/i;
+
+function rank(section: { projectId: number; section: string }): number {
+  if (!TEAM_PROJECT_IDS.has(section.projectId)) return 0;
+  return /role/i.test(section.section) ? 1 : 2;
+}
+
+function normalizeQuote(text: string): string {
+  return text.toLowerCase().replace(/[“”"‘’'`*_]/g, '').replace(/…|\.\.\./g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/**
+ * Retrieves candidate sections for each question and judges them in one
+ * model call. Every project the judge cites must come with a sentence copied
+ * from its excerpt, and that sentence is checked here: it has to be in the
+ * excerpt, name the technology when the question is about one, not describe
+ * an alternative he passed on, and on team projects say it was his work.
+ */
+async function judgeEvidence(
+  questions: string[],
+  perQuestion = 6,
+  mode: 'evidence' | 'fit' = 'evidence',
+  mustMention: (RegExp[] | null)[] = []
+): Promise<JudgedItem[]> {
   const empty: JudgedItem = { verdict: 'none', projects: [] };
   if (questions.length === 0) return [];
 
   // Over-fetch, then keep at most two sections per project so one project's
   // many similar sections can't crowd out another project's single strong one.
+  // Semantic hits, plus (for a named technology) the sections that actually
+  // name it, which dense search can rank below looser matches.
+  const sections = mustMention.some(Boolean) ? await getKnowledgeSections() : [];
   const hitLists = await Promise.all(
-    questions.map((question) =>
+    questions.map((question, i) =>
       searchKnowledge(question, { recordType: 'project', topK: Math.min(perQuestion * 3, 30) })
         .then((hits) => {
+          const terms = mustMention[i];
+          const named: KnowledgeHit[] = terms
+            ? sections
+                .filter((section) => terms.some((term) => term.test(section.text)))
+                // Solo projects first; on team projects, the section listing his own work first.
+                .sort((a, b) => rank(a) - rank(b))
+                .slice(0, 4)
+                .map((section) => ({ ...section, recordType: 'project' as const, score: 0 }))
+            : [];
           const perProject = new Map<number, number>();
-          return hits.filter((hit) => {
+          const seenSections = new Set<string>();
+          return [...named, ...hits].filter((hit) => {
+            const key = `${hit.projectId}|${hit.section}`;
+            if (seenSections.has(key)) return false;
+            seenSections.add(key);
             const count = perProject.get(hit.projectId) ?? 0;
             perProject.set(hit.projectId, count + 1);
             return count < 2;
-          }).slice(0, perQuestion);
+          }).slice(0, perQuestion + named.length);
         })
         .catch((error) => {
           console.error('judgeEvidence: search failed', error);
@@ -305,7 +335,8 @@ async function judgeEvidence(questions: string[], perQuestion = 6, mode: 'eviden
   });
 
   try {
-    const response = await getJudge(mode)
+    // A named technology gets the larger model: the small one quotes "SwiftUI" for "Swift".
+    const response = await getJudge(mode === 'fit' || mustMention.some(Boolean) ? 'fit' : 'evidence')
       .bind({ response_format: { type: 'json_object' } })
       .invoke([
         new SystemMessage(
@@ -313,14 +344,18 @@ async function judgeEvidence(questions: string[], perQuestion = 6, mode: 'eviden
 - "direct": an excerpt shows Kyle-Anthony himself built, used, or did this (on team projects, only the parts the excerpt attributes to him or the team he was on).
 - "related": no direct use, but excerpts show clearly adjacent or transferable work.
 - "none": nothing relevant.
-List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3") and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts.${mode === 'fit' ? FIT_RUBRIC : ''}
-Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","why":"..."}]}]}`
+List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3"), "quote" is the one sentence from that excerpt, copied exactly, that shows it, and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts.
+- A technology the excerpt names only as an alternative he did not pick ("chosen over X", "X vs Y", "alternatives would be X", "instead of X") is evidence AGAINST that technology: verdict "none" for it.
+- On team projects (OnTract, Sentio+), tech-stack, architecture and "skills demonstrated" lists describe the team's system; count a technology only where the excerpt says he built or used it, or it is part of his solo rebuild.
+- The excerpt must address the ITEM itself, not a word near it: REST is not GraphQL, WebSockets are not Kafka, Next.js is not "next-generation", Bedrock calls are not running AWS infrastructure, a trained model that was never deployed is not "deployed ML in production", a troubleshooting assistant is not incident response.${mode === 'fit' ? FIT_RUBRIC : ''}
+Being on the team that built something is not his use of it. When the ITEM names a technology, the quote must contain that technology's exact name (not a related one: "SwiftUI" is not "Swift"). If no sentence shows it, the verdict is "none" with no projects; never cite a project to say it lacks something.
+Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."}]}]}`
         ),
         new HumanMessage(blocks.join('\n\n')),
       ]);
     const text = typeof response.content === 'string' ? response.content : '';
     const parsed = JSON.parse(text) as {
-      items?: { index?: number; verdict?: string; projects?: { ref?: string; why?: string }[] }[];
+      items?: { index?: number; verdict?: string; projects?: { ref?: string; quote?: string; why?: string }[] }[];
     };
     return questions.map((_, i) => {
       const item = parsed.items?.find((candidate) => candidate.index === i);
@@ -331,8 +366,16 @@ Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"
         const j = Number(String(p.ref ?? '').split('.')[1]);
         const hit = Number.isInteger(j) ? hitLists[i][j] : undefined;
         if (!hit || !projectById(hit.projectId) || seen.has(hit.projectId)) return [];
+        const quote = normalizeQuote(p.quote ?? '');
+        const why = (p.why ?? '').trim();
+        if (quote.length < 12 || !normalizeQuote(hit.text).includes(quote.slice(0, 160))) return [];
+        if (REJECTED.test(quote) || /^(no|not|there is no|nothing)\b/i.test(why) || /\bon the team that\b|\bteam(mates)? (built|wrote)\b/i.test(why)) return [];
+        const terms = mustMention[i];
+        if (terms && terms.length > 0 && !terms.some((term) => term.test(quote))) return [];
+        // On team projects the sentence has to say it was his, unless it comes from the section listing his own commits.
+        if (TEAM_PROJECT_IDS.has(hit.projectId) && !ATTRIBUTION.test(quote) && !/role/i.test(hit.section)) return [];
         seen.add(hit.projectId);
-        return [{ id: hit.projectId, why: (p.why ?? '').trim(), section: hit.section }];
+        return [{ id: hit.projectId, why, section: hit.section }];
       });
       return { verdict: projects.length === 0 ? 'none' : verdict, projects };
     });
@@ -348,38 +391,44 @@ Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"
 
 export const checkExperience = tool(
   async ({ technology }) => {
+    // A mention is not experience: write-ups name tools he chose against and
+    // tools teammates built. The judge has to see his own use.
     const evidence = await gatherEvidence(technology);
-    let content = describeEvidence(evidence);
+    const [judged] = await judgeEvidence([`Kyle-Anthony's own hands-on use of ${technology}`], 6, 'evidence', [variantsFor(technology, evidence.skill).map(termPattern)]);
+    const verdict = judged?.verdict ?? 'none';
+    const hasExperience = verdict === 'direct';
+    const projects: EvidenceProject[] = (judged?.projects ?? []).slice(0, 4).map(({ id, why }) => ({ project: toCard(projectById(id)!), usage: why }));
+    const name = evidence.displayName;
+    const listed = evidence.skill && evidence.skill.group !== 'Discipline';
 
-    let projects = evidence.projects.slice(0, 6);
-    let hasExperience = evidence.hasExperience;
-
-    if (!evidence.hasExperience) {
-      // No keyword evidence: let the knowledge base and the judge find adjacent work.
-      const [judged] = await judgeEvidence([`Experience with ${technology}`]);
-      if (judged && judged.verdict !== 'none') {
-        hasExperience = judged.verdict === 'direct';
-        projects = judged.projects.slice(0, 4).map(({ id, why }) => ({ project: toCard(projectById(id)!), usage: why }));
-        content = hasExperience
-          ? `Kyle-Anthony has worked with ${evidence.displayName} (from project write-ups, not a listed skill):\n${projects.map((p) => `- ${p.project.title}: ${p.usage}`).join('\n')}`
-          : `${content}\n\nRelated (not direct) work:\n${projects.map((p) => `- ${p.project.title}: ${p.usage}`).join('\n')}`;
-      }
+    let content: string;
+    if (hasExperience) {
+      content = [
+        `Kyle-Anthony has used ${name}${evidence.since ? ` (listed since ${evidence.since}, about ${evidence.years} year${evidence.years === 1 ? '' : 's'}, mostly on personal and training projects)` : ''}:`,
+        ...projects.map((p) => `- ${p.project.title}: ${p.usage}`),
+      ].join('\n');
+    } else if (verdict === 'related') {
+      content = [`No project shows him using ${name} itself. Related work only:`, ...projects.map((p) => `- ${p.project.title}: ${p.usage}`)].join('\n');
+    } else if (listed) {
+      content = `${name} is listed among his skills${evidence.since ? ` (since ${evidence.since})` : ''}, but no project write-up shows him using it. Say exactly that; do not say he has experience with it, and suggest asking him.`;
+    } else {
+      content = `No evidence of ${name} in his projects or background. Say so plainly; do not offer substitutes he has not used.`;
     }
 
     const widget: Widget = {
       kind: 'experience_check',
-      technology: evidence.displayName,
+      technology: name,
       hasExperience,
-      since: evidence.since,
-      years: evidence.years,
+      since: hasExperience ? evidence.since : undefined,
+      years: hasExperience ? evidence.years : undefined,
       category: evidence.skill?.group,
-      projects,
-      related: evidence.related,
+      projects: verdict === 'none' ? [] : projects,
+      related: [],
     };
 
     return pack({
       content,
-      citedProjectIds: projects.map(({ project }) => project.id),
+      citedProjectIds: verdict === 'none' ? [] : projects.map(({ project }) => project.id),
       widget,
     });
   },
@@ -634,15 +683,26 @@ export const searchBackground = tool(
   }
 );
 
-const YEARS_PATTERN = /(\d+)\s*\+?\s*(?:years?|yrs?)/i;
+const YEARS_PATTERN = /(\d+)\s*\+?\s*(?:-\s*\d+\s*)?(?:years?|yrs?)/i;
 
-async function assessRequirement(requirement: string): Promise<FitRequirement> {
+/** His only confirmed professional role, for tenure questions. Side projects are not professional years. */
+const PROFESSIONAL_TENURE =
+  'Professional tenure isn’t established in his portfolio: one software engineering internship (2023); the rest is personal, freelance-style and training-program work. Validate in a screen.';
+
+type Shortcut = FitRequirement | { judge: true; requirement: string; requiredYears: number | null };
+
+/**
+ * Rows the portfolio answers without reading project write-ups: degrees,
+ * professional tenure, and where he can work. Everything else goes to the
+ * judge, which needs an excerpt showing his own use.
+ */
+function shortcut(requirement: string): Shortcut {
   const text = requirement.trim();
   const lower = text.toLowerCase();
-  const currentYear = new Date().getFullYear();
+  const yearsMatch = YEARS_PATTERN.exec(text);
+  const requiredYears = yearsMatch ? parseInt(yearsMatch[1], 10) : null;
 
-  // Non-technical requirements the corpus answers directly.
-  if (/\b(degree|bachelor|b\.?s\.?|computer science|cs\b|master'?s|ph\.?d|doctorate)/i.test(lower)) {
+  if (/\b(degree|bachelor|b\.?s\.?\b|master'?s|ph\.?d|doctorate)\b/i.test(lower) || /\bcomputer science\b/i.test(lower)) {
     // His degree is a B.S. in Computer Science; anything beyond that, or a different field, is not met.
     const advanced = /\b(master'?s?|m\.?sc?\b|ph\.?d|doctorate|graduate degree|mba)/i.test(lower);
     const bachelorAccepted = /\b(bachelor|b\.?s\.?\b|b\.?a\.?\b|undergraduate)/i.test(lower);
@@ -661,115 +721,28 @@ async function assessRequirement(requirement: string): Promise<FitRequirement> {
         projects: [],
       };
     }
-    return {
-      requirement: text,
-      status: 'match',
-      evidence: 'B.S. Computer Science, CUNY Hunter College (2024).',
-      projects: [],
-    };
+    return { requirement: text, status: 'match', evidence: 'B.S. Computer Science, CUNY Hunter College (2024).', projects: [] };
   }
-  // Leading or managing people is a bigger claim than working on a team: the
-  // background notes say he led small teams, and no write-up shows more.
-  if (/\b(lead(ing)?|leadership|mentor|manag(e|ing|er)|people management|direct reports)\b/i.test(lower) && /\b(team|engineer|people|developers|others|reports)\b|leadership|mentor/i.test(lower)) {
+
+  if (/\b(relocat\w*|on-?site|in[- ]office|hybrid|remote|based in|located in|work authori[sz]ation|authori[sz]ed to work|visas?|sponsorship|time ?zones?|travel\w*)\b/i.test(lower)) {
     return {
       requirement: text,
-      status: 'related',
-      evidence: 'His background notes say he has led small teams; no project write-up shows him managing or mentoring engineers.',
-      projects: [],
-    };
-  }
-  if (/\b(team|collaborat|communicat|agile|scrum|code review|cross-functional)/i.test(lower)) {
-    return {
-      requirement: text,
-      status: 'match',
-      evidence: 'Worked on teams of 15+ developers, led small teams, comfortable with ownership and code reviews.',
+      status: 'gap',
+      evidence: `Not stated in his portfolio: he is based in ${profile.location} and lists hybrid and on-site roles. Ask him.`,
       projects: [],
     };
   }
 
-  const skills = findSkillsInText(text);
-  const whole = findSkill(text);
-  if (whole && !skills.some((match) => match.skill.name === whole.skill.name)) skills.unshift(whole);
-
-  const yearsMatch = YEARS_PATTERN.exec(text);
-  const requiredYears = yearsMatch ? parseInt(yearsMatch[1], 10) : null;
-
-  if (skills.length === 0) {
-    // Maybe a discipline ("mobile development") or a generic years-of-experience line.
-    const discipline = findSkill(text.replace(YEARS_PATTERN, '').replace(/\b(of|in|with|experience|professional)\b/gi, '').trim());
-    if (discipline?.skill.since) {
-      const years = currentYear - discipline.skill.since;
-      const enough = requiredYears === null || years >= requiredYears;
-      return {
-        requirement: text,
-        status: enough ? 'match' : 'related',
-        evidence: `${discipline.skill.name} since ${discipline.skill.since} (~${years} years)${enough ? '' : `, short of the ${requiredYears} asked for`}.`,
-        projects: [],
-      };
+  // Years of experience in general, in industry, or in a job function: tenure, not a technology.
+  if (requiredYears !== null) {
+    const skills = findSkillsInText(text).filter((match) => termPattern(match.skill.name).test(text));
+    const professional = /\b(professional|industry|industrial|full[- ]time|commercial)\b|\bas an? [a-z]/i.test(lower);
+    if (skills.length === 0 || professional) {
+      return { requirement: text, status: requiredYears <= 1 ? 'related' : 'gap', evidence: PROFESSIONAL_TENURE, projects: [] };
     }
-    if (requiredYears !== null && /experience/i.test(text)) {
-      const years = currentYear - 2022;
-      const enough = years >= requiredYears;
-      return {
-        requirement: text,
-        status: enough ? 'match' : 'related',
-        evidence: `Building software since 2022 (~${years} years across professional, freelance, and production side projects).`,
-        projects: [],
-      };
-    }
-    const related = relatedStrengthsFor(text);
-    const evidenceList = await Promise.all(
-      text
-        .split(/[,/]|\bor\b|\band\b/i)
-        .map((part) => part.trim())
-        .filter((part) => part.length >= 2 && part.length <= 40)
-        .slice(0, 3)
-        .map(gatherEvidence)
-    );
-    const found = evidenceList.find((evidence) => evidence.hasExperience);
-    if (found) {
-      const [projectLine] = found.projects;
-      return {
-        requirement: text,
-        status: found.strong ? 'match' : 'related',
-        evidence: found.strong
-          ? describeEvidence(found).split('\n')[0]
-          : `Comes up in ${found.projects.map(({ project }) => project.title).join(', ')}${projectLine ? ` (${projectLine.usage})` : ''}, though it is not a listed skill.`,
-        projects: found.projects.slice(0, 3).map(({ project }) => project),
-      };
-    }
-    return {
-      requirement: text,
-      status: related.length > 0 ? 'related' : 'gap',
-      evidence:
-        related.length > 0
-          ? `No direct experience, but adjacent strengths in ${related.join(', ')}.`
-          : 'No direct evidence in the portfolio.',
-      projects: [],
-    };
   }
 
-  const evidences = await Promise.all(skills.slice(0, 3).map((match) => gatherEvidence(match.skill.name)));
-  const sinceYears = evidences.map((e) => e.years ?? 0).filter(Boolean);
-  const bestYears = sinceYears.length > 0 ? Math.max(...sinceYears) : null;
-  const meetsYears = requiredYears === null || bestYears === null || bestYears >= requiredYears;
-
-  const projects = [...new Map(evidences.flatMap((e) => e.projects).map((p) => [p.project.id, p.project])).values()].slice(0, 3);
-  const summary = evidences
-    .map((e) => `${e.displayName}${e.since ? ` since ${e.since} (~${e.years}y)` : ''}`)
-    .join(', ');
-
-  let status: FitStatus = 'match';
-  if (!meetsYears) status = 'related';
-
-  return {
-    requirement: text,
-    status,
-    evidence: `${summary}${projects.length > 0 ? ` · used in ${projects.map((p) => p.title).join(', ')}` : ''}${
-      meetsYears ? '' : ` · short of the ${requiredYears} years asked for`
-    }.`,
-    projects,
-  };
+  return { judge: true, requirement: text, requiredYears };
 }
 
 export type FitRead = 'strong fit' | 'good fit with some gaps' | 'partial fit: real gaps to weigh' | 'weak fit for this role';
@@ -780,46 +753,65 @@ export interface FitAssessment {
   read: FitRead;
 }
 
+export const MAX_REQUIREMENTS = 20;
+
 /**
- * The fit check itself, shared by assess_job_fit and the recruiter brief so
- * both judge a posting with the same rules.
+ * The fit check itself, shared by assess_job_fit and the recruiter brief.
+ * A row is a match only when a write-up shows him doing it: keyword hits and
+ * skill aliases ("apis", "real-time", "next") no longer count on their own,
+ * and a technology a write-up says he chose against is evidence against it.
  */
 export async function assessRequirements(requirements: string[]): Promise<FitAssessment> {
-  const trimmed = requirements.map((r) => r.trim()).filter(Boolean).slice(0, 12);
-  const results = await Promise.all(trimmed.map(assessRequirement));
+  const trimmed = requirements.map((r) => r.trim()).filter(Boolean).slice(0, MAX_REQUIREMENTS);
+  const results: FitRequirement[] = new Array(trimmed.length);
+  const toJudge: { index: number; requirement: string; requiredYears: number | null }[] = [];
 
-  // Keyword matching misses work described in prose (fine-tuning a transformer
-  // is deep learning; an ETL and analytics dashboard is data analysis), so
-  // weak rows get a second look against the project write-ups.
-  const weak = results
-    .map((result, index) => ({ result, index }))
-    .filter(({ result }) => result.status === 'gap' || (result.projects.length === 0 && !/degree|team|bachelor/i.test(result.requirement)))
-    // Years-of-experience rows are already decided from start years.
-    .filter(({ result }) => result.status === 'gap' || !YEARS_PATTERN.test(result.requirement));
-  if (weak.length > 0) {
-    const judged = await judgeEvidence(weak.map(({ result }) => result.requirement), 5, 'fit');
-    weak.forEach(({ result, index }, i) => {
+  trimmed.forEach((requirement, index) => {
+    const quick = shortcut(requirement);
+    if ('judge' in quick) toJudge.push({ index, requirement: quick.requirement, requiredYears: quick.requiredYears });
+    else results[index] = quick;
+  });
+
+  if (toJudge.length > 0) {
+    // When a row names technologies, the quoted sentence has to name one of them.
+    const named = toJudge.map(({ requirement }) => {
+      const skills = findSkillsInText(requirement).filter((match) => safeVariants(match).some((name) => termPattern(name).test(requirement)));
+      return skills.length > 0 ? skills.flatMap(safeVariants).map(termPattern) : null;
+    });
+    const judged = await judgeEvidence(toJudge.map((row) => row.requirement), 5, 'fit', named);
+    const currentYear = new Date().getFullYear();
+    toJudge.forEach(({ index, requirement, requiredYears }, i) => {
       const verdict = judged[i];
       if (!verdict || verdict.verdict === 'none') {
-        // "Adjacent strengths in Python, Java" from the keyword fallback is noise
-        // when the write-ups show nothing; call it a gap. Years-of-experience
-        // rows keep their own reading.
-        if (result.status === 'related' && result.projects.length === 0 && !YEARS_PATTERN.test(result.requirement)) {
-          results[index] = { ...result, status: 'gap', evidence: 'Nothing in his projects or background shows this.' };
-        }
+        results[index] = { requirement, status: 'gap', evidence: 'Nothing in his projects shows this.', projects: [] };
         return;
       }
       const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
       const lead = verdict.projects[0];
-      const status: FitStatus = verdict.verdict === 'direct' && result.status !== 'related' ? 'match' : 'related';
-      results[index] = {
-        ...result,
-        status,
-        evidence: result.status === 'gap' || result.projects.length === 0 ? `${lead.why}${status === 'related' ? ' (adjacent, not a direct match)' : ''}` : result.evidence,
-        projects,
-      };
+      let status: FitStatus = verdict.verdict === 'direct' ? 'match' : 'related';
+      let evidence = `${lead.why}${status === 'related' ? ' (adjacent, not a direct match)' : ''}`;
+
+      // "3+ years of Swift": the judge settles use; the start year settles length.
+      if (requiredYears !== null) {
+        const since = findSkillsInText(requirement)
+          .filter((match) => termPattern(match.skill.name).test(requirement))
+          .map((match) => match.skill.since)
+          .filter((year): year is number => typeof year === 'number');
+        const years = since.length > 0 ? currentYear - Math.min(...since) : null;
+        if (years === null) {
+          status = 'related';
+          evidence = `${lead.why} How long he has used it isn't recorded.`;
+        } else if (years < requiredYears) {
+          status = requiredYears - years <= 1 && status === 'match' ? 'related' : 'gap';
+          evidence = `${lead.why} About ${years} year${years === 1 ? '' : 's'} of use, mostly on personal and training projects, against ${requiredYears} asked.`;
+        } else {
+          evidence = `${lead.why} About ${years} years of use, mostly on personal and training projects.`;
+        }
+      }
+      results[index] = { requirement, status, evidence, projects };
     });
   }
+
   const summary = {
     match: results.filter((r) => r.status === 'match').length,
     related: results.filter((r) => r.status === 'related').length,
@@ -861,7 +853,7 @@ export const assessJobFit = tool(
       requirements: z
         .array(z.string())
         .min(1)
-        .max(12)
+        .max(MAX_REQUIREMENTS)
         .describe("Concrete requirements, one per entry, e.g. ['3+ years Swift', 'SwiftUI', 'REST APIs', 'CI/CD', 'Bachelor's degree']"),
     }),
   }

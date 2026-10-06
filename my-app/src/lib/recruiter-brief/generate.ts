@@ -30,7 +30,7 @@ import { newPublicId, saveBrief } from './store';
 
 /** The fit check's extraction rules, shared with the chat agent's prompt. */
 export const REQUIREMENT_RULES =
-  'Extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"). Keep experience requirements whole, with the job function, domain and years as written (e.g. "4+ years as a data scientist in finance"), and never soften or drop a requirement he may not meet.';
+  'Extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"). Keep experience requirements whole, with the job function, domain and years as written (e.g. "4+ years as a data scientist in finance"), and never soften or drop a requirement he may not meet. Keep an "or" list as one requirement (e.g. "Java, Kotlin, Python or Go").';
 
 /**
  * Facts not yet confirmed by Kyle-Anthony. Any sentence naming them is kept
@@ -84,7 +84,7 @@ async function extractRequirements(jobDescription: string): Promise<ExtractedPos
     logistics?: string[];
   }>(
     `You read a job posting for a recruiter. ${REQUIREMENT_RULES}
-Mark each one required or nice-to-have, as the posting does (preferred, bonus, plus = nice-to-have). Return at most 12, required ones first. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
+Mark each one required or nice-to-have, as the posting does (preferred, bonus, plus = nice-to-have). Return at most 16, required ones first. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
 "coreFunction" is the job itself as one experience requirement, with the seniority and domain the posting implies (e.g. "Senior-level experience as a finance analytics / BI data scientist", "Experience as a full-stack engineer building AI products"). It is always required.
 Return the role title and the hiring company exactly as the posting states them, or null.
 JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": string, "requirements": [{"text": string, "required": boolean}], "logistics": [string]}`,
@@ -100,7 +100,7 @@ JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": str
   return {
     roleTitle: parsed.roleTitle?.trim() || undefined,
     companyName: parsed.companyName?.trim() || undefined,
-    requirements: requirements.slice(0, 12),
+    requirements: requirements.slice(0, 16),
     coreIndex: core ? 0 : undefined,
     logistics: (parsed.logistics ?? []).filter((l): l is string => typeof l === 'string' && l.trim().length > 3 && !/^[A-Z_ ]+$/.test(l.trim())).slice(0, 4),
   };
@@ -165,7 +165,7 @@ async function buildEvidence(queries: string[], broadQuery: string, fit: FitAsse
     });
 
   const [perQuery, broad, personal, roles, sections] = await Promise.all([
-    Promise.all(queries.slice(0, 12).map((query) => search(query, 4))),
+    Promise.all(queries.slice(0, 16).map((query) => search(query, 4))),
     search(broadQuery, 10),
     search(broadQuery, 3, 'personal_info'),
     projectRoles(),
@@ -399,7 +399,10 @@ JSON: {"items":[{"index":0,"verdict":"supported|overstated|unsupported","fixed":
     const raw = item?.fixed?.trim();
     const fixed = raw && !/^(no evidence|there is no|nothing|not (shown|supported|stated)|the evidence does not)/i.test(raw) ? raw : undefined;
     if (verdict === 'overstated' && fixed) rewritten += 1;
-    if (verdict === 'unsupported') fixed ? (rewritten += 1) : (removed += 1);
+    if (verdict === 'unsupported') {
+      if (fixed) rewritten += 1;
+      else removed += 1;
+    }
     claim.apply(verdict, fixed);
   });
   return { rewritten, removed };
