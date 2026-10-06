@@ -17,11 +17,12 @@ const MAX_TOOL_ROUNDS = 4;
 const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini';
 
 /** What the intake step told us, as a prompt section. The posting is read once and cached. */
-async function visitorSection(context?: VisitorContext): Promise<string> {
-  if (!context) return '';
+async function visitorSection(context?: VisitorContext): Promise<{ text: string; postingTitle?: string }> {
+  if (!context) return { text: '' };
   if (!context.hiring) {
-    return `\n\n## Visitor\nThe visitor said they are just exploring, not hiring. Answer what they ask; do not steer toward job-fit checks unless they bring one up.`;
+    return { text: `\n\n## Visitor\nThe visitor said they are just exploring, not hiring. Answer what they ask; do not steer toward job-fit checks unless they bring one up.` };
   }
+  let postingTitle: string | undefined;
   const lines = [
     '\n\n## Visitor',
     `The visitor is considering Kyle-Anthony for a technical role${context.role ? `: ${context.role}` : ''}. Lean on the projects and experience most relevant to that role when you answer, without overstating anything. When they ask whether he is a fit and name no other role, use this one.`,
@@ -29,6 +30,12 @@ async function visitorSection(context?: VisitorContext): Promise<string> {
   if (context.jobUrl) {
     const posting = await readJobPosting(context.jobUrl).catch(() => null);
     if (posting?.ok) {
+      postingTitle = posting.title;
+      if (postingTitle && context.role && !sameRole(postingTitle, context.role)) {
+        lines.push(
+          `Note: they typed the role as "${context.role}", but the posting is for "${postingTitle}". Judge fit against the posting and say so in one short clause.`
+        );
+      }
       const text = posting.text.length > 6000 ? `${posting.text.slice(0, 6000)}\n[truncated]` : posting.text;
       lines.push(
         `They shared the job posting (${context.jobUrl}); it is below, so you do not need get_job_posting for this link. For a fit check, extract its requirements and call assess_job_fit.\n<job_posting>\n${text}\n</job_posting>`
@@ -39,7 +46,19 @@ async function visitorSection(context?: VisitorContext): Promise<string> {
       );
     }
   }
-  return lines.join('\n');
+  lines.push('If they share a different posting later in the chat, judge fit against that newer one.');
+  return { text: lines.join('\n'), postingTitle };
+}
+
+function normalizeRole(value: string): string {
+  return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').replace(/\b(senior|sr|junior|jr|staff|lead|principal|the|role)\b/g, '').trim();
+}
+
+/** Loose match, so "Full Stack Engineer" and "Full-Stack Engineer, Growth" count as the same role. */
+function sameRole(a: string, b: string): boolean {
+  const x = normalizeRole(a);
+  const y = normalizeRole(b);
+  return x === y || x.includes(y) || y.includes(x);
 }
 
 function systemPrompt(visitor = ''): string {
@@ -75,7 +94,7 @@ Some tool results are also rendered to the visitor as visual cards (project card
 - Concise and direct: one to three short paragraphs. Bullets only for genuinely parallel items. No headings.
 - Refer to projects by their exact names: ${projectNames}. The UI turns these names into links.
 - Warm and professional. Present Kyle-Anthony's work in its best honest light: name concrete technical decisions and results rather than adjectives.
-- Never upgrade what a tool returned: a take-home exercise is not client work, a team project is not solo work, and a product with subscriptions does not mean a stated number of paying customers.
+- Never upgrade what a tool returned: a take-home exercise is not client work, a team project is not solo work, and a product with subscriptions does not mean a stated number of paying customers. For a fit report, use the overall read it gives.
 - Years of experience are (current year − start year). Say "about 4 years", not the arithmetic.
 - End with the answer, not with an offer to help further.
 
@@ -214,8 +233,10 @@ export async function* runAgent(
   options: { signal?: AbortSignal; context?: VisitorContext; conversationId?: string } = {}
 ): AsyncGenerator<ChatEvent> {
   const { signal, context, conversationId } = options;
+  const visitor = await visitorSection(context);
+  let postingTitle = visitor.postingTitle;
   const messages: BaseMessage[] = [
-    new SystemMessage(systemPrompt(await visitorSection(context))),
+    new SystemMessage(systemPrompt(visitor.text)),
     ...toLangChain(history.slice(-12)),
     new HumanMessage(userMessage),
   ];
@@ -285,6 +306,23 @@ export async function* runAgent(
         }
       })
     );
+
+    // The report is titled from the posting, not from what the visitor typed.
+    for (const { step } of results) {
+      if (step.call.name === 'get_job_posting' && typeof step.call.args?.url === 'string') {
+        const posting = await readJobPosting(step.call.args.url).catch(() => null);
+        if (posting?.ok && posting.title) postingTitle = posting.title;
+      }
+    }
+    for (const { result } of results) {
+      const widget = result.widget;
+      if (widget?.kind === 'fit_report' && postingTitle && (!widget.role || !sameRole(widget.role, postingTitle))) {
+        if (widget.role) {
+          result.content += `\n\nThe role was called "${widget.role}", but the posting is for "${postingTitle}"; the report uses the posting's title. Mention that in one short clause.`;
+        }
+        widget.role = postingTitle;
+      }
+    }
 
     // A fit report already summarises everything; extra cards in the same
     // round (a timeline, per-technology checks) would just crowd it.

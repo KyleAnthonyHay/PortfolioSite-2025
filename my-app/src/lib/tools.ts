@@ -240,7 +240,14 @@ export interface JudgedItem {
 }
 
 let judgeModel: ChatOpenAI | null = null;
-function getJudge(): ChatOpenAI {
+let fitJudgeModel: ChatOpenAI | null = null;
+function getJudge(mode: 'evidence' | 'fit' = 'evidence'): ChatOpenAI {
+  // Fit checks are what recruiters act on, and the small model kept counting
+  // adjacent work as a match, so they get the larger model.
+  if (mode === 'fit') {
+    fitJudgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_FIT_JUDGE_MODEL ?? 'gpt-4.1', temperature: 0 });
+    return fitJudgeModel;
+  }
   judgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_JUDGE_MODEL ?? 'gpt-4.1-mini', temperature: 0 });
   return judgeModel;
 }
@@ -252,7 +259,20 @@ function excerpt(hit: KnowledgeHit): string {
 }
 
 /** Retrieves candidate sections for each question and judges them in one model call. */
-async function judgeEvidence(questions: string[], perQuestion = 6): Promise<JudgedItem[]> {
+/**
+ * Extra rules when the items are job requirements: a recruiter reads "match"
+ * as "has done this job", so building software near a domain is not enough.
+ */
+const FIT_RUBRIC = `
+These ITEMs are requirements from a job posting. Judge them the way a hiring manager would:
+- "direct" only when an excerpt shows Kyle-Anthony doing that exact kind of work.
+- Building software for a domain is not experience as a practitioner in it: a billing ledger or payout tool is not finance or accounting experience; a dashboard is not data science or analytics experience.
+- A requirement that names a profession or job function (data scientist, analyst, designer, product manager, sales, finance) is "direct" only if the excerpts show him working in that function; otherwise "related" at most.
+- Analytical methods (forecasting, statistical modeling, experimentation or A/B testing, causal inference, pricing analysis) need an excerpt showing him doing that analysis, not building a feature next to it.
+- Examples: "finance fluency" is not met by building a payments ledger; "pricing experimentation" is not met by building subscription tiers; "revenue forecasting" is not met by tracking subscriptions. Those are "related".
+- When unsure between two verdicts, choose the lower one.`;
+
+async function judgeEvidence(questions: string[], perQuestion = 6, mode: 'evidence' | 'fit' = 'evidence'): Promise<JudgedItem[]> {
   const empty: JudgedItem = { verdict: 'none', projects: [] };
   if (questions.length === 0) return [];
 
@@ -285,7 +305,7 @@ async function judgeEvidence(questions: string[], perQuestion = 6): Promise<Judg
   });
 
   try {
-    const response = await getJudge()
+    const response = await getJudge(mode)
       .bind({ response_format: { type: 'json_object' } })
       .invoke([
         new SystemMessage(
@@ -293,7 +313,8 @@ async function judgeEvidence(questions: string[], perQuestion = 6): Promise<Judg
 - "direct": an excerpt shows Kyle-Anthony himself built, used, or did this (on team projects, only the parts the excerpt attributes to him or the team he was on).
 - "related": no direct use, but excerpts show clearly adjacent or transferable work.
 - "none": nothing relevant.
-List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3") and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","why":"..."}]}]}`
+List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3") and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts.${mode === 'fit' ? FIT_RUBRIC : ''}
+Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","why":"..."}]}]}`
         ),
         new HumanMessage(blocks.join('\n\n')),
       ]);
@@ -732,21 +753,29 @@ export const assessJobFit = tool(
     // weak rows get a second look against the project write-ups.
     const weak = results
       .map((result, index) => ({ result, index }))
-      .filter(({ result }) => result.status === 'gap' || (result.projects.length === 0 && !/degree|team|bachelor/i.test(result.requirement)));
+      .filter(({ result }) => result.status === 'gap' || (result.projects.length === 0 && !/degree|team|bachelor/i.test(result.requirement)))
+      // Years-of-experience rows are already decided from start years.
+      .filter(({ result }) => result.status === 'gap' || !YEARS_PATTERN.test(result.requirement));
     if (weak.length > 0) {
-      const judged = await judgeEvidence(weak.map(({ result }) => result.requirement), 5);
+      const judged = await judgeEvidence(weak.map(({ result }) => result.requirement), 5, 'fit');
       weak.forEach(({ result, index }, i) => {
         const verdict = judged[i];
-        if (!verdict || verdict.verdict === 'none') return;
+        if (!verdict || verdict.verdict === 'none') {
+          // "Adjacent strengths in Python, Java" from the keyword fallback is noise
+          // when the write-ups show nothing; call it a gap. Years-of-experience
+          // rows keep their own reading.
+          if (result.status === 'related' && result.projects.length === 0 && !YEARS_PATTERN.test(result.requirement)) {
+            results[index] = { ...result, status: 'gap', evidence: 'Nothing in his projects or background shows this.' };
+          }
+          return;
+        }
         const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
         const lead = verdict.projects[0];
+        const status: FitStatus = verdict.verdict === 'direct' && result.status !== 'related' ? 'match' : 'related';
         results[index] = {
           ...result,
-          status: verdict.verdict === 'direct' && result.status !== 'related' ? 'match' : result.status === 'match' ? 'match' : 'related',
-          evidence:
-            result.status === 'gap'
-              ? `${lead.why}${verdict.verdict === 'related' ? ' (adjacent, not a direct match)' : ''}`
-              : result.evidence,
+          status,
+          evidence: result.status === 'gap' || result.projects.length === 0 ? `${lead.why}${status === 'related' ? ' (adjacent, not a direct match)' : ''}` : result.evidence,
           projects,
         };
       });
@@ -757,8 +786,17 @@ export const assessJobFit = tool(
       gap: results.filter((r) => r.status === 'gap').length,
     };
 
+    const score = (summary.match + summary.related * 0.5) / Math.max(1, results.length);
+    const read =
+      score >= 0.85 && summary.gap === 0
+        ? 'strong fit'
+        : score >= 0.65
+          ? 'good fit with some gaps'
+          : score >= 0.4
+            ? 'partial fit: real gaps to weigh'
+            : 'weak fit for this role';
     const content = [
-      `Fit assessment${role ? ` for ${role}` : ''}: ${summary.match} match, ${summary.related} related, ${summary.gap} gap out of ${results.length}.`,
+      `Fit assessment${role ? ` for ${role}` : ''}: ${summary.match} match, ${summary.related} related, ${summary.gap} gap out of ${results.length}. Overall read: ${read}. Use this read in your summary; do not call it a stronger fit than this.`,
       ...results.map((r) => `- [${r.status.toUpperCase()}] ${r.requirement} — ${r.evidence}`),
     ].join('\n');
 
@@ -1064,8 +1102,14 @@ export function readJobPosting(raw: string): Promise<JobPostingRead> {
           reason: page.problem ?? 'the page only loads its content with JavaScript, so the posting text is not in it',
         };
       }
-      const title = html && !text.startsWith('Title:') ? metaContent(html, 'og:title') ?? /<title[^>]*>([^<]*)/i.exec(html)?.[1]?.trim() : undefined;
-      return { ok: true, host: url.hostname, title: title ? decodeEntities(title) : undefined, text };
+      const raw = text.startsWith('Title:')
+        ? text.slice(6, text.indexOf('\n') > 0 ? text.indexOf('\n') : undefined)
+        : html
+          ? metaContent(html, 'og:title') ?? /<title[^>]*>([^<]*)/i.exec(html)?.[1]
+          : undefined;
+      // "Full-Stack Engineer | ElevenLabs careers" → "Full-Stack Engineer"
+      const title = raw ? decodeEntities(raw).split(/\s+[|–—]\s+|\s+-\s+/)[0].trim() : undefined;
+      return { ok: true, host: url.hostname, title: title || undefined, text };
     })();
     postingCache.set(key, read);
     // Failures are worth retrying later (a timeout, a rate limit); successes are kept.
