@@ -108,9 +108,9 @@ export default function BriefPdf({ view }: { view: BriefView }) {
           <Text style={s.eyebrow}>{page.general ? 'Candidate profile' : 'Prepared for'}</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
             <Text style={[s.title, { flex: 1, paddingRight: 12 }]}>{page.general ? 'General profile, not a role match' : page.title}</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', maxWidth: '45%' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', height: 12, maxWidth: '45%' }}>
               <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: positive ? ACCENT : zinc[400], marginRight: 5 }} />
-              <Text style={{ fontSize: 10.5, fontFamily: 'Helvetica-Bold', color: positive ? ACCENT : zinc[700] }}>{VERDICT_WORD[page.verdict.level]}</Text>
+              <Text style={{ fontSize: 10.5, lineHeight: 1, marginTop: 1, fontFamily: 'Helvetica-Bold', color: positive ? ACCENT : zinc[700] }}>{VERDICT_WORD[page.verdict.level]}</Text>
             </View>
           </View>
           <Text style={[s.body, { marginTop: 8 }]}>{page.snapshot}</Text>
