@@ -1,5 +1,6 @@
 import { projects as projectCards } from './projects';
 import type { ProjectCardData, TechStack } from './chat-events';
+import { projectIcons } from './project-icons';
 
 /**
  * Everything the chat agent and its widgets know about a project, in one
@@ -161,15 +162,6 @@ const details: Record<number, CatalogDetails> = {
   },
 };
 
-/** Each product's own icon. The Creator Dashboard shares SelahNote's mark. */
-const icons: Record<number, string> = {
-  1: '/project-icons/selahnote.png',
-  5: '/project-icons/ontract.png',
-  6: '/project-icons/sentio.png',
-  9: '/project-icons/soundsnag.png',
-  10: '/project-icons/selahnote.png',
-  11: '/project-icons/prodbot.png',
-};
 
 export const catalog: CatalogProject[] = projectCards
   .filter((card) => details[card.id])
@@ -186,7 +178,7 @@ export const catalog: CatalogProject[] = projectCards
       framed: !extra.unframed,
       video: extra.video,
       href: `/projects/${card.id}`,
-      icon: icons[card.id],
+      icon: projectIcons[card.id],
       link: card.link,
       github: card.github,
       highlights: extra.highlights,
