@@ -84,7 +84,7 @@ async function extractRequirements(jobDescription: string): Promise<ExtractedPos
     logistics?: string[];
   }>(
     `You read a job posting for a recruiter. ${REQUIREMENT_RULES}
-Mark each one required or nice-to-have, as the posting does (preferred, bonus, plus = nice-to-have). Return at most 16, required ones first. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
+Mark each one required or nice-to-have, as the posting does (preferred, bonus, plus = nice-to-have). Return at most 11, required ones first; when the posting lists more, merge closely related ones into one row rather than dropping any. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
 "coreFunction" is the job itself as one experience requirement, with the seniority and domain the posting implies (e.g. "Senior-level experience as a finance analytics / BI data scientist", "Experience as a full-stack engineer building AI products"). It is always required.
 Return the role title and the hiring company exactly as the posting states them, or null.
 JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": string, "requirements": [{"text": string, "required": boolean}], "logistics": [string]}`,
@@ -100,7 +100,7 @@ JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": str
   return {
     roleTitle: parsed.roleTitle?.trim() || undefined,
     companyName: parsed.companyName?.trim() || undefined,
-    requirements: requirements.slice(0, 16),
+    requirements: requirements.slice(0, 12),
     coreIndex: core ? 0 : undefined,
     logistics: (parsed.logistics ?? []).filter((l): l is string => typeof l === 'string' && l.trim().length > 3 && !/^[A-Z_ ]+$/.test(l.trim())).slice(0, 4),
   };
@@ -453,7 +453,7 @@ async function auditRoleMatches(matches: RoleMatch[], items: EvidenceReference[]
 - "met": "full" when the excerpts show him doing every part of the requirement; "partial" when they show some of it or adjacent work; "none" when they show nothing he did.
 - "projects": the named projects that show it as HIS work. On team projects (OnTract, Sentio+) count only what the excerpts attribute to him or to his solo rebuild; a tech-stack or skills list, or what teammates built, does not count.
 - "basis": under 22 words, a positive statement of what he did that supports the row (no notes about missing evidence; empty if "none").
-Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects.
+Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects. Business terms keep their business meaning: a payout ledger or subscription tracking is not revenue or growth analytics, owning his own app is not running an executive review, embeddings are not a metrics layer. Personal traits and ways of working (curiosity, juggling work streams, thriving in ambiguity) are "partial" at most unless an excerpt describes exactly that.
 ${FACTS}
 JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"..."}]}`,
     `BACKGROUND:\n${background.map((item) => `[${item.id}] ${item.section}: ${item.excerpt}`).join('\n')}\n\n${blocks.join('\n\n')}`,
@@ -683,7 +683,8 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
       text: `Interview question: ${question.question}`,
       evidenceIds: allIds.filter((id) => !id.startsWith('P4')).slice(0, 40),
       apply: (verdict, fixed) => {
-        if (verdict !== 'supported') question.question = fixed ?? '';
+        // A rewrite has to still be a question; otherwise the question goes.
+        if (verdict !== 'supported') question.question = fixed && /\?["”]?$/.test(fixed.trim()) ? fixed.replace(/^Interview question:\s*/, '') : '';
       },
     })
   );

@@ -172,7 +172,7 @@ export default function BriefPdf({ view }: { view: BriefView }) {
                     <Text style={{ fontFamily: 'Helvetica-Bold', color: zinc[900] }}>Why it matters: </Text>
                     {project.relevance}
                   </Text>
-                  {project.evidence.map((line) => (
+                  {project.evidence.slice(0, brief.roleMatches.length > 9 ? 2 : 3).map((line) => (
                     <View key={line} style={s.bullet}>
                       <View style={s.dot} />
                       <Text style={{ flex: 1, fontSize: 7.8, color: zinc[500], lineHeight: 1.32 }}>{line}</Text>
