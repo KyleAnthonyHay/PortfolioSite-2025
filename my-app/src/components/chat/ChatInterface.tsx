@@ -14,6 +14,7 @@ import { intakeMessage } from './HiringIntake';
 import Markdown from './Markdown';
 import SourcePills from './SourcePills';
 import WidgetRenderer from './widgets';
+import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
 
 interface UserMessage {
   id: string;
@@ -363,6 +364,18 @@ export default function ChatInterface() {
 
   const lastAssistantIndex = messages.map((m) => m.role).lastIndexOf('assistant');
 
+  // The brief needs something to judge against: a role, a posting, or a fit check.
+  const userMessages = messages.filter((m) => m.role === 'user');
+  const fitShown = messages.some((m) => m.role === 'assistant' && m.widgets.some((w) => w.kind === 'fit_report'));
+  const briefReady =
+    Boolean(visitor?.role || visitor?.jobUrl) || fitShown || userMessages.some((m) => /https?:\/\//i.test(m.content) || m.content.length >= 500);
+  const latestBrief = [...messages]
+    .reverse()
+    .flatMap((m) => (m.role === 'assistant' ? [...m.widgets].reverse() : []))
+    .find((w) => w.kind === 'recruiter_brief');
+  const briefId = latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : undefined;
+  const makeBrief = () => send(BRIEF_PROMPT);
+
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* Like a Messages thread: the agent's avatar and name centred, controls either side. */}
@@ -383,17 +396,19 @@ export default function ChatInterface() {
             </span>
           </div>
 
-          {messages.length > 0 ? (
-            <button
-              type="button"
-              onClick={handleNewChat}
-              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 px-3 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-zinc-900 active:scale-[0.97]"
-            >
-              <Plus className="h-3.5 w-3.5" /> New chat
-            </button>
-          ) : (
-            <span className="w-9" />
-          )}
+          <div className="flex items-center gap-2">
+            {isHydrated && <BriefButton ready={briefReady} busy={isStreaming} briefId={briefId} onMake={makeBrief} />}
+            {messages.length > 0 && (
+              <button
+                type="button"
+                onClick={handleNewChat}
+                aria-label="New chat"
+                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 px-3 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-zinc-900 active:scale-[0.97]"
+              >
+                <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">New chat</span>
+              </button>
+            )}
+          </div>
         </div>
       </header>
 
@@ -500,6 +515,7 @@ export default function ChatInterface() {
                                 active={index === lastAssistantIndex && message.status !== 'streaming' && !isStreaming}
                                 answer={next?.role === 'user' ? next.content : undefined}
                                 onAnswer={(text) => send(text)}
+                                onBrief={isStreaming ? undefined : makeBrief}
                                 chat={{ transcript: () => toTranscript(messagesRef.current), context: visitor }}
                               />
                             </motion.div>
@@ -563,6 +579,14 @@ export default function ChatInterface() {
         onStop={handleStop}
         isStreaming={isStreaming}
         inputRef={inputRef}
+      />
+      <BriefNudge
+        engaged={fitShown || userMessages.length >= 3}
+        ready={briefReady}
+        busy={isStreaming}
+        briefId={briefId}
+        activity={messages.length}
+        onMake={makeBrief}
       />
     </div>
   );

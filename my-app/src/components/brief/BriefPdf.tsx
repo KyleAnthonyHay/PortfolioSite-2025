@@ -87,7 +87,7 @@ export default function BriefPdf({ view }: { view: BriefView }) {
   return (
     <Document title={`Kyle-Anthony Hay · ${title}`} author="Kyle-Anthony Hay" subject="Recruiter brief" creator={SITE_URL}>
       <Page size="LETTER" style={s.page}>
-        <Text style={s.eyebrow}>Recruiter brief · {date}</Text>
+        <Text style={s.eyebrow}>Recruiter brief · Generated {date} by the AI agent on his portfolio</Text>
         <View style={s.header}>
           {/* eslint-disable-next-line jsx-a11y/alt-text */}
           <Image src={asset(candidate.photo)} style={s.photo} />
@@ -118,6 +118,9 @@ export default function BriefPdf({ view }: { view: BriefView }) {
             <Text style={[s.chip, verdictStyle[brief.recommendation.level], { fontSize: 7.5, paddingHorizontal: 8, paddingVertical: 3 }]}>{brief.recommendation.nextStep}</Text>
           </View>
           <Text style={[s.body, { marginTop: 8 }]}>{brief.candidateSummary}</Text>
+          {brief.roleMatches.length === 0 && (
+            <Text style={{ fontSize: 8, color: zinc[400], marginTop: 6 }}>No job posting was shared, so this is a general profile, not a role match.</Text>
+          )}
         </View>
 
         {matches.length > 0 && (

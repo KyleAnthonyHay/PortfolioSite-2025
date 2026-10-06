@@ -49,7 +49,7 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
       {/* Candidate header */}
       <header>
         <p className={`${eyebrow} mb-6`}>
-          Recruiter brief · {formatDate(view.createdAt)}
+          Recruiter brief · Generated {formatDate(view.createdAt)} by the AI agent on his portfolio
         </p>
         <div className="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-5">
@@ -97,6 +97,9 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
             </span>
           </div>
           <p className="mt-5 text-base leading-relaxed text-zinc-500 max-w-[68ch]">{brief.candidateSummary}</p>
+          {brief.roleMatches.length === 0 && (
+            <p className="mt-4 text-[13px] text-zinc-400">No job posting was shared, so this is a general profile, not a role match.</p>
+          )}
         </div>
       </section>
 

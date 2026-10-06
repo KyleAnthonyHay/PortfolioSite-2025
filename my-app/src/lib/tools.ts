@@ -271,7 +271,17 @@ function rank(section: { projectId: number; section: string }): number {
 }
 
 function normalizeQuote(text: string): string {
-  return text.toLowerCase().replace(/[“”"‘’'`*_]/g, '').replace(/…|\.\.\./g, ' ').replace(/\s+/g, ' ').trim();
+  return text.toLowerCase().replace(/[“”"‘’'`*_]/g, '').replace(/[–—]/g, '-').replace(/(^|\s)[-•]\s+/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** The quote is in the excerpt: every piece between ellipses, and at least one long enough to mean something. */
+function quoteFound(quote: string, source: string): boolean {
+  const haystack = normalizeQuote(source);
+  const pieces = normalizeQuote(quote)
+    .split(/…|\.\.\./)
+    .map((piece) => piece.replace(/^[\s\-:;,.]+|[\s\-:;,.]+$/g, ''))
+    .filter((piece) => piece.length >= 12);
+  return pieces.some((piece) => piece.length >= 20) && pieces.every((piece) => haystack.includes(piece));
 }
 
 /**
@@ -286,6 +296,23 @@ async function judgeEvidence(
   perQuestion = 6,
   mode: 'evidence' | 'fit' = 'evidence',
   mustMention: (RegExp[] | null)[] = []
+): Promise<JudgedItem[]> {
+  // A long batch makes the judge skip items, and a skipped item would read as
+  // a gap, so rows are judged three at a time.
+  const size = 3;
+  const chunks: number[][] = [];
+  for (let start = 0; start < questions.length; start += size) chunks.push(questions.slice(start, start + size).map((_, k) => start + k));
+  const judged = await Promise.all(
+    chunks.map((indexes) => judgeChunk(indexes.map((i) => questions[i]), perQuestion, mode, indexes.map((i) => mustMention[i] ?? null)))
+  );
+  return judged.flat();
+}
+
+async function judgeChunk(
+  questions: string[],
+  perQuestion: number,
+  mode: 'evidence' | 'fit',
+  mustMention: (RegExp[] | null)[]
 ): Promise<JudgedItem[]> {
   const empty: JudgedItem = { verdict: 'none', projects: [] };
   if (questions.length === 0) return [];
@@ -344,12 +371,12 @@ async function judgeEvidence(
 - "direct": an excerpt shows Kyle-Anthony himself built, used, or did this (on team projects, only the parts the excerpt attributes to him or the team he was on).
 - "related": no direct use, but excerpts show clearly adjacent or transferable work.
 - "none": nothing relevant.
-List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3"), "quote" is the one sentence from that excerpt, copied exactly, that shows it, and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts.
+List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3"), "quote" is the one sentence from that excerpt (at most 35 words), copied exactly with no ellipses, that shows it, and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts.
 - A technology the excerpt names only as an alternative he did not pick ("chosen over X", "X vs Y", "alternatives would be X", "instead of X") is evidence AGAINST that technology: verdict "none" for it.
 - On team projects (OnTract, Sentio+), tech-stack, architecture and "skills demonstrated" lists describe the team's system; count a technology only where the excerpt says he built or used it, or it is part of his solo rebuild.
 - The excerpt must address the ITEM itself, not a word near it: REST is not GraphQL, WebSockets are not Kafka, Next.js is not "next-generation", Bedrock calls are not running AWS infrastructure, a trained model that was never deployed is not "deployed ML in production", a troubleshooting assistant is not incident response.${mode === 'fit' ? FIT_RUBRIC : ''}
 Being on the team that built something is not his use of it. When the ITEM names a technology, the quote must contain that technology's exact name (not a related one: "SwiftUI" is not "Swift"). If no sentence shows it, the verdict is "none" with no projects; never cite a project to say it lacks something.
-Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."}]}]}`
+Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."}]}]}`
         ),
         new HumanMessage(blocks.join('\n\n')),
       ]);
@@ -368,7 +395,7 @@ Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"
         if (!hit || !projectById(hit.projectId) || seen.has(hit.projectId)) return [];
         const quote = normalizeQuote(p.quote ?? '');
         const why = (p.why ?? '').trim();
-        if (quote.length < 12 || !normalizeQuote(hit.text).includes(quote.slice(0, 160))) return [];
+        if (!quoteFound(p.quote ?? '', hit.text)) return [];
         if (REJECTED.test(quote) || /^(no|not|there is no|nothing)\b/i.test(why) || /\bon the team that\b|\bteam(mates)? (built|wrote)\b/i.test(why)) return [];
         const terms = mustMention[i];
         if (terms && terms.length > 0 && !terms.some((term) => term.test(quote))) return [];
@@ -774,8 +801,9 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
 
   if (toJudge.length > 0) {
     // When a row names technologies, the quoted sentence has to name one of them.
+    // Only when the row names the technology itself; "API design" or "agentic workflows" are kinds of work, not a tool to quote.
     const named = toJudge.map(({ requirement }) => {
-      const skills = findSkillsInText(requirement).filter((match) => safeVariants(match).some((name) => termPattern(name).test(requirement)));
+      const skills = findSkillsInText(requirement).filter((match) => termPattern(match.skill.name).test(requirement));
       return skills.length > 0 ? skills.flatMap(safeVariants).map(termPattern) : null;
     });
     const judged = await judgeEvidence(toJudge.map((row) => row.requirement), 5, 'fit', named);

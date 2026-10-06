@@ -25,9 +25,11 @@ interface WidgetRendererProps {
   onAnswer?: (text: string) => void;
   /** For the note card: the chat so far and the intake answer. */
   chat?: ChatHandle;
+  /** Turns a fit report into a recruiter brief. */
+  onBrief?: () => void;
 }
 
-export default function WidgetRenderer({ widget, active = false, answer, onAnswer, chat }: WidgetRendererProps) {
+export default function WidgetRenderer({ widget, active = false, answer, onAnswer, chat, onBrief }: WidgetRendererProps) {
   switch (widget.kind) {
     case 'projects':
       return <ProjectsWidget widget={widget} />;
@@ -44,7 +46,7 @@ export default function WidgetRenderer({ widget, active = false, answer, onAnswe
     case 'question':
       return <QuestionCard widget={widget} active={active} answer={answer} onAnswer={onAnswer} />;
     case 'fit_report':
-      return <FitReportWidget widget={widget} />;
+      return <FitReportWidget widget={widget} onBrief={onBrief} />;
     case 'recommendations':
       return <RecommendationsWidget widget={widget} onAsk={active ? onAnswer : undefined} />;
     case 'journey':
