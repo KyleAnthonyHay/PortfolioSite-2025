@@ -49,7 +49,7 @@ function CompactCard({ project }: { project: ProjectCardData }) {
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm font-medium text-zinc-900">{project.title}</p>
           <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-            {project.category === 'iOS Apps' ? 'iOS' : 'Web'}
+            {project.category === 'iOS Apps' ? 'iOS' : project.category === 'macOS Apps' ? 'Mac' : 'Web'}
           </span>
         </div>
         <p className="truncate text-xs text-zinc-400">{project.tagline}</p>

@@ -37,7 +37,7 @@ export default function ProjectMention({ id, children }: { id: number; children:
           <div className="mb-0.5 flex items-center justify-between gap-2">
             <p className="text-sm font-semibold text-zinc-900">{project.title}</p>
             <span className="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-              {project.category === 'iOS Apps' ? 'iOS' : 'Web'}
+              {project.category === 'iOS Apps' ? 'iOS' : project.category === 'macOS Apps' ? 'Mac' : 'Web'}
             </span>
           </div>
           <p className="mb-3 text-xs leading-relaxed text-zinc-500">{project.tagline}</p>
