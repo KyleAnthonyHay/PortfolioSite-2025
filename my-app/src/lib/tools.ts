@@ -1162,12 +1162,56 @@ const postingCache = new Map<string, Promise<JobPostingRead>>();
  * Fetches a posting once per URL per server process, so a link from the
  * intake step can ride along in every later turn without refetching.
  */
+/** Board and job id for a Greenhouse posting: a Greenhouse board URL, or any page with ?gh_jid= on a company domain. */
+function greenhouseIds(url: URL): { boards: string[]; id: string } | null {
+  const direct = /(?:^|\.)greenhouse\.io$/.test(url.hostname) ? /^\/(?:embed\/job_app\?for=)?([\w-]+)\/jobs\/(\d+)/.exec(url.pathname) : null;
+  if (direct) return { boards: [direct[1]], id: direct[2] };
+  const id = url.searchParams.get('gh_jid') ?? (url.hostname.endsWith('greenhouse.io') ? url.searchParams.get('token') : null);
+  if (!id || !/^\d+$/.test(id)) return null;
+  const forBoard = url.searchParams.get('for');
+  // careers.duolingo.com → "duolingo"; www.airbnb.com → "airbnb"
+  const labels = url.hostname.replace(/^www\./, '').split('.');
+  const guess = labels.length >= 2 ? labels[labels.length - 2] : labels[0];
+  return { boards: [...new Set([forBoard, guess, labels[0]].filter((b): b is string => Boolean(b)))], id };
+}
+
+async function readGreenhouse(url: URL): Promise<JobPostingRead | null> {
+  const ids = greenhouseIds(url);
+  if (!ids) return null;
+  for (const board of ids.boards) {
+    try {
+      const response = await fetch(`https://boards-api.greenhouse.io/v1/boards/${encodeURIComponent(board)}/jobs/${ids.id}`, {
+        signal: AbortSignal.timeout(8000),
+      });
+      if (!response.ok) continue;
+      const job = (await response.json()) as { title?: string; company_name?: string; location?: { name?: string }; content?: string };
+      if (!job.title || !job.content) continue;
+      const body = readableText(decodeEntities(job.content));
+      const text = [
+        `Title: ${job.title}`,
+        job.company_name && `Company: ${job.company_name}`,
+        job.location?.name && `Location: ${job.location.name}`,
+        `\n${body}`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+      return { ok: true, host: url.hostname, title: job.title, text };
+    } catch {
+      // Try the next board name, then fall back to the page itself.
+    }
+  }
+  return null;
+}
+
 export function readJobPosting(raw: string): Promise<JobPostingRead> {
   const url = isPublicUrl(raw.trim());
   if (!url) return Promise.resolve({ ok: false, status: 0, reason: 'that is not a public web address' });
   const key = url.toString();
   if (!postingCache.has(key)) {
     const read = (async (): Promise<JobPostingRead> => {
+      // Greenhouse boards render with JavaScript, but its public API has the full posting.
+      const greenhouse = await readGreenhouse(url);
+      if (greenhouse) return greenhouse;
       const page = await fetchPage(url, 9000);
       const html = page.html;
       let text = html ? jobPostingFromJsonLd(html) ?? readableText(html) : '';
