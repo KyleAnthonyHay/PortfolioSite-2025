@@ -1408,6 +1408,8 @@ export function describeToolCall(name: string, args: Record<string, unknown>): {
     }
     case 'ask_visitor':
       return { running: 'Writing a question for you', done: 'Asked a question' };
+    case 'generate_recruiter_brief':
+      return { running: 'Writing a recruiter brief and checking each claim', done: 'Wrote a recruiter brief' };
     default:
       return { running: `Running ${name}`, done: `Ran ${name}` };
   }

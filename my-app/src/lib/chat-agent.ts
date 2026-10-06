@@ -12,6 +12,8 @@ import { allTools, describeToolCall, parseToolResult, readJobPosting, type ToolR
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
 import { notifyFitCheck } from './notify';
+import { makeRecruiterBriefTool, rememberFitRequirements } from './recruiter-brief/tool';
+import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 
 const MAX_TOOL_ROUNDS = 4;
 const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini';
@@ -82,7 +84,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
 - A job posting URL → get_job_posting, then assess_job_fit with the requirements it lists and the role title.
-- A pasted job description or a list of requirements → extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"), then call assess_job_fit once. Keep experience requirements whole, with the job function, domain and years as written (e.g. "4+ years as a data scientist in finance"), and never soften or drop a requirement he may not meet. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
+- A pasted job description or a list of requirements → ${REQUIREMENT_RULES} Then call assess_job_fit once. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
+- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief. It finds a posting already shared in the chat; do not paste it into the call.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
 - When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
 If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates), say it is not stated and suggest asking him; never infer it from nearby facts.
@@ -160,6 +163,8 @@ function projectIdsIn(widget: Widget): number[] {
     case 'resources':
     case 'demo':
       return [widget.project.id];
+    case 'recruiter_brief':
+      return widget.view.projects.map((p) => p.id);
     case 'journey':
       return widget.nodes.flatMap((node) => node.projects?.map((p) => p.id) ?? []);
     default:
@@ -169,7 +174,7 @@ function projectIdsIn(widget: Widget): number[] {
 
 /** The argument worth showing beside a step's label. */
 function stepChip(args: Record<string, unknown>): string | undefined {
-  for (const key of ['query', 'technology', 'url', 'section', 'role']) {
+  for (const key of ['query', 'technology', 'url', 'section', 'role', 'roleTitle', 'jobUrl']) {
     const value = args[key];
     if (typeof value === 'string' && value.trim()) return value.trim().slice(0, 80);
   }
@@ -252,7 +257,8 @@ export async function* runAgent(
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
-  const tools = justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools;
+  const briefTool = makeRecruiterBriefTool({ userMessage, history, context, conversationId });
+  const tools = [...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), briefTool];
 
   for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
     const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
@@ -306,6 +312,11 @@ export async function* runAgent(
         }
       })
     );
+
+    // A brief made later in this chat judges the same requirements as this fit check.
+    for (const { step } of results) {
+      if (step.call.name === 'assess_job_fit') rememberFitRequirements(conversationId, step.call.args?.requirements);
+    }
 
     // The report is titled from the posting, not from what the visitor typed.
     for (const { step } of results) {
@@ -396,6 +407,8 @@ export async function* runAgent(
     );
     // After a fit check, one follow-up always offers a way to reach him.
     if (fitShown && items.length > 0) items.splice(Math.min(items.length, 3) - 1, 1, "I'd like Kyle-Anthony to follow up with me.");
+    // After a fit check, offer the shareable version once.
+    if (fitShown && items.length > 1 && !shownWidgets.has('recruiter_brief')) items.splice(0, 1, 'Make a recruiter brief I can share.');
     if (items.length > 0) yield { type: 'suggestions', items };
   }
 

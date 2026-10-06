@@ -5,6 +5,8 @@
  * UI can render cards instead of prose.
  */
 
+import type { BriefView } from './recruiter-brief/view';
+
 export type ProjectCategory = 'iOS Apps' | 'macOS Apps' | 'Web Apps';
 
 export interface ProjectCardData {
@@ -160,6 +162,7 @@ export type Widget =
       fallbackEmail: string;
     }
   | { kind: 'resume'; name: string; headline: string; viewUrl: string; downloadUrl: string; pages?: number; size?: string }
+  | { kind: 'recruiter_brief'; view: BriefView }
   | {
       kind: 'fit_report';
       role?: string;

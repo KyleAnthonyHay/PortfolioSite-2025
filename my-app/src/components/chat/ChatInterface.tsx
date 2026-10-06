@@ -112,6 +112,7 @@ const widgetNames: Partial<Record<Widget['kind'], string>> = {
   resume: 'résumé',
   book_time: 'booking card',
   note: 'note card',
+  recruiter_brief: 'recruiter brief',
 };
 
 /** The chat as plain messages for the note's transcript: prose, plus what cards were shown. */

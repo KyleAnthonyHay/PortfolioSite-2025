@@ -15,6 +15,7 @@ import { BookTimeWidget } from './BookTime';
 import { ResumeWidget } from './Resume';
 import { DemoWidget } from './Demo';
 import { NoteWidget, type ChatHandle } from './Note';
+import { RecruiterBriefWidget } from './RecruiterBrief';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -56,6 +57,8 @@ export default function WidgetRenderer({ widget, active = false, answer, onAnswe
       return <ResumeWidget widget={widget} />;
     case 'demo':
       return <DemoWidget widget={widget} />;
+    case 'recruiter_brief':
+      return <RecruiterBriefWidget widget={widget} />;
     case 'note':
       return <NoteWidget widget={widget} chat={chat} />;
     default:

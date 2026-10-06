@@ -89,6 +89,14 @@ function ToolIcon({ tool }: { tool: string }) {
         <path d="M14 2v6h6M8 13h8M8 17h5" />
       </svg>
     );
+  if (tool === 'generate_recruiter_brief')
+    return (
+      <svg {...common}>
+        <rect x="4" y="2" width="16" height="20" rx="2" />
+        <circle cx="12" cy="8.5" r="2.5" />
+        <path d="M8 15h8M8 18h5" />
+      </svg>
+    );
   if (tool === 'send_note' || tool === 'notify_kyle')
     return (
       <svg {...common}>
