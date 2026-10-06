@@ -375,6 +375,8 @@ export async function* runAgent(
     if (asked) break;
   }
 
+  yield { type: 'answered' };
+
   // Sources list every project the answer rests on: the ones it names first,
   // then the ones its cards show. Projects a tool touched but nothing on
   // screen uses (a check hidden behind a fit report) are left out.

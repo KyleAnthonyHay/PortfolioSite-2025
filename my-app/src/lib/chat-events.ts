@@ -189,6 +189,8 @@ export type ChatEvent =
   | { type: 'step'; step: ActivityStep }
   | { type: 'widget'; widget: Widget }
   | { type: 'text'; delta: string }
+  /** The answer's text is complete; sources and follow-ups may still come. */
+  | { type: 'answered' }
   | { type: 'sources'; sources: SourceRef[] }
   | { type: 'suggestions'; items: string[] }
   | { type: 'error'; message: string }

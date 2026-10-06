@@ -30,6 +30,8 @@ interface AssistantMessage {
   sources: SourceRef[];
   suggestions: string[];
   status: 'streaming' | 'done' | 'error';
+  /** The text is complete, so cards can come in after it. */
+  answered?: boolean;
   /** Client clock: when the turn started and when the answer (or the turn) first landed. */
   startedAt?: number;
   endedAt?: number;
@@ -144,6 +146,8 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
     }
     case 'widget':
       return { ...message, widgets: [...message.widgets, event.widget] };
+    case 'answered':
+      return { ...message, answered: true };
     case 'sources':
       return { ...message, sources: event.sources };
     case 'suggestions':
@@ -467,7 +471,7 @@ export default function ChatInterface() {
                     <ActivitySteps
                       steps={message.steps}
                       isStreaming={message.status === 'streaming'}
-                      hasText={message.content.length > 0 || message.widgets.length > 0}
+                      hasText={message.content.length > 0 || (Boolean(message.answered) && message.widgets.length > 0)}
                       startedAt={message.startedAt}
                       endedAt={message.endedAt}
                     />
@@ -478,7 +482,8 @@ export default function ChatInterface() {
                       <p className="text-sm text-zinc-400">Stopped.</p>
                     )}
 
-                    {message.widgets.length > 0 && (
+                    {/* Cards wait for the answer to finish, then rise in after it. */}
+                    {message.widgets.length > 0 && (message.answered || message.status !== 'streaming') && (
                       <div className={`space-y-3 ${message.content ? 'mt-5' : ''}`}>
                         {message.widgets.map((widget, widgetIndex) => {
                           const next = messages[index + 1];
@@ -487,7 +492,7 @@ export default function ChatInterface() {
                               key={`${message.id}-${widgetIndex}`}
                               initial={{ opacity: 0, y: 14, scale: 0.98, filter: 'blur(6px)' }}
                               animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: widgetIndex * 0.06 }}
+                              transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.08 + widgetIndex * 0.08 }}
                             >
                               <WidgetRenderer
                                 widget={widget}
