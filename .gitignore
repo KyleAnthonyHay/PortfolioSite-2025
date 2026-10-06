@@ -49,3 +49,6 @@ logs/
 
 # Claude Code local settings
 .claude/settings.local.json
+
+# Recruiter briefs saved locally until they move to Convex
+my-app/.data/

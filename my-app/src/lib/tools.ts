@@ -642,7 +642,25 @@ async function assessRequirement(requirement: string): Promise<FitRequirement> {
   const currentYear = new Date().getFullYear();
 
   // Non-technical requirements the corpus answers directly.
-  if (/\b(degree|bachelor|b\.?s\.?|computer science|cs\b)/i.test(lower)) {
+  if (/\b(degree|bachelor|b\.?s\.?|computer science|cs\b|master'?s|ph\.?d|doctorate)/i.test(lower)) {
+    // His degree is a B.S. in Computer Science; anything beyond that, or a different field, is not met.
+    const advanced = /\b(master'?s?|m\.?sc?\b|ph\.?d|doctorate|graduate degree|mba)/i.test(lower);
+    const bachelorAccepted = /\b(bachelor|b\.?s\.?\b|b\.?a\.?\b|undergraduate)/i.test(lower);
+    if (advanced && !bachelorAccepted) {
+      return { requirement: text, status: 'gap', evidence: 'His highest degree is a B.S. in Computer Science (CUNY Hunter College, 2024).', projects: [] };
+    }
+    const otherField = /\b(statistics|mathematics|math|economics|finance|physics|accounting|biology|chemistry|business)\b/i.test(lower);
+    const csNamed = /\b(computer science|cs\b|software|computer engineering)/i.test(lower);
+    if (otherField && !csNamed) {
+      // "Finance, economics, or a related field": CS may count as quantitative, but it is not the field named.
+      const loose = /\b(related|equivalent|technical|stem|quantitative)\b/i.test(lower);
+      return {
+        requirement: text,
+        status: loose ? 'related' : 'gap',
+        evidence: `His degree is a B.S. in Computer Science, not one of the fields named${loose ? '; whether it counts as related is for the team to judge' : ''}.`,
+        projects: [],
+      };
+    }
     return {
       requirement: text,
       status: 'match',
@@ -650,7 +668,17 @@ async function assessRequirement(requirement: string): Promise<FitRequirement> {
       projects: [],
     };
   }
-  if (/\b(team|collaborat|communicat|agile|scrum|code review|cross-functional|leadership|mentor)/i.test(lower)) {
+  // Leading or managing people is a bigger claim than working on a team: the
+  // background notes say he led small teams, and no write-up shows more.
+  if (/\b(lead(ing)?|leadership|mentor|manag(e|ing|er)|people management|direct reports)\b/i.test(lower) && /\b(team|engineer|people|developers|others|reports)\b|leadership|mentor/i.test(lower)) {
+    return {
+      requirement: text,
+      status: 'related',
+      evidence: 'His background notes say he has led small teams; no project write-up shows him managing or mentoring engineers.',
+      projects: [],
+    };
+  }
+  if (/\b(team|collaborat|communicat|agile|scrum|code review|cross-functional)/i.test(lower)) {
     return {
       requirement: text,
       status: 'match',
@@ -744,58 +772,75 @@ async function assessRequirement(requirement: string): Promise<FitRequirement> {
   };
 }
 
+export type FitRead = 'strong fit' | 'good fit with some gaps' | 'partial fit: real gaps to weigh' | 'weak fit for this role';
+
+export interface FitAssessment {
+  requirements: FitRequirement[];
+  summary: { match: number; related: number; gap: number };
+  read: FitRead;
+}
+
+/**
+ * The fit check itself, shared by assess_job_fit and the recruiter brief so
+ * both judge a posting with the same rules.
+ */
+export async function assessRequirements(requirements: string[]): Promise<FitAssessment> {
+  const trimmed = requirements.map((r) => r.trim()).filter(Boolean).slice(0, 12);
+  const results = await Promise.all(trimmed.map(assessRequirement));
+
+  // Keyword matching misses work described in prose (fine-tuning a transformer
+  // is deep learning; an ETL and analytics dashboard is data analysis), so
+  // weak rows get a second look against the project write-ups.
+  const weak = results
+    .map((result, index) => ({ result, index }))
+    .filter(({ result }) => result.status === 'gap' || (result.projects.length === 0 && !/degree|team|bachelor/i.test(result.requirement)))
+    // Years-of-experience rows are already decided from start years.
+    .filter(({ result }) => result.status === 'gap' || !YEARS_PATTERN.test(result.requirement));
+  if (weak.length > 0) {
+    const judged = await judgeEvidence(weak.map(({ result }) => result.requirement), 5, 'fit');
+    weak.forEach(({ result, index }, i) => {
+      const verdict = judged[i];
+      if (!verdict || verdict.verdict === 'none') {
+        // "Adjacent strengths in Python, Java" from the keyword fallback is noise
+        // when the write-ups show nothing; call it a gap. Years-of-experience
+        // rows keep their own reading.
+        if (result.status === 'related' && result.projects.length === 0 && !YEARS_PATTERN.test(result.requirement)) {
+          results[index] = { ...result, status: 'gap', evidence: 'Nothing in his projects or background shows this.' };
+        }
+        return;
+      }
+      const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
+      const lead = verdict.projects[0];
+      const status: FitStatus = verdict.verdict === 'direct' && result.status !== 'related' ? 'match' : 'related';
+      results[index] = {
+        ...result,
+        status,
+        evidence: result.status === 'gap' || result.projects.length === 0 ? `${lead.why}${status === 'related' ? ' (adjacent, not a direct match)' : ''}` : result.evidence,
+        projects,
+      };
+    });
+  }
+  const summary = {
+    match: results.filter((r) => r.status === 'match').length,
+    related: results.filter((r) => r.status === 'related').length,
+    gap: results.filter((r) => r.status === 'gap').length,
+  };
+
+  const score = (summary.match + summary.related * 0.5) / Math.max(1, results.length);
+  const read: FitRead =
+    score >= 0.85 && summary.gap === 0
+      ? 'strong fit'
+      : score >= 0.65
+        ? 'good fit with some gaps'
+        : score >= 0.4
+          ? 'partial fit: real gaps to weigh'
+          : 'weak fit for this role';
+  return { requirements: results, summary, read };
+}
+
 export const assessJobFit = tool(
   async ({ role, requirements }) => {
-    const trimmed = requirements.map((r) => r.trim()).filter(Boolean).slice(0, 12);
-    const results = await Promise.all(trimmed.map(assessRequirement));
-
-    // Keyword matching misses work described in prose (fine-tuning a transformer
-    // is deep learning; an ETL and analytics dashboard is data analysis), so
-    // weak rows get a second look against the project write-ups.
-    const weak = results
-      .map((result, index) => ({ result, index }))
-      .filter(({ result }) => result.status === 'gap' || (result.projects.length === 0 && !/degree|team|bachelor/i.test(result.requirement)))
-      // Years-of-experience rows are already decided from start years.
-      .filter(({ result }) => result.status === 'gap' || !YEARS_PATTERN.test(result.requirement));
-    if (weak.length > 0) {
-      const judged = await judgeEvidence(weak.map(({ result }) => result.requirement), 5, 'fit');
-      weak.forEach(({ result, index }, i) => {
-        const verdict = judged[i];
-        if (!verdict || verdict.verdict === 'none') {
-          // "Adjacent strengths in Python, Java" from the keyword fallback is noise
-          // when the write-ups show nothing; call it a gap. Years-of-experience
-          // rows keep their own reading.
-          if (result.status === 'related' && result.projects.length === 0 && !YEARS_PATTERN.test(result.requirement)) {
-            results[index] = { ...result, status: 'gap', evidence: 'Nothing in his projects or background shows this.' };
-          }
-          return;
-        }
-        const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
-        const lead = verdict.projects[0];
-        const status: FitStatus = verdict.verdict === 'direct' && result.status !== 'related' ? 'match' : 'related';
-        results[index] = {
-          ...result,
-          status,
-          evidence: result.status === 'gap' || result.projects.length === 0 ? `${lead.why}${status === 'related' ? ' (adjacent, not a direct match)' : ''}` : result.evidence,
-          projects,
-        };
-      });
-    }
-    const summary = {
-      match: results.filter((r) => r.status === 'match').length,
-      related: results.filter((r) => r.status === 'related').length,
-      gap: results.filter((r) => r.status === 'gap').length,
-    };
-
-    const score = (summary.match + summary.related * 0.5) / Math.max(1, results.length);
-    const read =
-      score >= 0.85 && summary.gap === 0
-        ? 'strong fit'
-        : score >= 0.65
-          ? 'good fit with some gaps'
-          : score >= 0.4
-            ? 'partial fit: real gaps to weigh'
-            : 'weak fit for this role';
+    const { requirements: results, summary, read } = await assessRequirements(requirements);
     const content = [
       `Fit assessment${role ? ` for ${role}` : ''}: ${summary.match} match, ${summary.related} related, ${summary.gap} gap out of ${results.length}. Overall read: ${read}. Use this read in your summary; do not call it a stronger fit than this.`,
       ...results.map((r) => `- [${r.status.toUpperCase()}] ${r.requirement} — ${r.evidence}`),
