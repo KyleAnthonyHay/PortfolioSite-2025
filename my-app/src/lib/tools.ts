@@ -330,7 +330,7 @@ export const checkExperience = tool(
     const evidence = await gatherEvidence(technology);
     let content = describeEvidence(evidence);
 
-    let projects = evidence.projects.slice(0, 4);
+    let projects = evidence.projects.slice(0, 6);
     let hasExperience = evidence.hasExperience;
 
     if (!evidence.hasExperience) {
@@ -365,7 +365,7 @@ export const checkExperience = tool(
   {
     name: 'check_experience',
     description:
-      "Verify whether Kyle-Anthony has experience with a specific technology, framework, language, platform, or discipline, with start year and the projects where it appears. Use for any 'does he know / has he used / how long has he worked with X' question. Call once per technology.",
+      "Verify whether Kyle-Anthony has experience with a specific technology, framework, language, platform, or discipline, with start year and every project where it appears. Use for any 'does he know / has he used / how long has he worked with X' question and for 'what did he build with X' or 'which projects use X'. Call once per technology.",
     schema: z.object({
       technology: z.string().describe("The technology to check, e.g. 'Swift', 'LangGraph', 'Kubernetes', 'iOS development'"),
     }),
@@ -427,8 +427,14 @@ export const getProject = tool(
   async ({ name, query }) => {
     const project = findProjectByName(name);
     if (!project) {
+      // The model sometimes passes a technology ("Convex") as the project. Answer
+      // with where that technology is used rather than "no such project", which
+      // reads as "he has never used it".
+      if (findSkill(name) || (await gatherEvidence(name)).hasExperience) {
+        return (await checkExperience.invoke({ technology: name })) as string;
+      }
       return pack({
-        content: `No project named "${name}". Available projects: ${catalog.map((p) => p.title).join(', ')}.`,
+        content: `No project named "${name}". Available projects: ${catalog.map((p) => p.title).join(', ')}. This says nothing about technologies; for those use check_experience.`,
         citedProjectIds: [],
       });
     }
@@ -469,7 +475,7 @@ export const getProject = tool(
     description:
       "Use whenever the visitor asks about one identifiable project: what it is, how a feature works, architecture, why a technology was chosen, what was hard, Kyle-Anthony's role, results, or status ('What is SelahNote?', 'How does it find scripture references?', 'Why Convex?', 'What did he do on OnTract?'). Pass the visitor's actual question as `query` so the right sections are retrieved. Shows a project card.",
     schema: z.object({
-      name: z.string().describe("Project name, e.g. 'SelahNote', 'OnTract', 'V1 ProdBot'"),
+      name: z.string().describe("Project name, e.g. 'SelahNote', 'OnTract', 'V1 ProdBot'. Never a technology: for 'what did he build with Convex' use check_experience."),
       query: z.string().optional().describe("What the visitor wants to know about it, in their words. Omit only for a general 'tell me about X'."),
     }),
   }
