@@ -171,6 +171,8 @@ export interface SourceRef {
   id: number;
   title: string;
   image: string;
+  /** The product's own app icon or favicon, when it has one. */
+  icon?: string;
   href: string;
 }
 

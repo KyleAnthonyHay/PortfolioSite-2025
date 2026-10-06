@@ -9,6 +9,8 @@ import type { ProjectCardData, TechStack } from './chat-events';
  * filenames, so tool citations can be resolved back to a card.
  */
 export interface CatalogProject extends ProjectCardData {
+  /** App icon or favicon, copied into public/project-icons. */
+  icon?: string;
   aliases: string[];
   corpusNames: string[];
   overview: string;
@@ -159,6 +161,16 @@ const details: Record<number, CatalogDetails> = {
   },
 };
 
+/** Each product's own icon. The Creator Dashboard shares SelahNote's mark. */
+const icons: Record<number, string> = {
+  1: '/project-icons/selahnote.png',
+  5: '/project-icons/ontract.png',
+  6: '/project-icons/sentio.png',
+  9: '/project-icons/soundsnag.png',
+  10: '/project-icons/selahnote.png',
+  11: '/project-icons/prodbot.png',
+};
+
 export const catalog: CatalogProject[] = projectCards
   .filter((card) => details[card.id])
   .map((card) => {
@@ -174,6 +186,7 @@ export const catalog: CatalogProject[] = projectCards
       framed: !extra.unframed,
       video: extra.video,
       href: `/projects/${card.id}`,
+      icon: icons[card.id],
       link: card.link,
       github: card.github,
       highlights: extra.highlights,

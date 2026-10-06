@@ -199,7 +199,7 @@ function stepDetail(result: ToolResult): string[] {
 
 function toSource(id: number): SourceRef | null {
   const project = projectById(id);
-  return project ? { id, title: project.title, image: project.image, href: project.href } : null;
+  return project ? { id, title: project.title, image: project.image, icon: project.icon, href: project.href } : null;
 }
 
 async function suggestFollowUps(userMessage: string, answer: string): Promise<string[]> {
