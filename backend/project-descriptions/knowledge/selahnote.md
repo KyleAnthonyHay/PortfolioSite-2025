@@ -10,7 +10,7 @@ status: live (iOS App Store; ongoing releases)
 
 ## Overview
 <!-- meta: {"type":"project","project":"SelahNote","category":"overview","technologies":["Swift","SwiftUI","SwiftData","Convex","OpenAI","AssemblyAI","Pinecone","Firebase Auth","RevenueCat"]} -->
-SelahNote is an AI sermon note-taking app for iPhone that Kyle-Anthony Hay designed, built and ships on his own. It is Kyle's flagship project and has over 400 users (about 40 of them paying subscribers, per Kyle as of October 2026). Earlier in development the app was called Lectra, and that name still appears in the codebase.
+SelahNote is an AI sermon note-taking app for iPhone that Kyle-Anthony Hay designed, built and ships on his own. It is Kyle's flagship project and has over 400 users (about 40 of them paying subscribers, per Kyle as of October 2026). Kyle wrote the iOS app himself in Swift (SwiftUI and SwiftData), and it has been a production Swift app, live on the App Store, since August 2025. Earlier in development the app was called Lectra, and that name still appears in the codebase.
 
 A listener records a sermon live, uploads an audio file, or pastes a YouTube link. SelahNote transcribes it, writes structured notes, finds the Bible verses the preacher quoted or referenced, and keeps everything synced across devices. Newer versions add a sermon chat assistant that answers questions about a specific message with citations, a voice mode for that assistant, a built-in Bible reader in two translations, note sharing by link or QR code, and a recap feature called Selah Stories.
 

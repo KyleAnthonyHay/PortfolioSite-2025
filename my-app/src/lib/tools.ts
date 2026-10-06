@@ -7,7 +7,7 @@ import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
-import { RESUME_EVIDENCE } from './facts';
+import { CAREER_FACTS, RESUME_EVIDENCE } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -232,10 +232,11 @@ function getJudge(mode: 'evidence' | 'fit' = 'evidence'): ChatOpenAI {
   // Fit checks are what recruiters act on, and the small model kept counting
   // adjacent work as a match, so they get the larger model.
   if (mode === 'fit') {
-    fitJudgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_FIT_JUDGE_MODEL ?? 'gpt-4.1', temperature: 0 });
+    // A fixed seed so the same posting gets the same rows run to run.
+    fitJudgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_FIT_JUDGE_MODEL ?? 'gpt-4.1', temperature: 0, modelKwargs: { seed: 7 } });
     return fitJudgeModel;
   }
-  judgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_JUDGE_MODEL ?? 'gpt-4.1-mini', temperature: 0 });
+  judgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_JUDGE_MODEL ?? 'gpt-4.1-mini', temperature: 0, modelKwargs: { seed: 7 } });
   return judgeModel;
 }
 
@@ -262,7 +263,11 @@ These ITEMs are requirements from a job posting. Judge them the way a hiring man
 - Business and analytics terms keep their business meaning: owning his own app is not running an executive business review; embeddings or vector search are not a semantic or metrics layer; a payout ledger is not finance or revenue analytics; custom charts are not BI tooling.
 - Personal traits and ways of working (curiosity, juggling work streams, communication, thriving in ambiguity) are "related" at most unless an excerpt describes exactly that.
 - For each project also give "same_context": true only if the excerpt shows the work in the setting the requirement means (analytics work in an analytics or finance function, executive work with executives, infrastructure at production scale, a technology used by him). A project with same_context false can support "related", never "direct".
-- When unsure between two verdicts, choose the lower one.`;
+- A requirement naming specific tools (Redshift, Snowflake, dbt, Looker, Kubernetes) is fully met only when those tools, or ones the posting calls equivalent, are shown; general SQL in app migrations is partial for a data-warehouse SQL requirement. Analytics engineering means building analytics data models and pipelines, not keeping an app codebase tested. Partnering with finance teams means working with a finance function; building a payout tool for his own app is partial at most.
+- Schema design or migrations are not database reliability work or troubleshooting production databases.
+- Production means shipped to real users: a live App Store app or a deployed web app with users. SelahNote is production Swift and production iOS; count it as such whenever a row asks for production apps in Swift or iOS.
+- When unsure between two verdicts, choose the lower one.
+${CAREER_FACTS}`;
 
 /** Team projects, where a write-up's stack lists describe the team's system rather than his part. */
 const TEAM_PROJECT_IDS = new Set([5, 6]);
@@ -378,6 +383,7 @@ async function judgeChunk(
 List each relevant project once, strongest evidence first: "ref" is the excerpt id that best supports it (e.g. "0.3"), "quote" is the one sentence from that excerpt (at most 35 words), copied exactly with no ellipses, that shows it, and "why" (under 18 words) answers the ITEM itself, not a generic project summary, stating concretely what he did. Be strict: leave out projects whose excerpts only loosely touch the ITEM, and never upgrade a claim (a take-home brief is not a client; a team project is not solo work). Never infer beyond the excerpts.
 - A technology the excerpt names only as an alternative he did not pick ("chosen over X", "X vs Y", "alternatives would be X", "instead of X") is evidence AGAINST that technology: verdict "none" for it.
 - On team projects (OnTract, Sentio+), tech-stack, architecture and "skills demonstrated" lists describe the team's system; count a technology only where the excerpt says he built or used it, or it is part of his solo rebuild.
+- Using a model through a cloud provider counts as using that model: Claude called through AWS Bedrock is hands-on Claude use.
 - The excerpt must address the ITEM itself, not a word near it: REST is not GraphQL, WebSockets are not Kafka, Next.js is not "next-generation", Bedrock calls are not running AWS infrastructure, a trained model that was never deployed is not "deployed ML in production", a troubleshooting assistant is not incident response.${mode === 'fit' ? FIT_RUBRIC : ''}
 Being on the team that built something is not his use of it. When the ITEM names a technology, the quote must contain that technology's exact name (not a related one: "SwiftUI" is not "Swift"). If no sentence shows it, the verdict is "none" with no projects; never cite a project to say it lacks something.
 Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."${mode === 'fit' ? ',"same_context":true' : ''}}]}]}`

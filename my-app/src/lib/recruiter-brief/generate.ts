@@ -51,7 +51,7 @@ function scrub(text: string): string {
 }
 
 function model(temperature = 0.2): ChatOpenAI {
-  return new ChatOpenAI({ model: process.env.OPENAI_BRIEF_MODEL ?? 'gpt-4.1', temperature });
+  return new ChatOpenAI({ model: process.env.OPENAI_BRIEF_MODEL ?? 'gpt-4.1', temperature, modelKwargs: { seed: 7 } });
 }
 
 async function askJson<T>(system: string, user: string, temperature = 0.2): Promise<T> {
@@ -76,7 +76,21 @@ interface ExtractedPosting {
   logistics: string[];
 }
 
-async function extractRequirements(jobDescription: string): Promise<ExtractedPosting> {
+/** One extraction per posting text, so the chat card and a later brief (and a rerun) read the same rows. */
+const extractions = new Map<string, Promise<ExtractedPosting>>();
+
+function extractRequirements(jobDescription: string): Promise<ExtractedPosting> {
+  const key = jobDescription.trim();
+  if (!extractions.has(key)) {
+    const run = extractRequirementsOnce(key);
+    extractions.set(key, run);
+    run.catch(() => extractions.delete(key));
+    if (extractions.size > 200) extractions.delete(extractions.keys().next().value!);
+  }
+  return extractions.get(key)!;
+}
+
+async function extractRequirementsOnce(jobDescription: string): Promise<ExtractedPosting> {
   const parsed = await askJson<{
     roleTitle?: string | null;
     companyName?: string | null;
@@ -434,7 +448,9 @@ function readFor(matches: RoleMatch[]): FitAssessment['read'] {
  * only stay or move down.
  */
 async function auditRoleMatches(matches: RoleMatch[], items: EvidenceReference[]): Promise<void> {
-  const rows = matches.map((match, i) => ({ match, i })).filter(({ match }) => match.assessment !== 'gap');
+  // Rows about years of using a named technology are settled by his start year, which the excerpts can't show.
+  const yearsOfTech = (requirement: string) => /\d+\s*\+?\s*(?:(?:-|–|—|to)\s*\d+\s*)?(?:years?|yrs?)/i.test(requirement) && !/\b(professional|industry|as an?)\b/i.test(requirement);
+  const rows = matches.map((match, i) => ({ match, i })).filter(({ match }) => match.assessment !== 'gap' && !yearsOfTech(match.requirement));
   if (rows.length === 0) return;
   const background = items.filter((item) => item.id.startsWith('B') || item.kind === 'profile');
   const blocks = rows.map(({ match }, k) => {
@@ -449,7 +465,7 @@ async function auditRoleMatches(matches: RoleMatch[], items: EvidenceReference[]
 - "met": "full" when the excerpts show him doing every part of the requirement; "partial" when they show some of it or adjacent work; "none" when they show nothing he did.
 - "projects": the named projects that show it as HIS work. On team projects (OnTract, Sentio+) count only what the excerpts attribute to him or to his solo rebuild; a tech-stack or skills list, or what teammates built, does not count.
 - "basis": under 22 words, a positive statement of what he did that supports the row (no notes about missing evidence; empty if "none").
-Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects. Business terms keep their business meaning: a payout ledger or subscription tracking is not revenue or growth analytics, owning his own app is not running an executive review, embeddings are not a metrics layer. Personal traits and ways of working (curiosity, juggling work streams, thriving in ambiguity) are "partial" at most unless an excerpt describes exactly that.
+Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects. A requirement naming specific tools (Redshift, Snowflake, dbt, Looker, Kubernetes) is fully met only when those tools, or ones the posting calls equivalent, are shown; general SQL in app migrations is partial for a data-warehouse SQL requirement. Analytics engineering means building analytics data models and pipelines, not keeping an app codebase tested. Partnering with finance teams means working with a finance function; building a payout tool for his own app is partial at most. Schema work or migrations are not assessing database reliability or troubleshooting production databases. Business terms keep their business meaning: a payout ledger or subscription tracking is not revenue or growth analytics, owning his own app is not running an executive review, embeddings are not a metrics layer. Personal traits and ways of working (curiosity, juggling work streams, thriving in ambiguity) are "partial" at most unless an excerpt describes exactly that.
 ${FACTS}
 JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"..."}]}`,
     `BACKGROUND:\n${background.map((item) => `[${item.id}] ${item.section}: ${item.excerpt}`).join('\n')}\n\n${blocks.join('\n\n')}`,
@@ -508,7 +524,22 @@ export interface FitEvaluation {
  * as the first row), the evidence check, the skeptical audit, and the bound on
  * how positive the recommendation may be.
  */
-export async function evaluateFit(input: FitInput): Promise<FitEvaluation> {
+/** Recent evaluations by posting, so asking twice about one posting gives one answer. */
+const evaluationCache = new Map<string, { at: number; result: Promise<FitEvaluation> }>();
+const EVALUATION_TTL = 60 * 60 * 1000;
+
+export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
+  const key = JSON.stringify([input.jobDescription?.trim() ?? '', input.knownRequirements ?? [], input.recruiterContext ?? '']);
+  const hit = evaluationCache.get(key);
+  if (hit && Date.now() - hit.at < EVALUATION_TTL) return hit.result;
+  const result = evaluateFitOnce(input);
+  evaluationCache.set(key, { at: Date.now(), result });
+  result.catch(() => evaluationCache.delete(key));
+  if (evaluationCache.size > 200) evaluationCache.delete(evaluationCache.keys().next().value!);
+  return result;
+}
+
+async function evaluateFitOnce(input: FitInput): Promise<FitEvaluation> {
   const jobDescription = input.jobDescription?.trim() || undefined;
 
   // 1. Requirements: the ones the chat's fit check used when there was one,

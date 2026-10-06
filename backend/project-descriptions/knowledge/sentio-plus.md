@@ -40,7 +40,7 @@ Sentio+ had two phases with different ownership.
 **Team version (January 2026, six engineers).** Kyle was the AI engineer and a front-end engineer. Based on the git history, his own commits were:
 
 - **The Next.js web app's first version:** the marketing landing page with a dashboard preview, and the demo chat page with multiple saved conversations kept in the browser.
-- **A first chat API route** in Next.js that called a model on AWS Bedrock directly, with a scripted demo mode so the page still worked when no AWS credentials were configured.
+- **A first chat API route** in Next.js that Kyle wrote himself, calling Anthropic's Claude 3 Sonnet directly through the AWS Bedrock API, with a scripted demo mode so the page still worked when no AWS credentials were configured.
 - **An early ETL and local vector database:** a script that merged the app-info and app-review CSVs and gave each review a stable hashed ID, and a loader that upserted reviews with their metadata (app, category, rating, date, helpful count) into a local ChromaDB collection, with a cosine-distance cutoff so off-topic questions return "no matching reviews" instead of weak matches.
 - **Setup documentation** for the web app's environment variables, and suggested prompts rewritten to match the real dataset (finance, health and fitness, food delivery, productivity apps).
 - **The fine-tuned RoBERTa sentiment model,** which Kyle and his team fine-tuned together on open-source review data (described in its own section).

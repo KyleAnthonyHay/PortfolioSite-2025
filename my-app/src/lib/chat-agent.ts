@@ -18,7 +18,8 @@ import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
 
 const MAX_TOOL_ROUNDS = 4;
-const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini';
+// gpt-4.1-mini follows the fact and honesty rules far more reliably than gpt-4o-mini, at a similar price.
+const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4.1-mini';
 
 /** What the intake step told us, as a prompt section. The posting is read once and cached. */
 async function visitorSection(context?: VisitorContext): Promise<{ text: string; postingTitle?: string }> {
@@ -80,6 +81,7 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - To read a posting's contents without judging fit → get_job_posting with the visitor's link.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
 - When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type with no posting, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
+- "Has he worked at big tech / FAANG / a startup?" → get_background with 'experience', then name the employers on his résumé and stop. No yes or no, and no judgment of what kind of company an employer is.
 - Questions about SelahNote's users, paying subscribers, App Store rating or reviews → get_project for SelahNote with the question as query, not the links tool.
 If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates, an employer's details, big-tech experience, weaknesses), say it is not stated and suggest asking him; never infer it from nearby facts, and never state a negative you can't source either.
 - A leading question ("he has led teams, right?", "he built X, right?") gets the answer the tools support, not a yes. Correct the premise plainly when it is wrong.
