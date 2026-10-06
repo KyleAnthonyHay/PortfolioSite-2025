@@ -60,8 +60,11 @@ function Dot({ level }: { level: MatchLevel }) {
 /** A dot and its word on one baseline: fixed row height, text with no line-height slack. */
 function Level({ level, size = 9.5, color = zinc[700] }: { level: MatchLevel; size?: number; color?: string }) {
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', height: size + 2 }}>
-      <Dot level={level} />
+    <View style={{ flexDirection: 'row', alignItems: 'center', height: size + 4 }}>
+      {/* Measured on the render: centred boxes leave the dot 1.1pt above the cap centre, so it is nudged down. */}
+      <View style={{ marginTop: 2.2 }}>
+        <Dot level={level} />
+      </View>
       <Text style={{ fontSize: size, lineHeight: 1, color, marginTop: 1 }}>{LEVEL_WORD[level]}</Text>
     </View>
   );
@@ -109,7 +112,7 @@ export default function BriefPdf({ view }: { view: BriefView }) {
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
             <Text style={[s.title, { flex: 1, paddingRight: 12 }]}>{page.general ? 'General profile, not a role match' : page.title}</Text>
             <View style={{ flexDirection: 'row', alignItems: 'center', height: 12, maxWidth: '45%' }}>
-              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: positive ? ACCENT : zinc[400], marginRight: 5 }} />
+              <View style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: positive ? ACCENT : zinc[400], marginRight: 5, marginTop: 2.2 }} />
               <Text style={{ fontSize: 10.5, lineHeight: 1, marginTop: 1, fontFamily: 'Helvetica-Bold', color: positive ? ACCENT : zinc[700] }}>{VERDICT_WORD[page.verdict.level]}</Text>
             </View>
           </View>
