@@ -136,6 +136,25 @@ export type Widget =
   | { kind: 'journey'; nodes: JourneyNode[] }
   | { kind: 'resources'; project: ProjectCardData; resources: ProjectResource[] }
   | { kind: 'book_time'; url?: string; email: string; contactPage: string }
+  | {
+      kind: 'demo';
+      project: ProjectCardData;
+      /** Walkthrough recording, when there is one. */
+      video?: { src: string; poster: string };
+      /** The running product, opened in a frame. */
+      liveUrl?: string;
+      /** Which view opens first. */
+      initial: 'video' | 'live';
+    }
+  | {
+      kind: 'note';
+      /** The agent's draft of the visitor's message, editable before sending. */
+      draft: string;
+      name?: string;
+      email?: string;
+      /** Shown before sending: the email address it goes to as a fallback. */
+      fallbackEmail: string;
+    }
   | { kind: 'resume'; name: string; headline: string; viewUrl: string; downloadUrl: string; pages?: number; size?: string }
   | {
       kind: 'fit_report';
@@ -174,4 +193,14 @@ export type ChatEvent =
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
+}
+
+/**
+ * What the visitor told the intake step before chatting. Sent with every
+ * turn so answers lean on the most relevant work for the role.
+ */
+export interface VisitorContext {
+  hiring: boolean;
+  role?: string;
+  jobUrl?: string;
 }

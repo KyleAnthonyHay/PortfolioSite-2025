@@ -1027,29 +1027,64 @@ function readableText(html: string): string {
     .join('\n');
 }
 
+export type JobPostingRead =
+  | { ok: true; host: string; title?: string; text: string }
+  | { ok: false; host?: string; status: number; reason: string };
+
+const postingCache = new Map<string, Promise<JobPostingRead>>();
+
+/**
+ * Fetches a posting once per URL per server process, so a link from the
+ * intake step can ride along in every later turn without refetching.
+ */
+export function readJobPosting(raw: string): Promise<JobPostingRead> {
+  const url = isPublicUrl(raw.trim());
+  if (!url) return Promise.resolve({ ok: false, status: 0, reason: 'that is not a public web address' });
+  const key = url.toString();
+  if (!postingCache.has(key)) {
+    const read = (async (): Promise<JobPostingRead> => {
+      const page = await fetchPage(url, 9000);
+      const html = page.html;
+      let text = html ? jobPostingFromJsonLd(html) ?? readableText(html) : '';
+      // Some boards render the posting only inside <main>-less shells; fall back to the whole page.
+      if (html && text.length < 400 && !text.startsWith('Title:')) text = readableText(html.replace(/<main[\s\S]*?<\/main>/i, ''));
+      if (!text || text.length < 200) {
+        return {
+          ok: false,
+          host: url.hostname,
+          status: page.status,
+          reason: page.problem ?? 'the page only loads its content with JavaScript, so the posting text is not in it',
+        };
+      }
+      const title = html && !text.startsWith('Title:') ? metaContent(html, 'og:title') ?? /<title[^>]*>([^<]*)/i.exec(html)?.[1]?.trim() : undefined;
+      return { ok: true, host: url.hostname, title: title ? decodeEntities(title) : undefined, text };
+    })();
+    postingCache.set(key, read);
+    // Failures are worth retrying later (a timeout, a rate limit); successes are kept.
+    read.then((result) => {
+      if (!result.ok) postingCache.delete(key);
+    });
+  }
+  return postingCache.get(key)!;
+}
+
 export const getJobPosting = tool(
   async ({ url: raw }) => {
-    const url = isPublicUrl(raw);
-    if (!url) {
-      return pack({ content: 'That is not a public job posting URL. Ask the visitor to paste the job description instead.', citedProjectIds: [] });
-    }
-    const page = await fetchPage(url, 9000);
-    const html = page.html;
-    let text = html ? jobPostingFromJsonLd(html) ?? readableText(html) : '';
-    // Some boards render the posting only inside <main>-less shells; fall back to the whole page.
-    if (html && text.length < 400 && !text.startsWith('Title:')) text = readableText(html.replace(/<main[\s\S]*?<\/main>/i, ''));
-    if (!text || text.length < 200) {
-      const reason = page.problem ?? 'the page only loads its content with JavaScript, so the posting text is not in it';
+    const posting = await readJobPosting(raw);
+    if (!posting.ok) {
+      if (!posting.host) {
+        return pack({ content: 'That is not a public job posting URL. Ask the visitor to paste the job description instead.', citedProjectIds: [] });
+      }
       return pack({
-        content: `Could not read the posting at ${url.hostname}: ${reason}. Tell the visitor this reason in plain words and ask them to paste the job description${
-          page.status === 404 ? ' or check the link' : ''
+        content: `Could not read the posting at ${posting.host}: ${posting.reason}. Tell the visitor this reason in plain words and ask them to paste the job description${
+          posting.status === 404 ? ' or check the link' : ''
         }.`,
         citedProjectIds: [],
       });
     }
-    const title = html && !text.startsWith('Title:') ? metaContent(html, 'og:title') ?? /<title[^>]*>([^<]*)/i.exec(html)?.[1]?.trim() : undefined;
+    const { host, title, text } = posting;
     return pack({
-      content: `Job posting from ${url.hostname}${title ? ` — ${decodeEntities(title)}` : ''}:\n\n${text.slice(0, 12000)}${
+      content: `Job posting from ${host}${title ? ` — ${title}` : ''}:\n\n${text.slice(0, 12000)}${
         text.length > 12000 ? '\n[truncated]' : ''
       }\n\nNext: extract the concrete requirements and call assess_job_fit with the role title.`,
       citedProjectIds: [],

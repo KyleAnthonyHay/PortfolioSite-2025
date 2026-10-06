@@ -5,11 +5,12 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeft, Check, Copy, CornerDownRight, Plus, RefreshCw } from 'lucide-react';
-import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, Widget } from '@/lib/chat-events';
+import { ArrowLeft, Briefcase, Check, Copy, CornerDownRight, Plus, RefreshCw, X } from 'lucide-react';
+import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
 import EmptyState from './EmptyState';
+import { intakeMessage } from './HiringIntake';
 import Markdown from './Markdown';
 import SourcePills from './SourcePills';
 import WidgetRenderer from './widgets';
@@ -37,6 +38,7 @@ interface AssistantMessage {
 type ChatMessage = UserMessage | AssistantMessage;
 
 const STORAGE_KEY = 'portfolio-chat-v2';
+const CONTEXT_KEY = 'portfolio-chat-context';
 const MAX_STORED = 40;
 const spring = { type: 'spring' as const, stiffness: 120, damping: 20 };
 
@@ -62,6 +64,24 @@ function persist(messages: ChatMessage[]) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED)));
   } catch {
     // Storage unavailable; the conversation just won't survive a reload.
+  }
+}
+
+function loadContext(): VisitorContext | null {
+  try {
+    const raw = localStorage.getItem(CONTEXT_KEY);
+    return raw ? (JSON.parse(raw) as VisitorContext) : null;
+  } catch {
+    return null;
+  }
+}
+
+function persistContext(context: VisitorContext | null) {
+  try {
+    if (context) localStorage.setItem(CONTEXT_KEY, JSON.stringify(context));
+    else localStorage.removeItem(CONTEXT_KEY);
+  } catch {
+    // Storage unavailable; the intake just asks again next visit.
   }
 }
 
@@ -122,6 +142,9 @@ export default function ChatInterface() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isHydrated, setIsHydrated] = useState(false);
+  // Null until the visitor answers or skips the opening question.
+  const [visitor, setVisitor] = useState<VisitorContext | null>(null);
+  const visitorRef = useRef<VisitorContext | null>(null);
   const messagesRef = useRef<ChatMessage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const hasSentInitialRef = useRef(false);
@@ -138,7 +161,16 @@ export default function ChatInterface() {
 
   useEffect(() => {
     setMessages(loadStored());
+    const stored = loadContext();
+    visitorRef.current = stored;
+    setVisitor(stored);
     setIsHydrated(true);
+  }, []);
+
+  const updateVisitor = useCallback((next: VisitorContext | null) => {
+    visitorRef.current = next;
+    setVisitor(next);
+    persistContext(next);
   }, []);
 
   useEffect(() => {
@@ -204,7 +236,7 @@ export default function ChatInterface() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: trimmed, history }),
+          body: JSON.stringify({ message: trimmed, history, context: visitorRef.current ?? undefined }),
           signal: controller.signal,
         });
         if (!response.ok || !response.body) throw new Error(`Request failed (${response.status})`);
@@ -262,6 +294,7 @@ export default function ChatInterface() {
   const handleNewChat = () => {
     abortRef.current?.abort();
     setMessages([]);
+    updateVisitor(null);
     setInput('');
     inputRef.current?.focus();
   };
@@ -311,6 +344,14 @@ export default function ChatInterface() {
         <div className="mx-auto w-full max-w-3xl px-4 pb-48 pt-8">
           {isHydrated && messages.length === 0 && (
             <EmptyState
+              onIntake={
+                visitor === null && !initialQuery
+                  ? (context) => {
+                      updateVisitor(context);
+                      if (context.hiring) send(intakeMessage(context));
+                    }
+                  : undefined
+              }
               onPick={(prompt, sendNow) => {
                 if (sendNow) {
                   send(prompt);
@@ -326,6 +367,26 @@ export default function ChatInterface() {
                 }
               }}
             />
+          )}
+
+          {visitor?.hiring && messages.length > 0 && (
+            <div className="mb-6 flex justify-center">
+              <span className="inline-flex h-7 max-w-full items-center gap-1.5 rounded-full border border-zinc-200 bg-white pl-2.5 pr-1 text-[12px] text-zinc-600">
+                <Briefcase className="h-3.5 w-3.5 shrink-0 text-zinc-400" />
+                <span className="truncate">
+                  Hiring for {visitor.role ?? 'a role'}
+                  {visitor.jobUrl ? ' · posting linked' : ''}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => updateVisitor({ hiring: false })}
+                  aria-label="Stop using this role as context"
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink"
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            </div>
           )}
 
           <div className="space-y-8">

@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import { motion } from 'motion/react';
 import { ArrowUpRight, ClipboardCheck, LayoutGrid, Sparkles, Users } from 'lucide-react';
+import type { VisitorContext } from '@/lib/chat-events';
+import HiringIntake from './HiringIntake';
 
 
 export const JOB_FIT_TEMPLATE = "How well does Kyle-Anthony fit this role?\n\n";
@@ -40,9 +42,11 @@ const starters = [
 
 interface EmptyStateProps {
   onPick: (prompt: string, send: boolean) => void;
+  /** Set until the visitor answers or skips the opening question. */
+  onIntake?: (context: VisitorContext) => void;
 }
 
-export default function EmptyState({ onPick }: EmptyStateProps) {
+export default function EmptyState({ onPick, onIntake }: EmptyStateProps) {
   const ease = [0.16, 1, 0.3, 1] as const;
   return (
     <div className="flex min-h-full flex-col items-center justify-center px-2 pb-24 pt-[6vh] text-center">
@@ -70,6 +74,16 @@ export default function EmptyState({ onPick }: EmptyStateProps) {
       >
         Ask me about Kyle-Anthony&apos;s products, skills, or fit for a role. I search his work, show you cards and sources, and ask when I need more to go on.
       </motion.p>
+      {onIntake ? (
+        <motion.div
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease, delay: 0.18 }}
+          className="flex w-full justify-center"
+        >
+          <HiringIntake onDone={onIntake} />
+        </motion.div>
+      ) : (
       <motion.div
         initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
@@ -100,6 +114,7 @@ export default function EmptyState({ onPick }: EmptyStateProps) {
           );
         })}
       </motion.div>
+      )}
     </div>
   );
 }
