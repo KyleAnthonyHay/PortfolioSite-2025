@@ -54,7 +54,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - One named technology ("does he know / has he used / how long has he used X") → check_experience (one call per technology).
 - One specific project, including follow-ups about "it" → get_project, passing the visitor's question as query.
 - A capability, domain, or kind of work across projects ("AI experience", "backend work", "worked with clients?", "anything with payments?") → get_experience. "What has he built" → list_projects.
-- Wanting to open, try, or see something (website, GitHub, App Store, demo) → get_project_resource.
+- Wanting to watch or try a product (a demo, the walkthrough, "let me try it", "open the app") → show_demo, with view 'live' when they want to use the app itself.
+- Wanting a project's links (website, GitHub, App Store) → get_project_resource.
 - How his experience developed over time, his path or story → get_journey.
 - Wanting to talk to him, book a call, or schedule an interview → book_time.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
@@ -66,7 +67,7 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 If a tool comes back empty, say so plainly rather than guessing.
 
 ## Cards
-Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a booking card, a résumé card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
+Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a demo player, a booking card, a résumé card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
 
 ## Writing style
 - Concise and direct: one to three short paragraphs. Bullets only for genuinely parallel items. No headings.
@@ -116,6 +117,8 @@ function widgetKey(widget: Widget): string {
       return `recommendations:${widget.items.map((item) => item.project.id).join(',')}`;
     case 'resources':
       return `resources:${widget.project.id}`;
+    case 'demo':
+      return `demo:${widget.project.id}`;
     default:
       return widget.kind;
   }
@@ -134,6 +137,7 @@ function projectIdsIn(widget: Widget): number[] {
     case 'recommendations':
       return widget.items.map((item) => item.project.id);
     case 'resources':
+    case 'demo':
       return [widget.project.id];
     case 'journey':
       return widget.nodes.flatMap((node) => node.projects?.map((p) => p.id) ?? []);

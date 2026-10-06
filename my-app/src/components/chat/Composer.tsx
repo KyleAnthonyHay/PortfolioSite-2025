@@ -21,6 +21,7 @@ const COMMANDS: SlashCommand[] = [
   { name: '/projects', hint: "See everything he's built", action: 'send', text: 'What has Kyle-Anthony built?' },
   { name: '/journey', hint: 'Walk through his path so far', action: 'send', text: 'Walk me through how his experience developed.' },
   { name: '/experience', hint: 'Search his experience with…', action: 'fill', text: 'What experience does he have with ' },
+  { name: '/demo', hint: 'Watch or try one of his products', action: 'fill', text: 'Show me a demo of ' },
   { name: '/links', hint: "Open a project's site or code", action: 'fill', text: 'Show me the links for ' },
   { name: '/resume', hint: 'View or download his résumé', action: 'send', text: "Can I see Kyle-Anthony's résumé?" },
 ];

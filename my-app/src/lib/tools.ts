@@ -5,6 +5,7 @@ import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import fs from 'fs/promises';
 import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
+import { projects as projectCards } from './projects';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -1003,7 +1004,7 @@ export const getProjectResource = tool(
   {
     name: 'get_project_resource',
     description:
-      "Use when the visitor wants to open, visit, try, watch, or inspect something for a project: 'Can I see SelahNote?', 'What's the website?', 'Is there a GitHub?', 'Show me the demo', 'App Store link?'. Call it once per project: it returns every link (website, GitHub, App Store) as preview cards, so don't repeat the URLs in prose.",
+      "Use when the visitor wants the links for a project: 'What's the website?', 'Is there a GitHub?', 'App Store link?', 'Where can I learn more?'. Call it once per project: it returns every link (website, GitHub, App Store) as preview cards, so don't repeat the URLs in prose. To watch or try the product inside the chat, use show_demo instead.",
     schema: z.object({
       project: z.string().describe("Project name, e.g. 'SelahNote'"),
       type: z.enum(['any', 'website', 'github', 'app-store', 'demo', 'video', 'docs']).optional().describe('A specific kind of link, if asked for'),
@@ -1100,6 +1101,46 @@ export const getJobPosting = tool(
   }
 );
 
+export const showDemo = tool(
+  async ({ project: name, view }) => {
+    const project = findProjectByName(name);
+    if (!project) {
+      return pack({ content: `No project named "${name}". Available projects: ${catalog.map((p) => p.title).join(', ')}.`, citedProjectIds: [] });
+    }
+    // The narrated walkthrough when there is one, otherwise the home grid's recording.
+    const card = projectCards.find((p) => p.id === project.id);
+    const video = project.video ?? (card?.video ? { src: card.video.src, poster: card.video.poster ?? project.image } : undefined);
+    const liveUrl = project.link;
+    if (!video && !liveUrl) {
+      return pack({
+        content: `${project.title} has no walkthrough recording or live version to show${project.category === 'macOS Apps' ? ' (it is a personal-use Mac app)' : ''}. Its page on this site is ${project.href}.`,
+        citedProjectIds: [project.id],
+      });
+    }
+    const initial: 'video' | 'live' = view === 'live' && liveUrl ? 'live' : video ? 'video' : 'live';
+    const native = project.category !== 'Web Apps';
+    const parts = [video && 'the walkthrough video', liveUrl && (native ? `its website (${liveUrl})` : `the live app (${liveUrl})`)].filter(Boolean);
+    return pack({
+      content: `A demo card is shown for ${project.title} with ${parts.join(' and ')}, opening on the ${initial === 'video' ? 'video' : native ? 'website' : 'live app'}${
+        parts.length > 1 ? '; the visitor can switch between them' : ''
+      }. ${view === 'live' && native ? `${project.title} is a native ${project.category === 'iOS Apps' ? 'iOS' : 'Mac'} app, so it cannot run in the browser; say so in a clause. ` : ''}${
+        !native && liveUrl ? 'The live app may ask them to sign in or use a demo account. ' : ''
+      }Keep the reply to one or two sentences and do not paste the links.`,
+      citedProjectIds: [project.id],
+      widget: { kind: 'demo', project: toCard(project), video, liveUrl, initial },
+    });
+  },
+  {
+    name: 'show_demo',
+    description:
+      "Use when the visitor wants to see a product working rather than read about it: 'show me a demo', 'can I see it in action?', 'play the walkthrough', 'let me try OnTract', 'open the live app'. Plays the walkthrough video, or opens the live app inside the chat, for one project. Use view 'live' when they ask to try, use, or open the app itself; otherwise 'video'. If they say 'it', use the project being discussed.",
+    schema: z.object({
+      project: z.string().describe("Project name, e.g. 'OnTract', 'Sentio+'"),
+      view: z.enum(['video', 'live']).optional().describe("'video' for the walkthrough (default), 'live' to open the running app"),
+    }),
+  }
+);
+
 export const getJourney = tool(
   async () =>
     pack({
@@ -1186,6 +1227,7 @@ export const allTools = [
   assessJobFit,
   askVisitor,
   getProjectResource,
+  showDemo,
   getJobPosting,
   getJourney,
   bookTime,
@@ -1204,6 +1246,12 @@ export function describeToolCall(name: string, args: Record<string, unknown>): {
       return { running: `Reading ${findProjectByName(str('name'))?.title ?? str('name')}`, done: `Read ${findProjectByName(str('name'))?.title ?? str('name')}` };
     case 'get_project_resource':
       return { running: `Finding links for ${findProjectByName(str('project'))?.title ?? str('project')}`, done: `Found links for ${findProjectByName(str('project'))?.title ?? str('project')}` };
+    case 'show_demo': {
+      const title = findProjectByName(str('project'))?.title ?? str('project');
+      return str('view') === 'live'
+        ? { running: `Opening ${title}`, done: `Opened ${title}` }
+        : { running: `Loading the ${title} walkthrough`, done: `Loaded the ${title} walkthrough` };
+    }
     case 'get_job_posting':
       return { running: 'Reading the job posting', done: 'Read the job posting' };
     case 'get_journey':
