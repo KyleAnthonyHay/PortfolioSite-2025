@@ -564,6 +564,7 @@ export const getBackground = tool(
           `${profile.name} — ${profile.headline}, based in ${profile.location}.`,
           ...profile.availability,
           ...contactLinks.map((link) => `${link.label}: ${link.detail ?? link.href}`),
+          'Not stated anywhere: willingness to relocate, visa or sponsorship status, salary expectations, start date. If asked, say it is not stated and suggest asking him directly.',
         ].join('\n');
         return pack({
           content,

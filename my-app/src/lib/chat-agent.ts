@@ -82,10 +82,10 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
 - A job posting URL → get_job_posting, then assess_job_fit with the requirements it lists and the role title.
-- A pasted job description or a list of requirements → extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"), then call assess_job_fit once. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
+- A pasted job description or a list of requirements → extract every concrete requirement, including nice-to-haves, as a short phrase each (e.g. "3+ years Swift", "CI/CD", "Kotlin or Android"), then call assess_job_fit once. Keep experience requirements whole, with the job function, domain and years as written (e.g. "4+ years as a data scientist in finance"), and never soften or drop a requirement he may not meet. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
 - When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
-If a tool comes back empty, say so plainly rather than guessing.
+If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates), say it is not stated and suggest asking him; never infer it from nearby facts.
 
 ## Cards
 Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a demo player, a booking card, a note card, a résumé card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
@@ -316,9 +316,10 @@ export async function* runAgent(
     }
     for (const { result } of results) {
       const widget = result.widget;
-      if (widget?.kind === 'fit_report' && postingTitle && (!widget.role || !sameRole(widget.role, postingTitle))) {
-        if (widget.role) {
-          result.content += `\n\nThe role was called "${widget.role}", but the posting is for "${postingTitle}"; the report uses the posting's title. Mention that in one short clause.`;
+      if (widget?.kind === 'fit_report' && postingTitle) {
+        const typed = [widget.role, context?.role].find((role) => role && !sameRole(role, postingTitle!));
+        if (typed) {
+          result.content += `\n\nThe visitor called the role "${typed}", but the posting is for "${postingTitle}"; the report is judged against the posting. Open your answer by saying so in one short clause.`;
         }
         widget.role = postingTitle;
       }
