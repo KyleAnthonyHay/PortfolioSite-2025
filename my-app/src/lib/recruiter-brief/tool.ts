@@ -73,7 +73,7 @@ export function makeRecruiterBriefTool(options: {
         roleTitle: posting.title ?? roleTitle ?? options.context?.role,
         companyName,
         recruiterContext,
-        knownRequirements: posting.text ? undefined : known,
+        knownRequirements: known,
       });
       const view = toBriefView(record);
       const { brief } = view;

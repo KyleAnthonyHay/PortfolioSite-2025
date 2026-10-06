@@ -83,9 +83,9 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting to leave him a message, pass something on, or have him get back to them → send_note, with a short draft in their voice from what they told you.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
+- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief, even when the same message shares a posting link or description: pass the link as jobUrl and call nothing else in that turn. It finds a posting shared earlier in the chat by itself; do not paste one into the call. Never say a brief was made unless this tool ran.
 - A job posting URL → get_job_posting, then assess_job_fit with the requirements it lists and the role title.
 - A pasted job description or a list of requirements → ${REQUIREMENT_RULES} Include location, relocation and work-authorization requirements as their own rows. Then call assess_job_fit once. It already checks degrees, teamwork, and every technology against the project write-ups, so do not call other tools in that turn.
-- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief. It finds a posting already shared in the chat; do not paste it into the call.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
 - When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
 If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates), say it is not stated and suggest asking him; never infer it from nearby facts.
@@ -121,6 +121,10 @@ function toLangChain(history: ConversationMessage[]): BaseMessage[] {
     .filter((m) => typeof m.content === 'string' && m.content.trim().length > 0)
     .map((m) => (m.role === 'user' ? new HumanMessage(m.content) : new AIMessage(m.content)));
 }
+
+/** A request for the shareable brief, which the small model tends to answer with a fit check instead. */
+const BRIEF_REQUEST =
+  /\b(recruiter brief|candidate (brief|profile|summary)|one[- ]pager|(a |the )?brief (i|we) can (send|share|forward)|turn this into a (recruiter )?brief|(send|forward|share) (it |this )?(to|with) (my|the|our) hiring manager|something (i|we) can send)/i;
 
 function isSmallTalk(message: string): boolean {
   const words = message.trim().split(/\s+/);
@@ -262,9 +266,17 @@ export async function* runAgent(
 
   for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
     const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
+    const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
     const allowTools = round < MAX_TOOL_ROUNDS;
     const model = allowTools
-      ? getBaseModel().bindTools(tools, forceTool ? { tool_choice: 'required' } : {})
+      ? getBaseModel().bindTools(
+          tools,
+          wantsBrief
+            ? { tool_choice: { type: 'function', function: { name: 'generate_recruiter_brief' } } }
+            : forceTool
+              ? { tool_choice: 'required' }
+              : {}
+        )
       : getBaseModel();
 
     const stream = await model.stream(messages, { signal });

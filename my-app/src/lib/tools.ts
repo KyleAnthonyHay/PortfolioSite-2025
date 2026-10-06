@@ -257,7 +257,10 @@ These ITEMs are requirements from a job posting. Judge them the way a hiring man
 - Analytical methods (forecasting, statistical modeling, experimentation or A/B testing, causal inference, pricing analysis) need an excerpt showing him doing that analysis, not building a feature next to it.
 - Examples: "finance fluency" is not met by building a payments ledger; "pricing experimentation" is not met by building subscription tiers; "revenue forecasting" is not met by tracking subscriptions. Those are "related".
 - Infrastructure and SRE work (large-scale distributed systems, incident response, on-call, database reliability at scale, container orchestration) needs an excerpt showing him operating production infrastructure at that scale; apps with a few hundred users, demo datasets or multi-tenant isolation do not qualify.
-- Calling LLM APIs or building agents is not training or deploying ML models.
+- Calling LLM APIs or building agents is not training or deploying ML models; a training-program project is not production.
+- Business and analytics terms keep their business meaning: owning his own app is not running an executive business review; embeddings or vector search are not a semantic or metrics layer; a payout ledger is not finance or revenue analytics; custom charts are not BI tooling.
+- Personal traits and ways of working (curiosity, juggling work streams, communication, thriving in ambiguity) are "related" at most unless an excerpt describes exactly that.
+- For each project also give "same_context": true only if the excerpt shows the work in the setting the requirement means (analytics work in an analytics or finance function, executive work with executives, infrastructure at production scale, a technology used by him). A project with same_context false can support "related", never "direct".
 - When unsure between two verdicts, choose the lower one.`;
 
 /** Team projects, where a write-up's stack lists describe the team's system rather than his part. */
@@ -376,13 +379,13 @@ List each relevant project once, strongest evidence first: "ref" is the excerpt 
 - On team projects (OnTract, Sentio+), tech-stack, architecture and "skills demonstrated" lists describe the team's system; count a technology only where the excerpt says he built or used it, or it is part of his solo rebuild.
 - The excerpt must address the ITEM itself, not a word near it: REST is not GraphQL, WebSockets are not Kafka, Next.js is not "next-generation", Bedrock calls are not running AWS infrastructure, a trained model that was never deployed is not "deployed ML in production", a troubleshooting assistant is not incident response.${mode === 'fit' ? FIT_RUBRIC : ''}
 Being on the team that built something is not his use of it. When the ITEM names a technology, the quote must contain that technology's exact name (not a related one: "SwiftUI" is not "Swift"). If no sentence shows it, the verdict is "none" with no projects; never cite a project to say it lacks something.
-Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."}]}]}`
+Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."${mode === 'fit' ? ',"same_context":true' : ''}}]}]}`
         ),
         new HumanMessage(blocks.join('\n\n')),
       ]);
     const text = typeof response.content === 'string' ? response.content : '';
     const parsed = JSON.parse(text) as {
-      items?: { index?: number; verdict?: string; projects?: { ref?: string; quote?: string; why?: string }[] }[];
+      items?: { index?: number; verdict?: string; projects?: { ref?: string; quote?: string; why?: string; same_context?: boolean }[] }[];
     };
     return questions.map((_, i) => {
       const item = parsed.items?.find((candidate) => candidate.index === i);
@@ -402,9 +405,12 @@ Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"ve
         // On team projects the sentence has to say it was his, unless it comes from the section listing his own commits.
         if (TEAM_PROJECT_IDS.has(hit.projectId) && !ATTRIBUTION.test(quote) && !/role/i.test(hit.section)) return [];
         seen.add(hit.projectId);
-        return [{ id: hit.projectId, why, section: hit.section }];
+        return [{ id: hit.projectId, why, section: hit.section, context: mode !== 'fit' || p.same_context === true }];
       });
-      return { verdict: projects.length === 0 ? 'none' : verdict, projects };
+      // In a fit check, "direct" needs at least one project doing it in the setting the requirement means.
+      const direct = verdict === 'direct' && projects.some((p) => p.context);
+      const ordered = [...projects.filter((p) => p.context), ...projects.filter((p) => !p.context)].map(({ id, why, section }) => ({ id, why, section }));
+      return { verdict: projects.length === 0 ? 'none' : direct ? 'direct' : verdict === 'none' ? 'none' : 'related', projects: ordered };
     });
   } catch (error) {
     console.error('judgeEvidence: judge failed', error);

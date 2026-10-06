@@ -508,6 +508,12 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
     requirements = extracted.requirements;
     coreIndex = extracted.coreIndex;
     logistics = extracted.logistics;
+    // After a fit check in the same chat, judge the same rows it showed, plus the job itself.
+    if (input.knownRequirements?.length) {
+      const core = coreIndex !== undefined ? [requirements[coreIndex]] : [];
+      requirements = [...core, ...input.knownRequirements.map((text) => ({ text, required: true }))];
+      coreIndex = core.length ? 0 : undefined;
+    }
   }
   if (requirements.length === 0 && input.knownRequirements?.length) {
     requirements = input.knownRequirements.map((text) => ({ text, required: true }));
