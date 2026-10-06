@@ -1,16 +1,13 @@
-import fs from 'fs/promises';
-import path from 'path';
 import { randomBytes } from 'crypto';
+import { ConvexHttpClient } from 'convex/browser';
+import { api } from '../../../convex/_generated/api';
 import type { StoredBrief } from './types';
 
 /**
- * Where briefs live. The portfolio has no database yet, so this writes one
- * JSON file per brief under my-app/.data/recruiter-briefs. That persists on a
- * local or long-running server but not on Vercel, whose filesystem is
- * read-only and per-request. Moving to Convex means reimplementing these two
- * functions against a recruiterBriefs table with the same fields.
+ * Briefs live in the portfolio's Convex project (convex/recruiterBriefs.ts),
+ * so share links survive deploys. Saving needs BRIEF_WRITE_KEY, which only
+ * the server has; reading needs the brief's unguessable id.
  */
-const dir = process.env.RECRUITER_BRIEF_DIR || path.resolve(process.cwd(), '.data/recruiter-briefs');
 
 const ALPHABET = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
@@ -20,23 +17,31 @@ export function newPublicId(): string {
   return [...bytes].map((byte) => ALPHABET[byte % ALPHABET.length]).join('');
 }
 
-function fileFor(publicId: string): string | null {
-  return /^[A-Za-z0-9]{6,32}$/.test(publicId) ? path.join(dir, `${publicId}.json`) : null;
+let client: ConvexHttpClient | null = null;
+function convex(): ConvexHttpClient {
+  const url = process.env.NEXT_PUBLIC_CONVEX_URL;
+  if (!url) throw new Error('NEXT_PUBLIC_CONVEX_URL is not set');
+  client ??= new ConvexHttpClient(url);
+  return client;
+}
+
+function validId(publicId: string): boolean {
+  return /^[A-Za-z0-9]{6,32}$/.test(publicId);
 }
 
 export async function saveBrief(brief: StoredBrief): Promise<void> {
-  const file = fileFor(brief.publicId);
-  if (!file) throw new Error('Invalid brief id');
-  await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(file, JSON.stringify(brief, null, 2), 'utf-8');
+  const key = process.env.BRIEF_WRITE_KEY;
+  if (!key) throw new Error('BRIEF_WRITE_KEY is not set');
+  if (!validId(brief.publicId)) throw new Error('Invalid brief id');
+  await convex().mutation(api.recruiterBriefs.save, { key, ...brief });
 }
 
 export async function getBrief(publicId: string): Promise<StoredBrief | null> {
-  const file = fileFor(publicId);
-  if (!file) return null;
+  if (!validId(publicId)) return null;
   try {
-    return JSON.parse(await fs.readFile(file, 'utf-8')) as StoredBrief;
-  } catch {
+    return ((await convex().query(api.recruiterBriefs.get, { publicId })) as StoredBrief | null) ?? null;
+  } catch (error) {
+    console.error('recruiter brief: could not load', publicId, error);
     return null;
   }
 }
