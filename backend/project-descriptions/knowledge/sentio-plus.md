@@ -112,7 +112,7 @@ Compared with the team version's ChromaDB vector search, the redesign uses Conve
 
 ## Fine-tuned RoBERTa sentiment model
 <!-- meta: {"type":"project","project":"Sentio+","category":"roberta-sentiment-fine-tuning","technologies":["RoBERTa","Hugging Face Transformers","TensorFlow","Keras","transfer learning","fine-tuning","NLP","sentiment analysis"]} -->
-An earlier iteration of Sentio+, before the team moved to frontier LLMs, used a sentiment classifier that Kyle and his team fine-tuned themselves on open-source review data. The model classifies a review as negative, neutral or positive.
+Kyle and his team fine-tuned a RoBERTa sentiment classifier on open-source review data as a side experiment for Sentio+. It was trained and evaluated but never wired into the live app: no version of Sentio+ that users can reach runs it. The model classifies a review as negative, neutral or positive.
 
 **Base model.** Twitter RoBERTa (cardiffnlp/twitter-roberta-base-sentiment-latest), a roughly 124M-parameter RoBERTa model already trained for sentiment on about 58M tweets. It was chosen over DistilBERT or Amazon-review models because tweets share the informal, expressive phrasing of app and product reviews.
 
@@ -124,7 +124,7 @@ An earlier iteration of Sentio+, before the team moved to frontier LLMs, used a 
 
 **Results.** Validation loss was best after epoch 2 (0.331). By epoch 3, training accuracy kept rising while validation loss went up, so early stopping restored the epoch-2 weights. On the held-out test set the model reached 83.9% accuracy (loss 0.342). On a small hand-picked set of eight difficult reviews (mixed sentiment, sarcasm), accuracy rose from 50% for the base model to 62.5% after fine-tuning. Runs were saved in timestamped folders for reproducibility, and inference could compare the base and fine-tuned models and return confidence scores so low-confidence predictions could be flagged for human review.
 
-The fine-tuned model was never wired into the live app. It belonged to an earlier iteration of the product; the team later moved to frontier models (Claude on AWS Bedrock) for reasoning over reviews, and the deployed redesign uses star ratings and theme matching for its sentiment views. The work still shows hands-on model training: choosing a base model, freezing layers, tuning optimization and evaluating against a held-out test set.
+To be precise about status: the fine-tuned model was trained on open-source data and never wired into the live app. The team version reasoned over reviews with Claude on AWS Bedrock, and the deployed redesign uses star ratings and theme matching for its sentiment views. Describe it as a model-training exercise, not a production component. The work still shows hands-on model training: choosing a base model, freezing layers, tuning optimization and evaluating against a held-out test set.
 
 ## Review analytics pipeline
 <!-- meta: {"type":"project","project":"Sentio+","category":"review-analytics-pipeline","technologies":["Python","ETL","Convex","regex","JSON","TypeScript"]} -->

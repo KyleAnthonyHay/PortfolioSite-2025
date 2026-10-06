@@ -146,7 +146,7 @@ PROJECT EXPERIENCE:
 
 AI-Powered Applications:
 - Built ChatGPT clone with RAG architecture using LangChain, LangGraph, ChromaDB, and FastAPI
-- Developed Sentio+ customer intelligence platform with vector search, sentiment analysis, and fine-tuned ML models
+- Developed Sentio+ customer intelligence platform with vector search and an LLM agent; separately fine-tuned a RoBERTa sentiment model on open-source data (trained and evaluated, not used in the live app)
 - Created contract management system with semantic search, automated metadata extraction, and multi-tenant architecture
 - Implemented AI note-taking app (SelahNote) with real-time transcription, streaming LLM responses, and hierarchical organization
 

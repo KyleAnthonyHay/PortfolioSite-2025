@@ -50,7 +50,7 @@ export const products: Product[] = [
     summary:
       'Fifty thousand app reviews, and nobody on your team has read them all. Sentio+ has: ask it a question and it answers with the numbers and the reviews behind them.',
     builtFor: 'Product and support teams',
-    stack: ['Next.js', 'FastAPI', 'LangGraph', 'ChromaDB', 'Fine-tuned RoBERTa'],
+    stack: ['Next.js', 'Convex', 'LangGraph', 'OpenAI', 'ChromaDB'],
     live: 'https://sentio.kyleanthonyhay.com',
     github: 'https://github.com/KyleAnthonyHay/sentio',
     loop: '/products/sentio/loop.mp4',

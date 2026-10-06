@@ -79,12 +79,12 @@ const details: Record<number, CatalogDetails> = {
     corpusNames: ['Sentio Plus', 'Finetuned Sentiment Analysis'],
     image: '/products/sentio/landing.jpg',
     video: { src: '/products/sentio/tour.mp4', poster: '/products/sentio/tour-poster.jpg' },
-    highlights: ['FastAPI', 'LangGraph', 'ChromaDB', 'RoBERTa'],
+    highlights: ['Convex', 'LangGraph', 'FastAPI', 'ChromaDB'],
     overview:
-      'Customer-intelligence platform that turns large volumes of unstructured reviews into decision-ready insights. RAG over ChromaDB for aspect-level reasoning, a fine-tuned RoBERTa sentiment model, and a FastAPI + LangGraph backend behind a Next.js dashboard.',
+      'Customer-intelligence platform that turns large volumes of unstructured reviews into decision-ready insights. RAG over ChromaDB and a FastAPI + LangGraph backend in the team version, then rebuilt solo on Convex with a LangGraph agent behind a Next.js dashboard. A RoBERTa sentiment model was fine-tuned on open-source data alongside it but never wired into the live app.',
     techStack: {
       frontend: ['Next.js 16 (App Router)', 'TypeScript', 'Tailwind CSS 4', 'Radix UI primitives', 'Framer Motion', 'React Context API', 'Lucide React'],
-      backend: ['FastAPI (Python)', 'LangChain & LangGraph', 'AWS Bedrock (Claude 3 Sonnet)', 'OpenAI-compatible APIs', 'OpenAI text-embedding-3-small', 'ChromaDB', 'Pandas', 'NumPy', 'Fine-tuned RoBERTa'],
+      backend: ['FastAPI (Python)', 'Convex (redesign)', 'LangChain & LangGraph', 'AWS Bedrock (Claude 3 Sonnet)', 'OpenAI-compatible APIs', 'OpenAI text-embedding-3-small', 'ChromaDB', 'Pandas', 'NumPy'],
       infrastructure: ['Docker & Docker Compose', 'ChromaDB (persistent, HTTP, cloud)', 'Local filesystem (CSV datasets)', 'Jupyter Notebooks'],
     },
   },

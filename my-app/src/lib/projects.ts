@@ -91,7 +91,7 @@ export const projects: ProjectCardData[] = [
     title: 'Sentio+',
     tagline: 'App-review intelligence',
     description:
-      'Customer-intelligence platform that reads thousands of app reviews and answers questions with the numbers and the reviews behind them, using RAG and a fine-tuned sentiment model.',
+      'Customer-intelligence platform that reads thousands of app reviews and answers questions with the numbers and the reviews behind them, using RAG and an LLM agent.',
     image: '/projects/sentio-1.png',
     video: { src: '/products/sentio/loop.mp4', poster: '/products/sentio/poster.jpg', ratio: 16 / 9, bare: true },
     link: 'https://sentio.kyleanthonyhay.com',
