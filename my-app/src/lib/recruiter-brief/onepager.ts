@@ -119,7 +119,7 @@ function buildOnePager(view: BriefView): OnePager {
     let evidence: string;
     if (match.assessment === 'gap') evidence = 'Not shown in his portfolio';
     else if (names.length > 0) evidence = names.slice(0, 3).join(', ');
-    else evidence = clause(match.evidence, 60);
+    else evidence = clause(match.evidence, 72);
     return { requirement: clause(match.requirement, 120), level: match.assessment, evidence, core: Boolean(match.core) };
   });
 

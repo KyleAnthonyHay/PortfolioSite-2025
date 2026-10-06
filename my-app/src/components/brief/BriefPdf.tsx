@@ -30,7 +30,6 @@ const s = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', paddingVertical: 4.5, borderBottomWidth: 0.6, borderBottomColor: zinc[100] },
   req: { width: '50%', paddingRight: 12, fontSize: 10, color: zinc[900], lineHeight: 1.3 },
   level: { width: '16%', flexDirection: 'row', alignItems: 'center' },
-  levelText: { fontSize: 9.5, color: zinc[700] },
   evid: { width: '34%', fontSize: 9.5, color: zinc[600], lineHeight: 1.3 },
   cols: { flexDirection: 'row', marginTop: 14 },
   col: { flex: 1, paddingRight: 18 },
@@ -48,12 +47,23 @@ function absolute(href: string): string {
   return /^https?:|^mailto:/.test(href) ? href : `${SITE_URL}${href}`;
 }
 
+/** Same 7pt circle for every level, so the three read as one set: filled, ring, grey ring. */
 function Dot({ level }: { level: MatchLevel }) {
   const color = level === 'gap' ? zinc[300] : ACCENT;
   return (
     <View
-      style={{ width: 7, height: 7, borderRadius: 4, borderWidth: 1.4, borderColor: color, backgroundColor: level === 'strong' ? ACCENT : 'transparent', marginRight: 5 }}
+      style={{ width: 7, height: 7, borderRadius: 3.5, borderWidth: level === 'strong' ? 0 : 1.3, borderColor: color, backgroundColor: level === 'strong' ? ACCENT : 'transparent', marginRight: 5 }}
     />
+  );
+}
+
+/** A dot and its word on one baseline: fixed row height, text with no line-height slack. */
+function Level({ level, size = 9.5, color = zinc[700] }: { level: MatchLevel; size?: number; color?: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', height: size + 2 }}>
+      <Dot level={level} />
+      <Text style={{ fontSize: size, lineHeight: 1, color, marginTop: 1 }}>{LEVEL_WORD[level]}</Text>
+    </View>
   );
 }
 
@@ -118,9 +128,8 @@ export default function BriefPdf({ view }: { view: BriefView }) {
               <Text style={s.eyebrow}>Role match</Text>
               <View style={{ flexDirection: 'row', alignItems: 'center' }}>
                 {(['strong', 'relevant', 'gap'] as MatchLevel[]).map((level) => (
-                  <View key={level} style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
-                    <Dot level={level} />
-                    <Text style={{ fontSize: 8, color: zinc[400] }}>{LEVEL_WORD[level]}</Text>
+                  <View key={level} style={{ marginLeft: 10 }}>
+                    <Level level={level} size={8} color={zinc[400]} />
                   </View>
                 ))}
               </View>
@@ -130,8 +139,7 @@ export default function BriefPdf({ view }: { view: BriefView }) {
                 <View key={row.requirement} style={s.row} wrap={false}>
                   <Text style={s.req}>{row.requirement}</Text>
                   <View style={s.level}>
-                    <Dot level={row.level} />
-                    <Text style={s.levelText}>{LEVEL_WORD[row.level]}</Text>
+                    <Level level={row.level} />
                   </View>
                   <Text style={[s.evid, row.level === 'gap' ? { color: zinc[400] } : {}]}>{row.evidence}</Text>
                 </View>
