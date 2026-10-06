@@ -83,7 +83,7 @@ function estimateHeight(page: OnePager): number {
   return h;
 }
 
-const PAGE_BUDGET = 690;
+const PAGE_BUDGET = 720;
 
 /** Trims the page until it fits, least important things first. */
 function fitToPage(page: OnePager): OnePager {
