@@ -143,6 +143,8 @@ export type Widget =
       video?: { src: string; poster: string };
       /** The running product, opened in a frame. */
       liveUrl?: string;
+      /** Native apps: where to install it. */
+      appStoreUrl?: string;
       /** Which view opens first. */
       initial: 'video' | 'live';
     }

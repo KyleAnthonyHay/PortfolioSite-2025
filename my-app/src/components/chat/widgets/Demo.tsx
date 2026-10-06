@@ -13,7 +13,7 @@ import { ArcSpinner } from '../ActivitySteps';
  * between them; the frame only loads once its tab is opened.
  */
 export function DemoWidget({ widget }: { widget: Extract<Widget, { kind: 'demo' }> }) {
-  const { project, video, liveUrl } = widget;
+  const { project, video, liveUrl, appStoreUrl } = widget;
   const [view, setView] = useState<'video' | 'live'>(widget.initial);
   const [opened, setOpened] = useState(widget.initial === 'live');
   const [loaded, setLoaded] = useState(false);
@@ -41,6 +41,18 @@ export function DemoWidget({ widget }: { widget: Extract<Widget, { kind: 'demo' 
           </Link>
           <p className="truncate text-xs text-zinc-500">{project.tagline}</p>
         </div>
+        <div className="flex shrink-0 items-center gap-2">
+        {appStoreUrl && (
+          <a
+            href={appStoreUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-8 items-center gap-1 rounded-full bg-zinc-900 px-3 text-[12.5px] font-medium text-white transition-colors hover:bg-zinc-800"
+          >
+            App Store
+            <ArrowUpRight className="h-3.5 w-3.5" />
+          </a>
+        )}
         {tabs.length > 1 && (
           <div role="tablist" aria-label="Demo view" className="flex shrink-0 rounded-full bg-zinc-100 p-0.5">
             {tabs.map(({ key, label, icon: Icon }) => (
@@ -60,6 +72,7 @@ export function DemoWidget({ widget }: { widget: Extract<Widget, { kind: 'demo' 
             ))}
           </div>
         )}
+        </div>
       </div>
 
       {video && view === 'video' && (

@@ -1112,6 +1112,7 @@ export const showDemo = tool(
     const card = projectCards.find((p) => p.id === project.id);
     const video = project.video ?? (card?.video ? { src: card.video.src, poster: card.video.poster ?? project.image } : undefined);
     const liveUrl = project.link;
+    const appStoreUrl = (await getProjectResources(project.id).catch(() => [])).find((r) => r.type === 'app-store')?.url;
     if (!video && !liveUrl) {
       return pack({
         content: `${project.title} has no walkthrough recording or live version to show${project.category === 'macOS Apps' ? ' (it is a personal-use Mac app)' : ''}. Its page on this site is ${project.href}.`,
@@ -1120,7 +1121,11 @@ export const showDemo = tool(
     }
     const initial: 'video' | 'live' = view === 'live' && liveUrl ? 'live' : video ? 'video' : 'live';
     const native = project.category !== 'Web Apps';
-    const parts = [video && 'the walkthrough video', liveUrl && (native ? `its website (${liveUrl})` : `the live app (${liveUrl})`)].filter(Boolean);
+    const parts = [
+      video && 'the walkthrough video',
+      liveUrl && (native ? `its website (${liveUrl})` : `the live app (${liveUrl})`),
+      appStoreUrl && 'an App Store button to install it',
+    ].filter(Boolean);
     return pack({
       content: `A demo card is shown for ${project.title} with ${parts.join(' and ')}, opening on the ${initial === 'video' ? 'video' : native ? 'website' : 'live app'}${
         parts.length > 1 ? '; the visitor can switch between them' : ''
@@ -1128,7 +1133,7 @@ export const showDemo = tool(
         !native && liveUrl ? 'The live app may ask them to sign in or use a demo account. ' : ''
       }Keep the reply to one or two sentences and do not paste the links.`,
       citedProjectIds: [project.id],
-      widget: { kind: 'demo', project: toCard(project), video, liveUrl, initial },
+      widget: { kind: 'demo', project: toCard(project), video, liveUrl, appStoreUrl, initial },
     });
   },
   {
