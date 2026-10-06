@@ -22,7 +22,7 @@ export const metadata: Metadata = {
 export default function ResumePage() {
   return (
     <object data={PDF} type="application/pdf" className="fixed inset-0 w-full h-full border-0">
-      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 px-6 text-center bg-[#f9fafb]">
+      <div className="min-h-[100dvh] flex flex-col items-center justify-center gap-4 px-6 text-center bg-paper">
         <p className="text-base text-zinc-500 max-w-[40ch]">
           This browser can&apos;t display PDFs inline.
         </p>

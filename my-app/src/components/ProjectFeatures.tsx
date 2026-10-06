@@ -25,13 +25,8 @@ import {
   Youtube,
   FileAudio,
   Sparkles,
-  LineChart,
-  Tag,
-  DollarSign,
   RefreshCw,
-  User,
   Globe,
-  Moon,
   LayoutGrid,
   Flag,
   Building2,
@@ -39,6 +34,9 @@ import {
   MousePointerClick,
   ScrollText,
   Gauge,
+  Link2,
+  Network,
+  PanelTop,
 } from 'lucide-react';
 
 const ontractFeatures = [
@@ -83,28 +81,6 @@ const selahNoteFeatures = [
   { icon: <FileText className="w-4 h-4" />, title: 'Custom Prompts', description: 'Sophisticated prompts for sermon and lecture content with structured markdown output.' },
 ];
 
-const expenseTrackerFeatures = [
-  { icon: <RefreshCw className="w-4 h-4" />, title: 'Async Data Fetching', description: 'URLSession with Combine operators for reactive updates via @Published properties.' },
-  { icon: <LineChart className="w-4 h-4" />, title: 'Data Visualization', description: 'SwiftUI Charts with LineChart for cumulative expense tracking over time.' },
-  { icon: <Tag className="w-4 h-4" />, title: 'Category System', description: 'Hierarchical categories with subcategories and FontAwesome icon integration.' },
-  { icon: <Calendar className="w-4 h-4" />, title: 'Transaction Organization', description: 'Grouping by month with chronological display, section headers, and date-based filtering.' },
-  { icon: <FileText className="w-4 h-4" />, title: 'Transaction Detail', description: 'Comprehensive info display including merchant, date, institution, and category editing.' },
-  { icon: <DollarSign className="w-4 h-4" />, title: 'Expense Calculation', description: 'Date interval calculation with daily aggregation and running sum for chart data.' },
-  { icon: <Zap className="w-4 h-4" />, title: 'Reactive State', description: '@EnvironmentObject for shared ViewModel with @Published properties for automatic UI updates.' },
-  { icon: <BarChart3 className="w-4 h-4" />, title: 'Data Processing', description: 'Computed properties for signed amounts, date parsing, month extraction, and category resolution.' },
-];
-
-const theWallFeatures = [
-  { icon: <User className="w-4 h-4" />, title: 'User Authentication', description: 'Email/password registration via Firebase Auth with automatic session management.' },
-  { icon: <MessageSquare className="w-4 h-4" />, title: 'Real-Time Feed', description: 'Public message wall with real-time updates via Firestore streams.' },
-  { icon: <Upload className="w-4 h-4" />, title: 'Post Creation', description: 'Text-based posts immediately visible to all authenticated users.' },
-  { icon: <Users className="w-4 h-4" />, title: 'User Profiles', description: 'Profile pages with username, email, and user discovery features.' },
-  { icon: <Moon className="w-4 h-4" />, title: 'Dark Mode', description: 'System-wide light and dark theme switching with Material Design.' },
-  { icon: <Globe className="w-4 h-4" />, title: 'Cross-Platform', description: 'Single codebase for iOS, Android, Web, Linux, macOS, and Windows.' },
-  { icon: <LayoutGrid className="w-4 h-4" />, title: 'Component Architecture', description: 'Modular UI components for consistent patterns and maintainability.' },
-  { icon: <Database className="w-4 h-4" />, title: 'Firestore Integration', description: 'Database service layer for post creation, retrieval, and real-time streams.' },
-];
-
 const countryViewerFeatures = [
   { icon: <Globe className="w-4 h-4" />, title: 'Country List', description: 'Scrollable table view with flag thumbnails, common names, and official names.' },
   { icon: <FileText className="w-4 h-4" />, title: 'Country Details', description: 'Flag banner, official name, capital, population, currency, and languages.' },
@@ -129,12 +105,57 @@ const yarnScriptFeatures = [
   { icon: <Gauge className="w-4 h-4" />, title: 'Responsive Demo Experience', description: 'Polished browser demo with microphone status, session controls, progress feedback, and a limited live-transcription timer.' },
 ];
 
+const soundSnagFeatures = [
+  { icon: <Link2 className="w-4 h-4" />, title: 'Snag Audio', description: 'Paste a YouTube, Instagram, or TikTok link, preview its metadata, and save the audio in its native M4A or WebM format.' },
+  { icon: <RefreshCw className="w-4 h-4" />, title: 'Convert Files', description: 'Images to JPEG, PNG, HEIC, TIFF, or one combined PDF; PDFs to images; audio and video to MP3, M4A, WAV, or FLAC.' },
+  { icon: <Shield className="w-4 h-4" />, title: 'Sandboxed by Design', description: 'Bundled, pinned yt-dlp, ffmpeg, and Deno run inside the App Sandbox from argument arrays, never a shell, to block option injection.' },
+  { icon: <PanelTop className="w-4 h-4" />, title: 'Menu Bar Extra', description: 'Paste a link or drop files on the menu bar icon, pick formats, watch progress, and drag finished files straight out of the panel.' },
+  { icon: <History className="w-4 h-4" />, title: 'History & Insights', description: 'SwiftData keeps every snag and conversion, and Swift Charts plots both over time.' },
+  { icon: <FolderTree className="w-4 h-4" />, title: 'One Save Location', description: 'Downloads or any folder through a security-scoped bookmark, shared by snags and conversions, and existing files are never overwritten.' },
+  { icon: <Bell className="w-4 h-4" />, title: 'Completion Notifications', description: 'Banners when a job finishes in the background; clicking one reveals the file in Finder.' },
+  { icon: <Zap className="w-4 h-4" />, title: 'Automation Hooks', description: 'Launch arguments that snag, convert, and screenshot the app, used to test it end to end.' },
+];
+
+const selahNoteDashboardFeatures = [
+  { icon: <Users className="w-4 h-4" />, title: 'Creator Management', description: 'Creator records, referral codes, offer mappings, and per-creator logins with owner, admin, viewer, and creator roles.' },
+  { icon: <Zap className="w-4 h-4" />, title: 'Live Data', description: 'Convex websocket subscriptions keep every page current, with a Live, Syncing, or Reconnecting indicator in the header.' },
+  { icon: <CreditCard className="w-4 h-4" />, title: 'Monthly Payouts', description: 'Idempotent payout batches that re-check every reward, settle partial payments oldest first, and carry the remainder forward.' },
+  { icon: <RefreshCw className="w-4 h-4" />, title: 'Event Reconciliation', description: 'RevenueCat webhook events listed by environment, with retry and reprocess for anything that failed to attribute.' },
+  { icon: <FileText className="w-4 h-4" />, title: 'UGC Activity Log', description: 'Creators log their own posts, and staff see that content next to each creator\'s referral results.' },
+  { icon: <Shield className="w-4 h-4" />, title: 'Membership-Gated Access', description: 'Firebase proves who you are; an admin membership row decides what you can do, and revoking it cuts off live queries at once.' },
+  { icon: <History className="w-4 h-4" />, title: 'Audit Trail', description: 'Every dashboard write records the verified actor along with before-and-after details.' },
+  { icon: <Calendar className="w-4 h-4" />, title: 'Consistent Reporting', description: 'Integer-cent money math and America/New_York month boundaries keep every total the same wherever it is shown.' },
+];
+
+const prodBotFeatures = [
+  { icon: <MessageSquare className="w-4 h-4" />, title: 'Grounded Chat', description: 'Streamed answers from the OpenAI Responses API, grounded in each campus\'s approved and shared documentation.' },
+  { icon: <Brain className="w-4 h-4" />, title: 'Visible Reasoning', description: 'The model\'s reasoning summary streams into a collapsible Thinking block above every answer.' },
+  { icon: <Network className="w-4 h-4" />, title: 'Wiring Explorer', description: 'Interactive campus wiring diagram with device search, fullscreen, PNG export, and double-click into a device\'s internal wiring.' },
+  { icon: <Sparkles className="w-4 h-4" />, title: 'Chat-Drawn Diagrams', description: 'Describe a change in plain language and the AI redraws the diagram; nothing is stored until you save a revision.' },
+  { icon: <FileText className="w-4 h-4" />, title: 'Reviewed AI Drafts', description: 'Generated pitfalls, runbooks, and systems docs sit beside the approved version so an admin can approve, edit, or discard them.' },
+  { icon: <History className="w-4 h-4" />, title: 'Safe Revisions', description: 'Approval keeps the previous version, and a draft cannot overwrite docs that changed after it started generating.' },
+  { icon: <ThumbsUp className="w-4 h-4" />, title: 'Volunteer Fix Reports', description: 'Volunteers report a resolved issue in chat, and it lands in an admin review queue with their report attached as evidence.' },
+  { icon: <Upload className="w-4 h-4" />, title: 'Import & Export', description: 'Approved docs export as a ZIP of YAML and markdown and re-import atomically as drafts.' },
+];
+
+const featuresByProject: Record<number, typeof ontractFeatures> = {
+  1: selahNoteFeatures,
+  4: countryViewerFeatures,
+  5: ontractFeatures,
+  6: sentioFeatures,
+  7: chatgptCloneFeatures,
+  8: yarnScriptFeatures,
+  9: soundSnagFeatures,
+  10: selahNoteDashboardFeatures,
+  11: prodBotFeatures,
+};
+
 interface ProjectFeaturesProps {
   projectId: number;
 }
 
 export default function ProjectFeatures({ projectId }: ProjectFeaturesProps) {
-  const features = projectId === 1 ? selahNoteFeatures : projectId === 2 ? expenseTrackerFeatures : projectId === 3 ? theWallFeatures : projectId === 4 ? countryViewerFeatures : projectId === 6 ? sentioFeatures : projectId === 7 ? chatgptCloneFeatures : projectId === 8 ? yarnScriptFeatures : ontractFeatures;
+  const features = featuresByProject[projectId] ?? ontractFeatures;
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

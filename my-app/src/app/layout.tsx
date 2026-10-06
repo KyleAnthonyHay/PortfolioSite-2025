@@ -1,14 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import SmoothScroll from "@/components/SmoothScroll";
 import "./globals.css";
 
-const geist = Geist({ subsets: ["latin"], variable: "--font-geist-sans" });
-const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-geist-mono" });
-
 export const metadata: Metadata = {
-  title: "Kyle-Anthony Hay | Portfolio",
-  description: "Software Developer and Entrepreneur",
-  keywords: ["Software Developer", "Entrepreneur", "Portfolio", "Production Company"],
+  title: "Kyle-Anthony Hay | AI Engineer",
+  description:
+    "Kyle-Anthony Hay builds AI products for companies and for himself: OnTract, Sentio+, V1 ProdBot and SelahNote.",
+  keywords: ["Kyle-Anthony Hay", "AI Engineer", "Software Engineer", "Portfolio", "OnTract", "Sentio+", "ProdBot", "SelahNote"],
   icons: {
     icon: "/profile.jpg",
   },
@@ -21,8 +19,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={`${geist.variable} ${geistMono.variable} font-sans antialiased`}>
-        <div className="min-h-screen bg-[#f9fafb]">
+      <body className="font-sans antialiased">
+        <SmoothScroll />
+        <div className="min-h-screen bg-paper">
           {children}
         </div>
       </body>

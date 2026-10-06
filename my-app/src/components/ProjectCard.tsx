@@ -6,10 +6,18 @@ import { motion } from 'motion/react';
 import { FaGithub } from 'react-icons/fa';
 import PhoneFrame from '@/components/PhoneFrame';
 import BrowserFrame from '@/components/BrowserFrame';
+import RecordingFrame from '@/components/RecordingFrame';
 import { useInView } from '@/hooks/useInView';
 import type { ProjectCardData } from '@/lib/projects';
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
+
+const categoryLabel: Record<ProjectCardData['category'], string> = {
+  'iOS Apps': 'iOS',
+  'macOS Apps': 'macOS',
+  'Web Apps': 'Web',
+};
+
 
 interface ProjectCardProps {
   project: ProjectCardData;
@@ -41,9 +49,28 @@ export default function ProjectCard({
   detailed = false,
 }: ProjectCardProps) {
   const portrait = !project.landscape;
+  // Live products get a real "Open app" link beside the card link; it can't
+  // nest inside the card's own anchor, so it's laid over the footer instead.
+  const openApp = project.live && project.link ? project.link : null;
   // Same play gating as PhoneFrame's lazyVideo — landscape demos only load
   // and play once the card scrolls near the viewport.
   const { ref: videoRef, isInView: videoInView } = useInView({ threshold: 0.15, rootMargin: '200px' });
+
+  const cardVideo = project.video && (
+    <video
+      className="w-full h-full object-contain"
+      poster={project.video.poster}
+      autoPlay
+      loop
+      muted
+      playsInline
+      preload={videoInView ? 'auto' : 'none'}
+      aria-hidden="true"
+    >
+      {videoInView && project.video.webm && <source src={project.video.webm} type="video/webm" />}
+      {videoInView && <source src={project.video.src} type="video/mp4" />}
+    </video>
+  );
 
   const content = (
     <motion.div
@@ -53,9 +80,9 @@ export default function ProjectCard({
       // h-full + column flex makes the card fill its grid row, and the media
       // area absorbs the slack — so paired cards line up instead of leaving a
       // ragged gap under the shorter one. The aspect ratio stays the minimum.
-      className="group relative h-full flex flex-col bg-white rounded-[1.5rem] overflow-hidden border border-slate-200/50 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)] transition-shadow duration-500"
+      className="group relative h-full flex flex-col bg-white rounded-[1.5rem] overflow-hidden border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] hover:border-zinc-300 hover:shadow-[0_28px_50px_-24px_rgba(0,0,0,0.28)] transition-[box-shadow,border-color] duration-500"
     >
-      <div className={`relative w-full grow ${portrait ? 'aspect-[4/5]' : 'aspect-[16/10]'} overflow-hidden`}>
+      <div className={`relative w-full grow ${portrait ? 'aspect-[4/5]' : 'aspect-[16/10]'} overflow-hidden bg-gradient-to-b from-zinc-50 to-zinc-100/80`}>
         <div className="absolute inset-0 flex items-center justify-center">
           {/*
             Portrait devices are sized off the well's height, not its width.
@@ -71,26 +98,19 @@ export default function ProjectCard({
               className="h-[82%] w-auto transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
             />
           ) : project.video ? (
-            /* The same browser-framed player the project's detail showcase uses */
+            /* The same player the project's detail showcase uses: in browser
+               chrome, or bare when the recording brings its own window */
             <div
               ref={videoRef}
-              className="w-[85%] transform transition-transform duration-700 ease-out group-hover:scale-[1.03]"
+              className="w-[90%] transform transition-transform duration-700 ease-out group-hover:scale-[1.02]"
             >
-              <BrowserFrame url={project.video.url} ratio={project.video.ratio ?? 16 / 9}>
-                <video
-                  className="w-full h-full object-cover object-top"
-                  poster={project.video.poster}
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  preload={videoInView ? 'auto' : 'none'}
-                  aria-hidden="true"
-                >
-                  {videoInView && project.video.webm && <source src={project.video.webm} type="video/webm" />}
-                  {videoInView && <source src={project.video.src} type="video/mp4" />}
-                </video>
-              </BrowserFrame>
+              {project.video.bare ? (
+                <RecordingFrame ratio={project.video.ratio}>{cardVideo}</RecordingFrame>
+              ) : (
+                <BrowserFrame url={project.video.url} ratio={project.video.ratio ?? 16 / 9}>
+                  {cardVideo}
+                </BrowserFrame>
+              )}
             </div>
           ) : (
             <div
@@ -110,9 +130,20 @@ export default function ProjectCard({
         </div>
       </div>
 
-      <div className="p-6">
+      <div className="p-6 border-t border-zinc-200/60">
         <div className="flex items-center gap-3 mb-1">
           <h3 className="text-zinc-900 font-medium text-base">{project.title}</h3>
+          {project.live && (
+            <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+              Live
+            </span>
+          )}
+          {!openApp && (
+            <span className="ml-auto font-mono text-[11px] text-zinc-400 transition-transform duration-300 group-hover:translate-x-0.5">
+              {categoryLabel[project.category]} →
+            </span>
+          )}
           {detailed && project.link && (
             <span className="inline-flex text-zinc-400">
               <ExternalIcon />
@@ -132,8 +163,20 @@ export default function ProjectCard({
   );
 
   return (
-    <Link href={`/projects/${project.id}`} className={className}>
-      {content}
-    </Link>
+    <div className={`relative ${className}`}>
+      <Link href={`/projects/${project.id}`} className="block h-full">
+        {content}
+      </Link>
+      {openApp && (
+        <a
+          href={openApp}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="absolute bottom-6 right-6 inline-flex h-8 items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 text-xs font-medium text-zinc-700 transition-all duration-200 hover:border-zinc-900 hover:text-zinc-900 active:scale-[0.97]"
+        >
+          Open app <span aria-hidden>↗</span>
+        </a>
+      )}
+    </div>
   );
 }

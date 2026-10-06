@@ -146,7 +146,7 @@ PROJECT EXPERIENCE:
 
 AI-Powered Applications:
 - Built ChatGPT clone with RAG architecture using LangChain, LangGraph, ChromaDB, and FastAPI
-- Developed Sentio+ customer intelligence platform with vector search, sentiment analysis, and fine-tuned ML models
+- Developed Sentio+ customer intelligence platform with vector search and an LLM agent; separately fine-tuned a RoBERTa sentiment model on open-source data (trained and evaluated, not used in the live app)
 - Created contract management system with semantic search, automated metadata extraction, and multi-tenant architecture
 - Implemented AI note-taking app (SelahNote) with real-time transcription, streaming LLM responses, and hierarchical organization
 
@@ -167,7 +167,7 @@ Full-Stack Web Applications:
 
 TEAM & LEADERSHIP EXPERIENCE:
 - Worked on teams of 15+ developers
-- Experience leading small development teams
+- Self-reported, not shown in any project write-up: has led small development teams. Treat it as his own account and suggest asking him for specifics; no project in the portfolio shows him leading a team.
 - Comfortable with task ownership, collaboration, and code reviews
 
 ---
@@ -215,4 +215,12 @@ Q: What technologies are you most experienced with?
 A: Swift/SwiftUI for iOS, React/Next.js/TypeScript for frontend, Python/FastAPI for backend, and LangChain/LangGraph for AI orchestration. Experienced with vector databases (ChromaDB, pgvector), OpenAI APIs, and building production-ready SaaS applications.
 
 Q: Have you worked with AI/ML technologies?
-A: Yes, extensive experience building RAG systems, working with vector databases, LangChain/LangGraph orchestration, fine-tuning models, and integrating LLMs (OpenAI, AWS Bedrock) into production applications.
+A: Yes: building RAG systems, working with vector databases, LangChain/LangGraph orchestration, and integrating LLMs (OpenAI, AWS Bedrock) into shipped applications. He has fine-tuned a RoBERTa sentiment model on open-source data, but that model was never deployed to production.
+
+FROM HIS RÉSUMÉ (his own account, confirmed by Kyle; not described in the project write-ups):
+- AI Engineer at Cognizant, November 2025 to present. In his résumé's words: designed an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules to reduce manual test-data preparation; fine-tuned DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points; executed ETL regression testing across millions of records to surface pre-production data defects. Nothing else about the Cognizant work is described, and none of his portfolio projects were built there.
+- Software Engineering Intern at The Difference, July to September 2023: built a web version of a fitness app from Figma designs using WordPress, HTML and CSS, and evaluated web technologies for the company's app-to-web migration, delivering two front-end applications.
+- MunchMap, February 2024: first place at the Headstarter Hackathon with a three-person team, a role-based React food-donation workflow demonstrated live to 200+ attendees.
+- YarnScript (listed on the résumé as "AI Teleprompter"): his résumé says he placed in the top 5% of applicants in that four-hour engineering challenge. The project write-up dates the build to March 18, 2026.
+- Professional tenure: about 11 months as an AI Engineer at Cognizant (since November 2025) plus a three-month internship in 2023, so roughly one year of professional experience as of October 2026. Years of personal, freelance-style and training-program work are not professional years.
+
