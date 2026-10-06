@@ -14,6 +14,7 @@ import { ResourcesWidget } from './Resources';
 import { BookTimeWidget } from './BookTime';
 import { ResumeWidget } from './Resume';
 import { DemoWidget } from './Demo';
+import { NoteWidget, type ChatHandle } from './Note';
 
 interface WidgetRendererProps {
   widget: Widget;
@@ -21,9 +22,11 @@ interface WidgetRendererProps {
   active?: boolean;
   answer?: string;
   onAnswer?: (text: string) => void;
+  /** For the note card: the chat so far and the intake answer. */
+  chat?: ChatHandle;
 }
 
-export default function WidgetRenderer({ widget, active = false, answer, onAnswer }: WidgetRendererProps) {
+export default function WidgetRenderer({ widget, active = false, answer, onAnswer, chat }: WidgetRendererProps) {
   switch (widget.kind) {
     case 'projects':
       return <ProjectsWidget widget={widget} />;
@@ -53,6 +56,8 @@ export default function WidgetRenderer({ widget, active = false, answer, onAnswe
       return <ResumeWidget widget={widget} />;
     case 'demo':
       return <DemoWidget widget={widget} />;
+    case 'note':
+      return <NoteWidget widget={widget} chat={chat} />;
     default:
       return null;
   }

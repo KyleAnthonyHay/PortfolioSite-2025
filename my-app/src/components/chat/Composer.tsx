@@ -23,6 +23,7 @@ const COMMANDS: SlashCommand[] = [
   { name: '/experience', hint: 'Search his experience with…', action: 'fill', text: 'What experience does he have with ' },
   { name: '/demo', hint: 'Watch or try one of his products', action: 'fill', text: 'Show me a demo of ' },
   { name: '/links', hint: "Open a project's site or code", action: 'fill', text: 'Show me the links for ' },
+  { name: '/note', hint: 'Leave Kyle-Anthony a message', action: 'send', text: "I'd like to leave Kyle-Anthony a note." },
   { name: '/resume', hint: 'View or download his résumé', action: 'send', text: "Can I see Kyle-Anthony's résumé?" },
 ];
 

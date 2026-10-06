@@ -152,7 +152,9 @@ export type Widget =
       draft: string;
       name?: string;
       email?: string;
-      /** Shown before sending: the email address it goes to as a fallback. */
+      /** False without a Resend key: the card opens the visitor's mail app instead. */
+      configured: boolean;
+      /** Where the mail app fallback addresses the note. */
       fallbackEmail: string;
     }
   | { kind: 'resume'; name: string; headline: string; viewUrl: string; downloadUrl: string; pages?: number; size?: string }

@@ -89,6 +89,13 @@ function ToolIcon({ tool }: { tool: string }) {
         <path d="M14 2v6h6M8 13h8M8 17h5" />
       </svg>
     );
+  if (tool === 'send_note' || tool === 'notify_kyle')
+    return (
+      <svg {...common}>
+        <rect x="2" y="4" width="20" height="16" rx="2" />
+        <path d="M22 7l-10 6L2 7" />
+      </svg>
+    );
   if (tool === 'ask_visitor')
     return (
       <svg {...common}>

@@ -39,6 +39,7 @@ type ChatMessage = UserMessage | AssistantMessage;
 
 const STORAGE_KEY = 'portfolio-chat-v2';
 const CONTEXT_KEY = 'portfolio-chat-context';
+const CONVERSATION_KEY = 'portfolio-chat-id';
 const MAX_STORED = 40;
 const spring = { type: 'spring' as const, stiffness: 120, damping: 20 };
 
@@ -83,6 +84,49 @@ function persistContext(context: VisitorContext | null) {
   } catch {
     // Storage unavailable; the intake just asks again next visit.
   }
+}
+
+function loadConversationId(): string {
+  try {
+    const stored = localStorage.getItem(CONVERSATION_KEY);
+    if (stored) return stored;
+    const id = newId();
+    localStorage.setItem(CONVERSATION_KEY, id);
+    return id;
+  } catch {
+    return newId();
+  }
+}
+
+const widgetNames: Partial<Record<Widget['kind'], string>> = {
+  fit_report: 'fit report',
+  projects: 'project cards',
+  project: 'project card',
+  recommendations: 'recommendations',
+  experience_check: 'experience check',
+  demo: 'demo',
+  resources: 'links',
+  journey: 'journey',
+  resume: 'résumé',
+  book_time: 'booking card',
+  note: 'note card',
+};
+
+/** The chat as plain messages for the note's transcript: prose, plus what cards were shown. */
+function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
+  return messages
+    .map((m) => {
+      if (m.role === 'user') return { role: m.role, content: m.content };
+      const cards = m.widgets.map((w) => {
+        if (w.kind === 'question') return `asked: ${w.question}`;
+        if (w.kind === 'fit_report') return `fit report${w.role ? ` for ${w.role}` : ''} (${w.summary.match} match, ${w.summary.related} related, ${w.summary.gap} gap)`;
+        if (w.kind === 'demo' || w.kind === 'resources' || w.kind === 'project') return `${widgetNames[w.kind]}: ${w.project.title}`;
+        return widgetNames[w.kind] ?? w.kind;
+      });
+      const shown = cards.length > 0 ? `[Shown: ${cards.join('; ')}]` : '';
+      return { role: m.role, content: [m.content.trim(), shown].filter(Boolean).join('\n\n') };
+    })
+    .filter((m) => m.content.trim().length > 0);
 }
 
 function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessage {
@@ -145,6 +189,7 @@ export default function ChatInterface() {
   // Null until the visitor answers or skips the opening question.
   const [visitor, setVisitor] = useState<VisitorContext | null>(null);
   const visitorRef = useRef<VisitorContext | null>(null);
+  const conversationRef = useRef('');
   const messagesRef = useRef<ChatMessage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const hasSentInitialRef = useRef(false);
@@ -164,6 +209,7 @@ export default function ChatInterface() {
     const stored = loadContext();
     visitorRef.current = stored;
     setVisitor(stored);
+    conversationRef.current = loadConversationId();
     setIsHydrated(true);
   }, []);
 
@@ -236,7 +282,7 @@ export default function ChatInterface() {
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: trimmed, history, context: visitorRef.current ?? undefined }),
+          body: JSON.stringify({ message: trimmed, history, context: visitorRef.current ?? undefined, conversationId: conversationRef.current }),
           signal: controller.signal,
         });
         if (!response.ok || !response.body) throw new Error(`Request failed (${response.status})`);
@@ -295,6 +341,12 @@ export default function ChatInterface() {
     abortRef.current?.abort();
     setMessages([]);
     updateVisitor(null);
+    try {
+      localStorage.removeItem(CONVERSATION_KEY);
+    } catch {
+      // Storage unavailable; a fresh id below is enough.
+    }
+    conversationRef.current = loadConversationId();
     setInput('');
     inputRef.current?.focus();
   };
@@ -442,6 +494,7 @@ export default function ChatInterface() {
                                 active={index === lastAssistantIndex && message.status !== 'streaming' && !isStreaming}
                                 answer={next?.role === 'user' ? next.content : undefined}
                                 onAnswer={(text) => send(text)}
+                                chat={{ transcript: () => toTranscript(messagesRef.current), context: visitor }}
                               />
                             </motion.div>
                           );

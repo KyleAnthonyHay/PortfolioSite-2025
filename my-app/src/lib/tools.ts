@@ -6,6 +6,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
+import { isEmailConfigured } from './email';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -1178,6 +1179,35 @@ export const bookTime = tool(
   }
 );
 
+export const sendNote = tool(
+  async ({ message, name, email }) =>
+    pack({
+      content:
+        'A note card is shown with your draft, ready for the visitor to check, add their email, and press Send. Nothing has been sent yet, so never say it was. Keep the reply to one short sentence.',
+      citedProjectIds: [],
+      widget: {
+        kind: 'note',
+        draft: message.trim(),
+        name: name?.trim() || undefined,
+        email: email?.trim() || undefined,
+        configured: isEmailConfigured(),
+        fallbackEmail: profile.email,
+      },
+    }),
+  {
+    name: 'send_note',
+    description:
+      "Use when the visitor wants to leave Kyle-Anthony a message or have him get back to them: 'can you pass this on?', 'tell him I'm interested', 'I'd like him to reach out', 'leave a note', 'how do I contact him about this role?'. Shows a note card prefilled with your draft that the visitor edits and sends themselves; the chat so far is attached to the email. For booking a call, use book_time instead.",
+    schema: z.object({
+      message: z
+        .string()
+        .describe("A draft in the visitor's own voice, first person, from what they said (2-4 sentences, e.g. who they are, the role, what they'd like). Never invent details they did not give."),
+      name: z.string().optional().describe('Their name, only if they gave it'),
+      email: z.string().optional().describe('Their email, only if they gave it'),
+    }),
+  }
+);
+
 /** Page count and size of the résumé PDF in public/, for the card's caption. */
 async function resumeFileFacts(): Promise<{ pages?: number; size?: string }> {
   try {
@@ -1231,6 +1261,7 @@ export const allTools = [
   getJobPosting,
   getJourney,
   bookTime,
+  sendNote,
   getResume,
 ];
 
@@ -1260,6 +1291,8 @@ export function describeToolCall(name: string, args: Record<string, unknown>): {
       return { running: 'Opening his calendar', done: 'Opened his calendar' };
     case 'get_resume':
       return { running: 'Fetching his résumé', done: 'Fetched his résumé' };
+    case 'send_note':
+      return { running: 'Drafting a note to Kyle-Anthony', done: 'Drafted a note to Kyle-Anthony' };
     case 'list_projects':
       return { running: 'Gathering projects', done: 'Gathered projects' };
     case 'get_background': {

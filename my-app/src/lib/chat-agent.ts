@@ -11,6 +11,7 @@ import { concat } from '@langchain/core/utils/stream';
 import { allTools, describeToolCall, parseToolResult, readJobPosting, type ToolResult } from './tools';
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
+import { notifyFitCheck } from './notify';
 
 const MAX_TOOL_ROUNDS = 4;
 const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4o-mini';
@@ -58,6 +59,7 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting a project's links (website, GitHub, App Store) → get_project_resource.
 - How his experience developed over time, his path or story → get_journey.
 - Wanting to talk to him, book a call, or schedule an interview → book_time.
+- Wanting to leave him a message, pass something on, or have him get back to them → send_note, with a short draft in their voice from what they told you.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
 - A job posting URL → get_job_posting, then assess_job_fit with the requirements it lists and the role title.
@@ -67,7 +69,7 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 If a tool comes back empty, say so plainly rather than guessing.
 
 ## Cards
-Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a demo player, a booking card, a résumé card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
+Some tool results are also rendered to the visitor as visual cards (project cards, recommendation cards, an experience card, a skills grid, a journey flowchart, link previews, a demo player, a booking card, a note card, a résumé card, a contact card, a fit report). Those results say so. When a card is shown, do not restate its contents (no re-listing links, projects, or skills); write the takeaway in one or two sentences and let the card carry the detail.
 
 ## Writing style
 - Concise and direct: one to three short paragraphs. Bullets only for genuinely parallel items. No headings.
@@ -209,9 +211,9 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 export async function* runAgent(
   userMessage: string,
   history: ConversationMessage[],
-  options: { signal?: AbortSignal; context?: VisitorContext } = {}
+  options: { signal?: AbortSignal; context?: VisitorContext; conversationId?: string } = {}
 ): AsyncGenerator<ChatEvent> {
-  const { signal, context } = options;
+  const { signal, context, conversationId } = options;
   const messages: BaseMessage[] = [
     new SystemMessage(systemPrompt(await visitorSection(context))),
     ...toLangChain(history.slice(-12)),
@@ -224,6 +226,7 @@ export async function* runAgent(
   let answer = '';
   let stepCounter = 0;
   let asked = false;
+  let fitShown = false;
 
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
@@ -311,6 +314,25 @@ export async function* runAgent(
       if (result.widget?.kind === 'question') asked = true;
     }
 
+    // notify_kyle: a fit check is the moment a recruiter is serious, so Kyle-Anthony hears about it.
+    const report = results.find(({ result }) => result.widget?.kind === 'fit_report')?.result.widget;
+    if (report?.kind === 'fit_report' && !fitShown) {
+      fitShown = true;
+      stepCounter += 1;
+      const id = `step-${stepCounter}`;
+      const notice = notifyFitCheck({
+        report,
+        context,
+        conversationId,
+        transcript: [...history, { role: 'user', content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])],
+      }).catch(() => 'failed' as const);
+      // Only shown when an email actually goes out; without a Resend key this is silent.
+      const outcome = await withTimeout(notice, 6000, 'failed' as const);
+      if (outcome === 'sent') {
+        yield { type: 'step', step: { id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the report by email so he can follow up today'] } };
+      }
+    }
+
     // A question card ends the turn; the visitor's choice starts the next one.
     if (asked) break;
   }
@@ -331,6 +353,8 @@ export async function* runAgent(
       5000,
       [] as string[]
     );
+    // After a fit check, one follow-up always offers a way to reach him.
+    if (fitShown && items.length > 0) items.splice(Math.min(items.length, 3) - 1, 1, "I'd like Kyle-Anthony to follow up with me.");
     if (items.length > 0) yield { type: 'suggestions', items };
   }
 
