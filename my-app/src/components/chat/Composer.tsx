@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
+import { useMediaQuery } from '@/lib/use-media-query';
 
 /**
  * "/" commands, shaped after Beautiful UI's Prompt Bar (MIT, © 2026 Shane
@@ -88,7 +89,7 @@ function CommandMenu({
           ))
         )}
       </div>
-      <p className="mt-1 border-t border-zinc-100 px-3 pb-0.5 pt-1.5 text-[11.5px] text-zinc-400">
+      <p className="mt-1 border-t border-zinc-100 px-3 pb-0.5 pt-1.5 text-[11.5px] text-zinc-400 max-sm:hidden">
         ↑↓ to move · Enter to choose · Esc to close
       </p>
     </div>
@@ -144,13 +145,17 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
     const el = inputRef.current;
     if (!el) return;
     el.style.height = '0px';
-    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+    // Empty: always one line, whatever the placeholder would wrap to.
+    el.style.height = value ? `${Math.min(el.scrollHeight, 168)}px` : '36px';
   }, [value, inputRef]);
+
+  // Phones get a placeholder that fits on one line.
+  const narrow = useMediaQuery('(max-width: 640px)');
 
   const canSend = value.trim().length > 0 && !isStreaming;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40">
       <div className="h-12 bg-gradient-to-t from-paper to-transparent" />
       <div className="bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <form
@@ -191,10 +196,11 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
                   if (canSend) onSend();
                 }
               }}
-              placeholder="Ask about his work, or type / for commands"
+              placeholder={narrow ? 'Ask, or type / for commands' : 'Ask about his work, or type / for commands'}
               aria-label="Message"
               aria-autocomplete="list"
-              className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[15px] leading-[22px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
+              enterKeyHint="send"
+              className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] sm:text-[15px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
             />
             {isStreaming ? (
               <button

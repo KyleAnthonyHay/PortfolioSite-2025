@@ -24,7 +24,7 @@ const Header = () => {
 
   return (
     <header
-      className={`fixed bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out ${
+      className={`fixed bottom-[calc(1.25rem+env(safe-area-inset-bottom))] sm:bottom-8 left-1/2 -translate-x-1/2 z-50 transition-all duration-500 ease-out ${
         isVisible ? 'translate-y-0 opacity-100' : 'translate-y-20 opacity-0 pointer-events-none'
       }`}
     >
@@ -34,7 +34,7 @@ const Header = () => {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask about Kyle-Anthony.."
-          className="w-80 sm:w-96 px-5 py-3.5 pr-12 bg-white/90 backdrop-blur-xl text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] text-sm"
+          className="w-[calc(100vw-2rem)] sm:w-96 px-5 py-3.5 pr-12 bg-white/90 backdrop-blur-xl text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] text-base sm:text-sm"
         />
         <button
           type="submit"

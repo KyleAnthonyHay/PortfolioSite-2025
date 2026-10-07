@@ -66,13 +66,13 @@ export default function ProjectsPage() {
             initial={{ opacity: 0, y: 10 }}
             animate={mounted ? { opacity: 1, y: 0 } : {}}
             transition={{ ...spring, delay: 0.1 }}
-            className="flex items-center gap-1 border-b border-zinc-200/60 pb-0"
+            className="flex items-center gap-1 overflow-x-auto scrollbar-hide border-b border-zinc-200/60 pb-0"
           >
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setActiveCategory(category)}
-                className={`text-sm font-medium px-4 py-3 border-b-2 -mb-px transition-all duration-200 ${
+                className={`shrink-0 whitespace-nowrap text-sm font-medium px-4 py-3 border-b-2 -mb-px transition-all duration-200 ${
                   activeCategory === category
                     ? 'text-zinc-900 border-zinc-900'
                     : 'text-zinc-400 border-transparent hover:text-zinc-600'

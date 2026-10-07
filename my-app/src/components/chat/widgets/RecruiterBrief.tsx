@@ -60,7 +60,7 @@ export function RecruiterBriefWidget({ widget }: { widget: Extract<Widget, { kin
       )}
 
       {open && (
-        <div className="mx-4 mt-4 rounded-2xl border border-zinc-100 bg-white p-5">
+        <div className="mx-3 mt-4 rounded-2xl border border-zinc-100 bg-white p-4 sm:mx-4 sm:p-5">
           <BriefDocument view={view} compact />
         </div>
       )}

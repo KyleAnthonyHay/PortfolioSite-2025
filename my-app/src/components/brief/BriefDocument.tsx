@@ -32,7 +32,7 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
   const positive = page.verdict.level === 'advance' || page.verdict.level === 'screen';
 
   return (
-    <article className={`text-zinc-900 ${compact ? '' : 'rounded-[1.5rem] border border-slate-200/50 bg-white p-8 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] md:p-12'}`}>
+    <article className={`text-zinc-900 ${compact ? '' : 'rounded-[1.5rem] border border-slate-200/50 bg-white p-5 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.04)] sm:p-8 md:p-12'}`}>
       {/* Header */}
       <header className="flex flex-wrap items-center gap-4">
         <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-2xl">
@@ -88,7 +88,7 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
           </div>
           <ul className="mt-3 divide-y divide-zinc-100 border-y border-zinc-100">
             {page.rows.map((row) => (
-              <li key={row.requirement} className="grid grid-cols-[minmax(0,1fr)_96px] items-center gap-x-6 py-3 sm:grid-cols-[minmax(0,1.3fr)_96px_minmax(0,1fr)]">
+              <li key={row.requirement} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 py-3 sm:grid-cols-[minmax(0,1.3fr)_96px_minmax(0,1fr)] sm:items-center sm:gap-x-6">
                 <p className="text-[15px] leading-snug text-zinc-900">{row.requirement}</p>
                 <p className="flex items-center gap-2 text-sm text-zinc-700">
                   <Dot level={row.level} />

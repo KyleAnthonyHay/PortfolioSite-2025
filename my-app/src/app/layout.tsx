@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import SmoothScroll from "@/components/SmoothScroll";
 import "./globals.css";
 
@@ -10,6 +10,15 @@ export const metadata: Metadata = {
   icons: {
     icon: "/profile.jpg",
   },
+};
+
+// viewport-fit=cover lets the chat composer pad for the home indicator;
+// resizes-content keeps the chat shell above the keyboard on Android.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  interactiveWidget: "resizes-content",
 };
 
 export default function RootLayout({

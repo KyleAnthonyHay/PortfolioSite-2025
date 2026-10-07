@@ -254,6 +254,8 @@ export async function* runAgent(
   const cited = new Set<number>();
   const shownWidgets = new Set<string>();
   const shownProjects = new Set<number>();
+  // Project cards already on screen from earlier replies in this chat.
+  const earlierCards = new Set(history.flatMap((m) => m.projectCards ?? []));
   let answer = '';
   let stepCounter = 0;
   let asked = false;
@@ -358,7 +360,10 @@ export async function* runAgent(
       result.citedProjectIds.forEach((id) => cited.add(id));
 
       let content = result.content;
-      if (result.widget && (!fitInRound || result.widget.kind === 'fit_report')) {
+      if (result.widget?.kind === 'project' && earlierCards.has(result.widget.project.id)) {
+        // The card (and its walkthrough video) is already up from an earlier reply; answer in text.
+        content += `\n\n[The ${result.widget.project.title} card, with its walkthrough video, is already on screen from earlier in this chat, so it was not shown again. Answer in text. If the visitor asks to see the video or demo again, call show_demo.]`;
+      } else if (result.widget && (!fitInRound || result.widget.kind === 'fit_report')) {
         const key = widgetKey(result.widget);
         if (!shownWidgets.has(key)) {
           shownWidgets.add(key);

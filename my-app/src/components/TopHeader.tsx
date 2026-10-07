@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { motion } from 'motion/react';
+import { AnimatePresence, motion } from 'motion/react';
 import Wordmark from '@/components/home/Wordmark';
 import { useIntro } from '@/components/home/IntroContext';
 
@@ -100,9 +100,23 @@ const TopHeader = () => {
         </button>
       </nav>
 
+      <AnimatePresence>
       {isMenuOpen && (
-        <div className="md:hidden absolute top-full left-0 right-0 bg-paper/95 backdrop-blur-xl border-b border-slate-200/50 z-50">
-          <div className="flex flex-col px-6 py-4 gap-1">
+        <motion.div
+          key="menu"
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
+          className="md:hidden absolute top-full left-0 right-0 bg-paper border-b border-slate-200/50 shadow-[0_24px_40px_-24px_rgba(0,0,0,0.18)] z-50"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], delay: 0.06 }}
+            className="flex flex-col px-6 py-4 gap-1"
+          >
             {[
               { href: '/', label: 'Home' },
               { href: '/#products', label: 'Products' },
@@ -155,9 +169,10 @@ const TopHeader = () => {
                 Contact
               </Link>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
+      </AnimatePresence>
     </header>
   );
 };

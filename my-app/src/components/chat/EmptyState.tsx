@@ -70,7 +70,7 @@ export default function EmptyState({ onPick, onIntake }: EmptyStateProps) {
         initial={{ opacity: 0, y: 14 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, ease, delay: 0.12 }}
-        className="mb-10 max-w-[44ch] text-[15px] leading-relaxed text-zinc-500"
+        className="mb-6 max-w-[44ch] text-[15px] leading-relaxed text-zinc-500 sm:mb-10"
       >
         Ask me about Kyle-Anthony&apos;s products, skills, or fit for a role. I search his work, show you cards and sources, and ask when I need more to go on.
       </motion.p>

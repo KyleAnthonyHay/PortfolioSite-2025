@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { FileText, X } from 'lucide-react';
+import { useMediaQuery } from '@/lib/use-media-query';
 
 export const BRIEF_PROMPT = 'Make a recruiter brief I can send to the hiring manager.';
 
@@ -106,6 +107,7 @@ export function BriefNudge({
   const [paused, setPaused] = useState(false);
   const remaining = useRef(NUDGE_MS);
   const eligible = engaged && !busy;
+  const phone = useMediaQuery('(max-width: 640px)');
 
   useEffect(() => {
     if (!eligible || readFlag(NUDGED_KEY)) return;
@@ -150,9 +152,62 @@ export function BriefNudge({
   const primary = `${button} bg-olive text-white hover:brightness-95`;
   const secondary = `${button} border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50`;
 
+  const bar = (
+    <div aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-zinc-100">
+      <div
+        className="nudge-fill h-full w-full origin-left bg-olive"
+        data-paused={paused ? 'true' : 'false'}
+        style={{ animationDuration: `${NUDGE_MS}ms` }}
+        onAnimationEnd={() => setOpen(false)}
+      />
+    </div>
+  );
+
   return (
     <AnimatePresence>
-      {open && (
+      {open && phone ? (
+        // Phone: one small banner that drops in from the top, like a notification.
+        <motion.div
+          role="dialog"
+          aria-label="Take the brief with you"
+          initial={{ opacity: 0, y: -16 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -12 }}
+          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+          onPointerEnter={() => setPaused(true)}
+          onPointerLeave={() => setPaused(false)}
+          onFocusCapture={() => setPaused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+          }}
+          className="absolute inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] z-50 flex items-center gap-2.5 overflow-hidden rounded-2xl border border-zinc-200/80 bg-white py-2 pl-3.5 pr-1.5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_18px_36px_-20px_rgba(0,0,0,0.28)]"
+        >
+          <FileText className="h-4 w-4 shrink-0 text-zinc-500" />
+          <p className="min-w-0 flex-1 truncate text-[13px] text-zinc-900">
+            {briefId ? 'Your brief is ready' : 'Take the brief with you?'}
+          </p>
+          {briefId ? (
+            <a href={`/brief/${briefId}/pdf`} download onClick={() => setOpen(false)} className="inline-flex h-7 shrink-0 items-center rounded-full bg-olive px-3 text-[12px] font-medium text-white">
+              PDF
+            </a>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                setOpen(false);
+                onMake();
+              }}
+              className="inline-flex h-7 shrink-0 items-center rounded-full bg-olive px-3 text-[12px] font-medium text-white"
+            >
+              Make it
+            </button>
+          )}
+          <button type="button" onClick={() => setOpen(false)} aria-label="Dismiss" className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900">
+            <X className="h-3.5 w-3.5" />
+          </button>
+          {bar}
+        </motion.div>
+      ) : open && (
         <motion.div
           role="dialog"
           aria-label="Take the brief with you"
@@ -166,7 +221,7 @@ export function BriefNudge({
           onBlurCapture={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
           }}
-          className="fixed bottom-28 right-4 z-50 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white p-4 pb-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)]"
+          className="absolute bottom-28 right-4 z-50 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white p-4 pb-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)]"
         >
           <button type="button" onClick={() => setOpen(false)} aria-label="Dismiss" className="absolute right-3 top-3 rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900">
             <X className="h-3.5 w-3.5" />
@@ -202,14 +257,7 @@ export function BriefNudge({
               </button>
             )}
           </div>
-          <div aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-zinc-100">
-            <div
-              className="nudge-fill h-full w-full origin-left bg-olive"
-              data-paused={paused ? 'true' : 'false'}
-              style={{ animationDuration: `${NUDGE_MS}ms` }}
-              onAnimationEnd={() => setOpen(false)}
-            />
-          </div>
+          {bar}
         </motion.div>
       )}
     </AnimatePresence>
