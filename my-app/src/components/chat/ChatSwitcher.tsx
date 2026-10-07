@@ -104,16 +104,17 @@ export default function ChatSwitcher({
                     <span className="block text-[11px] text-zinc-400">{row.isCurrent ? 'Current · ' : ''}{stampFor(row.updatedAt)}</span>
                   </span>
                 </button>
-                {!row.isCurrent && (
-                  <button
-                    type="button"
-                    onClick={() => onRemove(row.id)}
-                    aria-label={`Delete chat “${row.title}”`}
-                    className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-200/70 hover:text-zinc-900 focus:opacity-100 group-hover/row:opacity-100 [@media(pointer:coarse)]:opacity-100"
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (row.isCurrent) setOpen(false);
+                    onRemove(row.id);
+                  }}
+                  aria-label={`Delete chat “${row.title}”`}
+                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-200/70 hover:text-zinc-900 focus:opacity-100 group-hover/row:opacity-100 [@media(pointer:coarse)]:opacity-100"
+                >
+                  <X className="h-3 w-3" />
+                </button>
               </div>
             ))}
           </motion.div>

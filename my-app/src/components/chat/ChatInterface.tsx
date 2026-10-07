@@ -443,9 +443,9 @@ export default function ChatInterface() {
 
   const handleStop = () => abortRef.current?.abort();
 
-  const handleNewChat = () => {
+  const handleNewChat = (options?: { discard?: boolean }) => {
     abortRef.current?.abort();
-    stashCurrent();
+    if (!options?.discard) stashCurrent();
     setMessages([]);
     updateVisitor(null);
     try {
@@ -477,7 +477,11 @@ export default function ChatInterface() {
     setInput('');
   };
 
-  const removeChat = (id: string) => updateArchive(archiveRef.current.filter((item) => item.id !== id));
+  /** Delete a chat for good: a parked one leaves the list; the current one is cleared without being parked. */
+  const removeChat = (id: string) => {
+    if (id === conversationRef.current) handleNewChat({ discard: true });
+    else updateArchive(archiveRef.current.filter((item) => item.id !== id));
+  };
 
   const regenerate = (assistantIndex: number) => {
     const user = messagesRef.current[assistantIndex - 1];
@@ -528,7 +532,7 @@ export default function ChatInterface() {
                     : null
                 }
                 parked={archive.map((chat) => ({ id: chat.id, title: chatTitle(chat.messages), updatedAt: chat.updatedAt }))}
-                onNew={handleNewChat}
+                onNew={() => handleNewChat()}
                 onOpen={openChat}
                 onRemove={removeChat}
               />
