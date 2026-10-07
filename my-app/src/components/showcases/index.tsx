@@ -6,6 +6,7 @@ import {
   FolderTree,
   Gauge,
   Globe,
+  Highlighter,
   LayoutDashboard,
   Library,
   MessageSquare,
@@ -83,6 +84,14 @@ const selahNote: Showcase = {
       description:
         'Scripture mentions are detected as they are spoken, matched against the text, and linked back to the moment in the recording.',
       media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/references.png', alt: 'Detected scripture references with timestamps' } },
+    },
+    {
+      label: 'Bible',
+      icon: <Highlighter className={ic} />,
+      title: 'A Bible that works offline, with your highlights.',
+      description:
+        'KJV and World English Bible text ship inside the app. Tap a verse to highlight it in a colour, save it, copy it or share it, and the reader remembers where you left off.',
+      media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/bible.png', alt: 'Matthew 13 in the built-in Bible reader with highlighted verses' } },
     },
     {
       label: 'Organize',
