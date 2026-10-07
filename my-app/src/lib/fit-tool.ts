@@ -37,6 +37,16 @@ function typedRequirements(message: string, requirements?: string[]): boolean {
   return message.length > 120 || /[;\n•]|\d\)/.test(message) || requirements.length >= 3 && message.length > 60;
 }
 
+const FILLER = new Set(['years', 'year', 'experience', 'with', 'and', 'the', 'for', 'plus', 'strong', 'knowledge', 'skills', 'proficiency', 'familiarity', 'ability', 'required', 'preferred', 'working', 'using', 'development', 'developer', 'engineer', 'engineering', 'level', 'senior', 'junior', 'role']);
+
+const WORD = /[a-z0-9+#.]{2,}/g;
+
+/** True when a requirement names something the visitor wrote: a word of it (not filler) is a word they used. */
+function groundedIn(requirement: string, shared: Set<string>): boolean {
+  const words = requirement.toLowerCase().match(WORD) ?? [];
+  return words.some((word) => !FILLER.has(word) && shared.has(word));
+}
+
 /**
  * assess_job_fit, built per chat turn so it can find the posting itself: a
  * link or description in this message first, then one shared earlier (or in
@@ -49,21 +59,25 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
   return tool(
     async ({ role, requirements }) => {
       const inMessage = URL_IN_TEXT.test(userMessage) || looksLikePosting(userMessage);
+      const sharedWords = new Set([userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.role ?? ''].join('\n').toLowerCase().match(WORD) ?? []);
       const posting =
         inMessage || !typedRequirements(userMessage, requirements)
           ? await findPosting({}, userMessage, history, context)
           : {};
 
       const roleOnly = role ?? context?.role;
-      if (!posting.text && !requirements?.length && roleOnly) {
+      // Only requirements the visitor actually gave in this chat are judged. A
+      // list the model wrote itself (what a posting "usually" asks for) is not.
+      const given = requirements?.length ? (typedRequirements(userMessage, requirements) ? requirements : requirements.filter((r) => groundedIn(r, sharedWords))) : [];
+      const invented = (requirements?.length ?? 0) > 0 && given.length < Math.ceil((requirements?.length ?? 0) / 2);
+      if (!posting.text && (!requirements?.length || invented)) {
+        const why = invented
+          ? `The requirements passed were not given by the visitor in this chat, so nothing was assessed.`
+          : posting.note ?? 'No job posting or requirements were shared in this chat.';
         return JSON.stringify({
-          content: `No posting was shared, only the role "${roleOnly}". Call assess_job_fit again with 6-8 requirements typical of that role, including the job itself with its seniority (e.g. "Staff-level experience as a machine learning engineer") and the years a posting for it would ask, and say in your answer that these are typical requirements, not from a posting.`,
-          citedProjectIds: [],
-        });
-      }
-      if (!posting.text && !requirements?.length) {
-        return JSON.stringify({
-          content: `${posting.note ?? 'No job posting or requirements are available.'} Ask the visitor to paste the job description or list the requirements. Do not invent a link.`,
+          content: `${why} Do not guess what a${roleOnly ? ` "${roleOnly}"` : ''} posting usually asks for and do not call assess_job_fit again this turn. ${
+            roleOnly ? `Call get_experience with "${roleOnly}" as the query, describe his relevant experience in two or three sentences from what it returns without saying whether he is a fit, and` : 'Say so briefly, then'
+          } ask the visitor to share the posting link or paste the job description so the real requirements can be judged. Do not invent a link.`,
           citedProjectIds: [],
         });
       }
@@ -71,7 +85,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
       const evaluation = await evaluateFit(
         posting.text
           ? { jobDescription: posting.text, roleTitle: posting.title }
-          : { knownRequirements: requirements!.slice(0, MAX_REQUIREMENTS), roleTitle: role ?? context?.role }
+          : { knownRequirements: given.slice(0, MAX_REQUIREMENTS), roleTitle: role ?? context?.role }
       );
       if (conversationId) evaluations.set(conversationId, evaluation);
       if (evaluations.size > 500) evaluations.delete(evaluations.keys().next().value!);
@@ -125,7 +139,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
           .array(z.string())
           .max(40)
           .optional()
-          .describe('Only for a list the visitor typed without a posting: one requirement per entry, kept whole, "or" lists as one entry.'),
+          .describe('Only for a list the visitor typed without a posting: one requirement per entry, kept whole, "or" lists as one entry. Never write requirements yourself; with only a role title, leave this empty.'),
       }),
     }
   );
