@@ -85,23 +85,33 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
     setProgress(fraction);
   };
 
+  // A drag is tracked on the window, so letting go anywhere ends it, even
+  // off the bar or outside the player; pointer capture alone proved
+  // unreliable for the release.
   const onBarPointerDown = (event: PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0 && event.pointerType === 'mouse') return;
     event.preventDefault();
-    event.currentTarget.setPointerCapture(event.pointerId);
     scrubbingRef.current = true;
     setScrubbing(true);
     seekTo(event.clientX);
-  };
-
-  const onBarPointerMove = (event: PointerEvent<HTMLDivElement>) => {
-    if (scrubbing) seekTo(event.clientX);
-  };
-
-  const onBarPointerUp = (event: PointerEvent<HTMLDivElement>) => {
-    if (!scrubbing) return;
-    scrubbingRef.current = false;
-    setScrubbing(false);
-    event.currentTarget.releasePointerCapture(event.pointerId);
+    const move = (e: globalThis.PointerEvent) => {
+      if (scrubbingRef.current) seekTo(e.clientX);
+    };
+    const stop = () => {
+      scrubbingRef.current = false;
+      setScrubbing(false);
+      // Some browsers pause on a seek; a scrub should never stop the video.
+      const video = ref.current;
+      if (video && wantsPlay.current && video.paused) video.play().catch(() => {});
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', stop);
+      window.removeEventListener('pointercancel', stop);
+      window.removeEventListener('blur', stop);
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', stop);
+    window.addEventListener('pointercancel', stop);
+    window.addEventListener('blur', stop);
   };
 
   const onBarKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -162,9 +172,6 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
         aria-valuemax={100}
         aria-valuenow={Math.round(progress * 100)}
         onPointerDown={onBarPointerDown}
-        onPointerMove={onBarPointerMove}
-        onPointerUp={onBarPointerUp}
-        onPointerCancel={onBarPointerUp}
         onKeyDown={onBarKeyDown}
         className={`group/bar absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-pointer touch-none items-end opacity-0 transition-opacity duration-300 focus:opacity-100 focus:outline-none group-hover:opacity-100 ${
           scrubbing ? 'opacity-100' : ''
