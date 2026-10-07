@@ -57,7 +57,7 @@ test('misheard project names are corrected, ordinary words are not', () => {
   assert.equal(correctProjectNames('Tell me about Sela note'), 'Tell me about SelahNote');
   assert.equal(correctProjectNames('Tell me about yarn script.'), 'Tell me about YarnScript.');
   assert.equal(correctProjectNames('what about on tract'), 'what about OnTract');
-  assert.equal(correctProjectNames('Has he built a country viewer app?'), 'Has he built a Country Viewer app?');
+  assert.equal(correctProjectNames('Has he built sound snag for the Mac?'), 'Has he built SoundSnag for the Mac?');
   assert.equal(correctProjectNames('Does he do contract work?'), 'Does he do contract work?');
   assert.equal(correctProjectNames('Is he a fit for a role that needs Swift and SwiftUI?'), 'Is he a fit for a role that needs Swift and SwiftUI?');
 });
