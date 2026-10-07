@@ -69,6 +69,14 @@ const selahNote: Showcase = {
       media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/summary.png', alt: 'AI-generated sermon summary' } },
     },
     {
+      label: 'Ask',
+      icon: <MessageSquare className={ic} />,
+      title: 'Ask the sermon what you missed.',
+      description:
+        'A chat per sermon, answered by an agent that searches that message\'s transcript, its detected references and the Bible text, in the translation you pick. It works mid-recording too, and you can ask by voice.',
+      media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/ask.png', alt: 'Asking SelahNote what a sermon was about' } },
+    },
+    {
       label: 'Scripture',
       icon: <BookOpen className={ic} />,
       title: 'Every reference caught and timestamped.',

@@ -74,6 +74,7 @@ const selahNoteFeatures = [
   { icon: <Mic className="w-4 h-4" />, title: 'Real-Time Transcription', description: 'High-quality audio capture with WebSocket-based streaming transcription to AssemblyAI during recording.' },
   { icon: <FileAudio className="w-4 h-4" />, title: 'Multiple Audio Sources', description: 'Direct recording, audio file upload from Files app, and YouTube video transcript extraction.' },
   { icon: <Sparkles className="w-4 h-4" />, title: 'AI Note Generation', description: 'Automated transcription with intelligent summarization via GPT-4o and scripture reference detection.' },
+  { icon: <MessageSquare className="w-4 h-4" />, title: 'Sermon Chat', description: 'Ask questions about one sermon and get answers that cite its transcript, references and Bible text, by typing or by voice, even while recording.' },
   { icon: <FolderTree className="w-4 h-4" />, title: 'Hierarchical Organization', description: 'Folder-based organization with drag-and-drop, search and sort, and cascade deletion.' },
   { icon: <Youtube className="w-4 h-4" />, title: 'YouTube Integration', description: 'URL validation supporting various YouTube formats with Cloud Run transcript fetching.' },
   { icon: <Play className="w-4 h-4" />, title: 'Advanced Audio Processing', description: 'Audio format conversion, background session management, and interruption handling.' },
