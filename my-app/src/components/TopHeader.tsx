@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { AnimatePresence, motion } from 'motion/react';
 import Wordmark from '@/components/home/Wordmark';
 import { useIntro } from '@/components/home/IntroContext';
@@ -66,28 +67,30 @@ const TopHeader = () => {
               {link.label}
             </a>
           ))}
-          <Link
-            href="/chat"
-            className="text-zinc-500 hover:text-zinc-900 text-sm font-medium px-3 py-2 rounded-lg hover:bg-zinc-100/80 transition-all duration-200"
-          >
-            Ask my agent
-          </Link>
         </motion.div>
 
+        {/* The agent is the one filled button in the header; everything else stays quiet. */}
         <motion.div {...reveal(0.2)} className="hidden md:flex items-center gap-2">
           <a
             href="/Kyle-Anthony_Resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-4 py-2 text-sm font-medium text-zinc-600 border border-zinc-300/80 rounded-xl hover:bg-zinc-100 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
+            className="px-3 py-2 text-sm font-medium text-zinc-500 rounded-lg hover:bg-zinc-100/80 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200"
           >
             Resume
           </a>
           <Link
             href="/contact"
-            className="px-4 py-2 text-sm font-medium text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 active:scale-[0.98] transition-all duration-200"
+            className="px-4 py-2 text-sm font-medium text-zinc-700 border border-zinc-300/80 rounded-xl hover:bg-zinc-100 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
           >
             Contact
+          </Link>
+          <Link
+            href="/chat"
+            className="inline-flex items-center gap-2 pl-2.5 pr-4 py-1.5 text-sm font-medium text-white bg-accent-blue rounded-xl shadow-[0_6px_18px_-6px_rgba(10,132,255,0.6)] hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
+          >
+            <Image src="/agent.png" alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
+            Ask my agent
           </Link>
         </motion.div>
 
@@ -145,29 +148,30 @@ const TopHeader = () => {
                 {link.label}
               </a>
             ))}
-            <Link
-              href="/chat"
-              onClick={closeMenu}
-              className="text-zinc-600 hover:text-zinc-900 text-sm font-medium py-3 px-3 rounded-lg hover:bg-zinc-100/80 transition-all"
-            >
-              Ask my agent
-            </Link>
             <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-zinc-200/60">
+              <Link
+                href="/chat"
+                onClick={closeMenu}
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white bg-accent-blue rounded-xl shadow-[0_8px_20px_-8px_rgba(10,132,255,0.6)] hover:bg-[#0077e6] transition-all"
+              >
+                <Image src="/agent.png" alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
+                Ask my agent
+              </Link>
+              <Link
+                href="/contact"
+                onClick={closeMenu}
+                className="px-4 py-2.5 text-sm font-medium text-zinc-700 border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-all text-center"
+              >
+                Contact
+              </Link>
               <a
                 href="/Kyle-Anthony_Resume.pdf"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="px-4 py-2.5 text-sm font-medium text-zinc-600 border border-zinc-200 rounded-xl hover:bg-zinc-50 transition-all text-center"
+                className="px-4 py-2.5 text-sm font-medium text-zinc-600 rounded-xl hover:bg-zinc-50 transition-all text-center"
               >
                 Resume
               </a>
-              <Link
-                href="/contact"
-                onClick={closeMenu}
-                className="px-4 py-2.5 text-sm font-medium text-white bg-zinc-900 rounded-xl hover:bg-zinc-800 transition-all text-center"
-              >
-                Contact
-              </Link>
             </div>
           </motion.div>
         </motion.div>
