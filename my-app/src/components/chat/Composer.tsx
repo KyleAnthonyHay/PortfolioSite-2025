@@ -2,6 +2,7 @@
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { ArrowUp, Square } from 'lucide-react';
+import { useMediaQuery } from '@/lib/use-media-query';
 
 /**
  * "/" commands, shaped after Beautiful UI's Prompt Bar (MIT, © 2026 Shane
@@ -144,18 +145,12 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
     const el = inputRef.current;
     if (!el) return;
     el.style.height = '0px';
-    el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
+    // Empty: always one line, whatever the placeholder would wrap to.
+    el.style.height = value ? `${Math.min(el.scrollHeight, 168)}px` : '36px';
   }, [value, inputRef]);
 
   // Phones get a placeholder that fits on one line.
-  const [narrow, setNarrow] = useState(false);
-  useEffect(() => {
-    const query = window.matchMedia('(max-width: 480px)');
-    const sync = () => setNarrow(query.matches);
-    sync();
-    query.addEventListener('change', sync);
-    return () => query.removeEventListener('change', sync);
-  }, []);
+  const narrow = useMediaQuery('(max-width: 640px)');
 
   const canSend = value.trim().length > 0 && !isStreaming;
 
