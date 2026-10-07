@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeft, Briefcase, Check, Copy, CornerDownRight, Plus, RefreshCw, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, Briefcase, Check, Copy, Plus, RefreshCw, X } from 'lucide-react';
 import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
@@ -20,6 +20,8 @@ interface UserMessage {
   id: string;
   role: 'user';
   content: string;
+  /** Client clock, for the time stamps between messages. */
+  at?: number;
 }
 
 interface AssistantMessage {
@@ -163,6 +165,21 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
   }
 }
 
+/** "9:28 AM" today, otherwise "Oct 6 at 1:21 PM", like a Messages thread. */
+function stampFor(ms: number): string {
+  const date = new Date(ms);
+  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  const today = new Date();
+  if (date.toDateString() === today.toDateString()) return time;
+  return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`;
+}
+
+const STAMP_GAP_MS = 10 * 60_000;
+
+function messageTime(message: ChatMessage): number | undefined {
+  return message.role === 'user' ? message.at : message.startedAt;
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -201,6 +218,7 @@ export default function ChatInterface() {
   const hasSentInitialRef = useRef(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  const [atBottom, setAtBottom] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const isStreaming = messages.some((m) => m.role === 'assistant' && m.status === 'streaming');
@@ -275,16 +293,33 @@ export default function ChatInterface() {
     const el = scrollerRef.current;
     if (!el) return;
     const onScroll = () => {
-      stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+      const near = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+      stickToBottomRef.current = near;
+      setAtBottom(near);
     };
+    onScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Follow the answer as it streams in: new messages, prose, steps and
+  // cards. Follow-ups, sources and the done mark leave the scroll where it
+  // is, so the thread never snaps down once the reader has started reading.
+  const last = messages[messages.length - 1];
+  const followKey =
+    last?.role === 'assistant' ? `${messages.length}:${last.content.length}:${last.steps.length}:${last.widgets.length}` : `${messages.length}`;
   useEffect(() => {
     const el = scrollerRef.current;
     if (el && stickToBottomRef.current && messages.length > 0) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followKey]);
+
+  const scrollToBottom = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  };
 
   const send = useCallback(
     async (text: string, options?: { replaceFromIndex?: number }) => {
@@ -315,7 +350,7 @@ export default function ChatInterface() {
       const assistantId = newId();
       const next: ChatMessage[] = [
         ...base,
-        { id: newId(), role: 'user', content: trimmed },
+        { id: newId(), role: 'user', content: trimmed, at: Date.now() },
         { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now() },
       ];
       stickToBottomRef.current = true;
@@ -429,7 +464,7 @@ export default function ChatInterface() {
           <Link
             href="/"
             aria-label="Back to the portfolio"
-            className="group flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+            className="group flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200/60 bg-white text-zinc-600 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.12)] transition-colors hover:text-zinc-900"
           >
             <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
           </Link>
@@ -448,9 +483,9 @@ export default function ChatInterface() {
                 type="button"
                 onClick={handleNewChat}
                 aria-label="New chat"
-                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 px-3 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-zinc-900 active:scale-[0.97]"
+                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200/60 bg-white text-zinc-600 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.12)] transition-all hover:text-zinc-900 active:scale-[0.97] sm:w-auto sm:gap-1.5 sm:px-3.5 sm:text-[12px]"
               >
-                <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">New chat</span>
+                <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> <span className="hidden sm:inline">New chat</span>
               </button>
             )}
           </div>
@@ -508,17 +543,22 @@ export default function ChatInterface() {
 
           <div className="space-y-8">
             <AnimatePresence initial={false}>
-              {messages.map((message, index) =>
-                message.role === 'user' ? (
+              {messages.map((message, index) => {
+                const time = messageTime(message);
+                const previous = index > 0 ? messageTime(messages[index - 1]) : undefined;
+                const stamp = time !== undefined && (previous === undefined || time - previous > STAMP_GAP_MS) ? stampFor(time) : null;
+                return message.role === 'user' ? (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                     transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex justify-end"
                   >
-                    <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-zinc-200/70 px-4 py-2.5 text-[15px] leading-6 text-ink">
-                      {message.content}
+                    {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-[#0a84ff] px-4 py-2.5 text-[16px] leading-[1.4] text-white">
+                        {message.content}
+                      </div>
                     </div>
                   </motion.div>
                 ) : (
@@ -537,7 +577,13 @@ export default function ChatInterface() {
                       endedAt={message.endedAt}
                     />
 
-                    {message.content && <Markdown content={message.content} streaming={message.status === 'streaming'} />}
+                    {message.content && (
+                      <div className="flex">
+                        <div className="max-w-[88%] rounded-[22px] rounded-bl-md bg-zinc-100 px-4 py-2.5">
+                          <Markdown content={message.content} streaming={message.status === 'streaming'} />
+                        </div>
+                      </div>
+                    )}
 
                     {message.status === 'done' && !message.content && message.widgets.length === 0 && (
                       <p className="text-sm text-zinc-400">Stopped.</p>
@@ -588,33 +634,47 @@ export default function ChatInterface() {
                     )}
 
                     {index === lastAssistantIndex && message.status === 'done' && message.suggestions.length > 0 && (
-                      <div className="mt-6">
-                        <p className="label mb-1.5">Follow-ups</p>
-                        <div className="border-t border-zinc-200/80">
-                          {message.suggestions.map((suggestion, i) => (
-                            <motion.button
-                              key={suggestion}
-                              type="button"
-                              initial={{ opacity: 0, x: -6 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 + i * 0.06 }}
-                              onClick={() => send(suggestion)}
-                              className="group flex w-full items-center gap-2.5 border-b border-zinc-200/80 py-2.5 text-left text-[14px] text-zinc-600 transition-colors hover:text-ink"
-                            >
-                              <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-zinc-300 transition-colors group-hover:text-clay" />
-                              <span className="transition-transform duration-300 group-hover:translate-x-0.5">{suggestion}</span>
-                            </motion.button>
-                          ))}
-                        </div>
+                      <div className="mt-4 flex max-w-[88%] flex-col gap-2">
+                        {message.suggestions.map((suggestion, i) => (
+                          <motion.button
+                            key={suggestion}
+                            type="button"
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 + i * 0.06 }}
+                            onClick={() => send(suggestion)}
+                            className="w-full rounded-2xl border border-dashed border-zinc-300 px-4 py-2.5 text-left text-[14px] leading-snug text-zinc-800 transition-colors hover:border-zinc-400 hover:bg-zinc-50 active:scale-[0.99]"
+                          >
+                            {suggestion}
+                          </motion.button>
+                        ))}
                       </div>
                     )}
                   </motion.div>
-                )
-              )}
+                );
+              })}
             </AnimatePresence>
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {!atBottom && messages.length > 0 && (
+          <motion.button
+            key="to-bottom"
+            type="button"
+            onClick={scrollToBottom}
+            aria-label="Scroll to the latest message"
+            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.9 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-[9.5rem] left-1/2 z-40 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-zinc-200/60 bg-white text-zinc-700 shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-[0.95]"
+          >
+            <ArrowDown className="h-4 w-4" strokeWidth={2} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <Composer
         value={input}
