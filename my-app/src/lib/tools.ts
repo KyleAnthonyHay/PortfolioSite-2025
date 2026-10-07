@@ -7,7 +7,7 @@ import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
-import { CAREER_FACTS, WORK_ARRANGEMENT, WORK_EVIDENCE, workArrangement } from './facts';
+import { CAREER_FACTS, GPA, HIRING_DETAILS, WORK_ARRANGEMENT, WORK_EVIDENCE, workArrangement } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -695,9 +695,9 @@ export const getBackground = tool(
         const content = [
           `${profile.name} — ${profile.headline}, based in ${profile.location}.`,
           ...profile.availability,
-          ...WORK_ARRANGEMENT.map((text) => `${text} (his own words)`),
+          ...[...WORK_ARRANGEMENT, ...HIRING_DETAILS].map((text) => `${text} (his own words)`),
           ...contactLinks.map((link) => `${link.label}: ${link.detail ?? link.href}`),
-          'Anything about where or how he works that is not listed above (salary expectations, start date, travel) is not stated: say so and suggest asking him directly.',
+          'Anything about where or how he works that is not listed above is not stated: say so and suggest asking him directly. Questions about how he works or thinks are for him to answer: suggest asking him.',
         ].join('\n');
         return pack({
           content,
@@ -785,6 +785,13 @@ function shortcut(requirement: string): Shortcut {
   const lower = text.toLowerCase();
   const yearsMatch = YEARS_PATTERN.exec(text);
   const requiredYears = yearsMatch ? parseInt(yearsMatch[1], 10) : null;
+
+  if (/\bgpa\b|grade point/i.test(lower)) {
+    const asked = /(\d\.\d+)/.exec(text)?.[1];
+    if (GPA === null) return { requirement: text, status: 'gap', evidence: 'His GPA is not stated: ask him.', projects: [] };
+    const met = !asked || GPA >= parseFloat(asked);
+    return { requirement: text, status: met ? 'match' : 'gap', evidence: `Undergraduate GPA ${GPA} (his own words), B.S. Computer Science, CUNY Hunter College (2024).`, projects: [] };
+  }
 
   if (/\b(degree|bachelor|b\.?s\.?\b|master'?s|ph\.?d|doctorate)\b/i.test(lower) || /\bcomputer science\b/i.test(lower)) {
     // His degree is a B.S. in Computer Science; anything beyond that, or a different field, is not met.

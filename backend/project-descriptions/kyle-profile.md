@@ -5,7 +5,8 @@ The portfolio agent reads this file for facts Kyle has stated himself that are n
 - Each `##` heading is a topic; each `-` bullet under it is one fact.
 - Headings that start with "Work:" are jobs. The fit check can cite their bullets as work history.
 - Project stories belong in the project's write-up in `knowledge/`, not here. Résumé lines stay in the résumé (`my-app/src/lib/facts.ts` mirrors them).
-- Under "Work arrangement", the agent looks for a bullet mentioning the office, one mentioning sponsorship and one mentioning relocating. Remove one and that question goes back to "ask him".
+- Under "Work arrangement", the agent looks for bullets mentioning the office, sponsorship, relocating, remote work and travel. Remove one and that question goes back to "ask him".
+- Questions about how he works or thinks (for example how AI changed his work) are left for recruiters to ask him directly.
 
 ## Work: AI Engineer at Cognizant (Nov 2025 to present)
 - Works on a QA team as part of his AI Engineer role; regression testing and functional and technical reconciliation are the team's core work.
@@ -19,3 +20,18 @@ The portfolio agent reads this file for facts Kyle has stated himself that are n
 - Willing to work in the office five days a week anywhere in the New York City metro area (New York and New Jersey), and five days a week in another state if he relocates.
 - Does not need visa sponsorship.
 - Willing to relocate for the right role.
+- Open to fully remote roles.
+- Open to any amount of travel.
+- How soon he could relocate depends on where.
+
+## Hiring details
+- U.S. citizen.
+- Can start immediately.
+- Open to full-time, contract and contract-to-hire roles.
+- Open on salary.
+- Willing to complete a background check and drug screen.
+- Speaks English.
+- Why he is looking: he wants to grow his career in frontier tech, working on frontier problems in AI and innovation.
+
+## Education
+- B.S. in Computer Science, CUNY Hunter College (2024), GPA 3.6.

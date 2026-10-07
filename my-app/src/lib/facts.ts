@@ -35,6 +35,8 @@ const cognizantOwn = ownFacts(/^work:.*cognizant/i);
 /** His answers on where and how he works, in his words. */
 export const WORK_ARRANGEMENT = ownFacts(/^work arrangement/i);
 const arrangement = WORK_ARRANGEMENT;
+/** Citizenship, start date, pay, employment type, GPA and the like, in his words. */
+export const HIRING_DETAILS = [...ownFacts(/^hiring/i), ...ownFacts(/^education/i)];
 
 /**
  * Career facts every answer has to respect, shared by the chat agent and the
@@ -56,7 +58,7 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
 - Client and real-user work: V1 ProdBot is the one project built at an outside stakeholder's request. SelahNote has real users and paying subscribers. The Creator Dashboard is an internal tool for SelahNote's staff and creators. YarnScript, Sentio+, OnTract, SoundSnag and Country Viewer have no stated users.
 - Never classify an employer (big tech, FAANG, startup, enterprise) or answer yes or no to whether he has worked at one: list the employers his résumé names (Cognizant, The Difference) and let the visitor judge. Never state what he has not done unless a tool says so. Never speculate about weaknesses.
 - Also from his résumé: first place at the Headstarter Hackathon (MunchMap, February 2024, three-person team); top 5% of applicants in the Yarn challenge.
-- Work arrangement, in his own words: ${arrangement.join(' ') || 'not stated.'} He is based in ${profile.location}. Anything else about where or how he works (salary, start date, travel) is not stated.
+- Work arrangement, in his own words: ${arrangement.join(' ') || 'not stated.'} He is based in ${profile.location}.${HIRING_DETAILS.length ? ` Hiring details, in his own words: ${HIRING_DETAILS.join(' ')}` : ''} Anything not listed here (for example notice details or a salary figure) is not stated.
 - His background notes are his own account. A claim found only there (for example that he has led small teams) is "he says", not a verified fact, and no project shows him leading a team.`;
 
 /**
@@ -72,8 +74,8 @@ export const WORK_EVIDENCE: { where: string; text: string; source: 'résumé' | 
   { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Executed ETL regression testing across millions of records to surface pre-production data defects.', source: 'résumé' },
   { where: 'Software Engineering Intern at The Difference (Jul to Sep 2023)', text: 'Built a web version of a fitness app from Figma designs using WordPress, HTML, and CSS.', source: 'résumé' },
   { where: 'MunchMap, 1st place at the Headstarter Hackathon (Feb 2024)', text: 'Built a role-based React food-donation workflow with a three-person team.', source: 'résumé' },
-  // Everything in kyle-profile.md except where he works, which workArrangement() answers.
-  ...OWN_ACCOUNT.filter((fact) => !/^work arrangement/i.test(fact.topic)).map((fact) => ({
+  // His jobs and other work from kyle-profile.md; where he works, hiring details and education are answered elsewhere.
+  ...OWN_ACCOUNT.filter((fact) => !/^(work arrangement|hiring|education)/i.test(fact.topic)).map((fact) => ({
     where: fact.topic.replace(/^work:\s*/i, ''),
     text: fact.text,
     source: 'his account' as const,
@@ -85,6 +87,8 @@ export const WORK_EVIDENCE: { where: string; text: string; source: 'résumé' | 
 const own = (pattern: RegExp) => arrangement.find((text) => pattern.test(text) && !(pattern.source !== 'office' && /office/i.test(text))) ?? arrangement.find((text) => pattern.test(text));
 export const IN_OFFICE = own(/office/i) ? `${own(/office/i)!.replace(/\.$/, '')} (his own words).` : '';
 const AUTHORIZED = own(/sponsor/i) ? `${own(/sponsor/i)!.replace(/\.$/, '')} (his own words).` : '';
+const REMOTE = own(/remote/i) ? `${own(/remote/i)!.replace(/\.$/, '')} (his own words).` : '';
+const TRAVEL = own(/travel/i) ? `${own(/travel/i)!.replace(/\.$/, '')} (his own words).` : '';
 const RELOCATE = own(/relocat/i) ? `${own(/relocat/i)!.replace(/\.$/, '')} (his own words).` : '';
 
 /**
@@ -96,14 +100,24 @@ export function workArrangement(condition: string): { met: boolean; evidence: st
   const text = condition.toLowerCase();
   const base = `Based in ${profile.location}.`;
   const ask = (what: string) => ({ met: false, evidence: `${base} ${what} is not stated: ask him.` });
-  if (/\btravel\w*|\btime ?zones?\b/.test(text)) return ask('Travel or time-zone flexibility');
+  if (/\btravel\w*/.test(text)) return TRAVEL ? { met: true, evidence: `${base} ${TRAVEL}` } : ask('Travel');
+  if (/\btime ?zones?\b/.test(text)) return ask('Time-zone flexibility');
   if (/\b(visas?|sponsor\w*|authori[sz]\w*|citizen\w*|green card)\b/.test(text)) {
-    return AUTHORIZED ? { met: true, evidence: `${base} ${AUTHORIZED}` } : ask('Work authorization');
+    const citizen = HIRING_DETAILS.find((t) => /citizen/i.test(t));
+    const said = [citizen ? `${citizen.replace(/\.$/, '')} (his own words).` : '', AUTHORIZED].filter(Boolean).join(' ');
+    return said ? { met: true, evidence: `${base} ${said}` } : ask('Work authorization');
   }
   const inOffice = /\b(office|on-?site|hybrid|in[- ]person)\b/.test(text);
-  if (/\b(remote|telecommute|distributed)\b/.test(text) && !inOffice) return ask('Whether fully remote suits him');
+  if (/\b(remote|telecommute|distributed)\b/.test(text) && !inOffice) return REMOTE ? { met: true, evidence: `${base} ${REMOTE}` } : ask('Whether fully remote suits him');
   const local = /\b(new york|nyc|brooklyn|manhattan|queens|bronx|staten island|new jersey|nj|jersey city|hoboken|newark)\b/.test(text);
   if (inOffice && !IN_OFFICE) return ask('Office attendance');
   if (!local && !RELOCATE) return ask('Relocation');
   return { met: true, evidence: [base, inOffice ? IN_OFFICE : '', local ? '' : RELOCATE].filter(Boolean).join(' ') };
 }
+
+/** His GPA from kyle-profile.md, when he has given it. */
+export const GPA = (() => {
+  const line = HIRING_DETAILS.find((text) => /\bGPA\b/i.test(text));
+  const value = line ? /GPA\s*(?:of\s*)?(\d(?:\.\d+)?)/i.exec(line)?.[1] : undefined;
+  return value ? parseFloat(value) : null;
+})();
