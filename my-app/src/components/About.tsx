@@ -63,7 +63,7 @@ const About = () => {
                 , building agentic solutions for enterprise companies and hacking away at personal projects whenever I can.
               </p>
               <p>
-                I also run{' '}
+                I also founded{' '}
                 <a href="https://selahnote.app/" target="_blank" rel="noopener noreferrer" className="text-zinc-900 font-medium underline decoration-zinc-300 underline-offset-4 hover:text-clay hover:decoration-clay transition-colors">
                   SelahNote
                 </a>

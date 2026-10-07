@@ -23,7 +23,7 @@ const techIconsRow2 = [
 
 const experience = [
   { role: 'AI Engineer', company: 'Cognizant', period: '2026 - Present' },
-  { role: 'Founder & iOS Engineer', company: 'SelahNote', period: '2025 - Present' },
+  { role: 'AI Engineer & iOS Developer', company: 'SelahNote', note: 'Founder', period: '2025 - Present' },
   { role: 'Software Engineering Intern', company: 'The Difference', period: '2023' },
 ];
 
@@ -126,7 +126,10 @@ const WebResume = () => {
                   <div key={index} className="flex items-center justify-between py-4">
                     <div>
                       <p className="text-zinc-900 font-medium text-sm">{exp.role}</p>
-                      <p className="text-zinc-400 text-sm">{exp.company}</p>
+                      <p className="text-zinc-400 text-sm">
+                        {exp.company}
+                        {exp.note && <span> · {exp.note}</span>}
+                      </p>
                     </div>
                     <span className="text-zinc-400 text-xs font-mono">{exp.period}</span>
                   </div>
