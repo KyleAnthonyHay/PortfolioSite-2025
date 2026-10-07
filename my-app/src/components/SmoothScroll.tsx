@@ -17,6 +17,9 @@ export default function SmoothScroll() {
     if (!window.location.hash) window.scrollTo(0, 0);
     if (pathname?.startsWith('/chat')) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    // Phones keep native momentum scrolling; Lenis only adds lag there and
+    // fights the rubber-band. In-page anchors glide via CSS instead.
+    if (window.matchMedia('(pointer: coarse)').matches) return;
 
     const lenis = new Lenis({ duration: 1.1, easing: (t) => 1 - Math.pow(1 - t, 4) });
     if (!window.location.hash) lenis.scrollTo(0, { immediate: true });

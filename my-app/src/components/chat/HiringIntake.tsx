@@ -98,7 +98,7 @@ export default function HiringIntake({ onDone }: HiringIntakeProps) {
                   onChange={(event) => setRole(event.target.value)}
                   maxLength={120}
                   placeholder="e.g. iOS Engineer, AI Engineer"
-                  className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-[14px] text-ink placeholder-zinc-400 outline-none transition-colors focus:border-zinc-400"
+                  className="h-10 w-full rounded-xl border border-zinc-200 bg-white px-3 text-[16px] text-ink placeholder-zinc-400 sm:text-[14px] outline-none transition-colors focus:border-zinc-400"
                 />
               </label>
               <label className="block">
@@ -114,7 +114,7 @@ export default function HiringIntake({ onDone }: HiringIntakeProps) {
                     maxLength={600}
                     placeholder="https://jobs.ashbyhq.com/…"
                     aria-invalid={!urlValid}
-                    className={`h-10 w-full rounded-xl border bg-white pl-8 pr-3 text-[14px] text-ink placeholder-zinc-400 outline-none transition-colors ${
+                    className={`h-10 w-full rounded-xl border bg-white pl-8 pr-3 text-[16px] text-ink placeholder-zinc-400 sm:text-[14px] outline-none transition-colors ${
                       urlValid ? 'border-zinc-200 focus:border-zinc-400' : 'border-red-300 focus:border-red-400'
                     }`}
                   />

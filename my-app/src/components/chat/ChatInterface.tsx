@@ -225,9 +225,50 @@ export default function ChatInterface() {
     persistContext(next);
   }, []);
 
+  // Desktop only: on a phone a programmatic focus would raise the keyboard
+  // over the opening card before the visitor has asked for it.
   useEffect(() => {
-    if (isHydrated && !isStreaming) inputRef.current?.focus();
+    if (!isHydrated || isStreaming) return;
+    if (window.matchMedia('(pointer: coarse)').matches) return;
+    inputRef.current?.focus();
   }, [isHydrated, isStreaming]);
+
+  // iPhone keyboard: the fixed chat shell shrinks to the visual viewport, so
+  // the composer rides on the keyboard and the header stays put, instead of
+  // Safari sliding the whole shell up to reveal the input.
+  useEffect(() => {
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+    const root = document.documentElement;
+    const update = () => {
+      const keyboardUp = window.innerHeight - viewport.height > 80;
+      if (keyboardUp) {
+        root.style.setProperty('--chat-vh', `${viewport.height}px`);
+        if (window.scrollY > 0 || viewport.offsetTop > 0) window.scrollTo(0, 0);
+      } else {
+        root.style.removeProperty('--chat-vh');
+      }
+    };
+    viewport.addEventListener('resize', update);
+    viewport.addEventListener('scroll', update);
+    update();
+    return () => {
+      viewport.removeEventListener('resize', update);
+      viewport.removeEventListener('scroll', update);
+      root.style.removeProperty('--chat-vh');
+    };
+  }, []);
+
+  // When the shell shrinks for the keyboard, keep following the newest message.
+  useEffect(() => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver(() => {
+      if (stickToBottomRef.current) el.scrollTop = el.scrollHeight;
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   // Follow the newest content unless the visitor has scrolled up to read.
   useEffect(() => {
@@ -262,6 +303,10 @@ export default function ChatInterface() {
           if (m.role === 'assistant' && !m.content.trim()) {
             const asked = m.widgets.find((w) => w.kind === 'question');
             if (asked && asked.kind === 'question') return { role: m.role, content: `[Asked the visitor: ${asked.question}]` };
+          }
+          if (m.role === 'assistant') {
+            const projectCards = m.widgets.flatMap((w) => (w.kind === 'project' ? [w.project.id] : []));
+            if (projectCards.length > 0) return { role: m.role, content: m.content, projectCards };
           }
           return { role: m.role, content: m.content };
         })
@@ -412,7 +457,7 @@ export default function ChatInterface() {
         </div>
       </header>
 
-      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto">
+      <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
         <div className="mx-auto w-full max-w-3xl px-4 pb-48 pt-8">
           {isHydrated && messages.length === 0 && (
             <EmptyState
@@ -472,7 +517,7 @@ export default function ChatInterface() {
                     transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
                     className="flex justify-end"
                   >
-                    <div className="max-w-[85%] whitespace-pre-wrap rounded-[22px] rounded-br-md bg-zinc-200/70 px-4 py-2.5 text-[15px] leading-6 text-ink">
+                    <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-zinc-200/70 px-4 py-2.5 text-[15px] leading-6 text-ink">
                       {message.content}
                     </div>
                   </motion.div>

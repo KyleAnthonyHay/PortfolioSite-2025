@@ -155,7 +155,7 @@ export default function ProjectCard({
             </span>
           )}
         </div>
-        <p className={`text-zinc-400 text-sm ${detailed ? 'leading-relaxed' : ''}`}>
+        <p className={`text-zinc-400 text-sm ${detailed ? 'leading-relaxed' : ''} ${openApp ? (detailed ? 'pb-10' : 'pr-28') : ''}`}>
           {detailed ? project.description : project.tagline}
         </p>
       </div>

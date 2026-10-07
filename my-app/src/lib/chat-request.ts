@@ -14,7 +14,10 @@ export function sanitizeHistory(value: unknown, limit = 20): ConversationMessage
         (item.role === 'user' || item.role === 'assistant') &&
         typeof item.content === 'string'
     )
-    .map((item) => ({ role: item.role, content: item.content.slice(0, MAX_MESSAGE_LENGTH) }))
+    .map((item) => {
+      const cards = Array.isArray(item.projectCards) ? item.projectCards.filter((id) => Number.isInteger(id)).slice(0, 20) : [];
+      return { role: item.role, content: item.content.slice(0, MAX_MESSAGE_LENGTH), ...(cards.length > 0 ? { projectCards: cards } : {}) };
+    })
     .slice(-limit);
 }
 
