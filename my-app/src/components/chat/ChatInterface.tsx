@@ -263,6 +263,10 @@ export default function ChatInterface() {
             const asked = m.widgets.find((w) => w.kind === 'question');
             if (asked && asked.kind === 'question') return { role: m.role, content: `[Asked the visitor: ${asked.question}]` };
           }
+          if (m.role === 'assistant') {
+            const projectCards = m.widgets.flatMap((w) => (w.kind === 'project' ? [w.project.id] : []));
+            if (projectCards.length > 0) return { role: m.role, content: m.content, projectCards };
+          }
           return { role: m.role, content: m.content };
         })
         .filter((m) => m.content.trim().length > 0);

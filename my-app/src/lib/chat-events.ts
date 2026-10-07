@@ -204,6 +204,8 @@ export type ChatEvent =
 export interface ConversationMessage {
   role: 'user' | 'assistant';
   content: string;
+  /** Ids of the project cards this reply put on screen, so a follow-up doesn't send them again. */
+  projectCards?: number[];
 }
 
 /**
