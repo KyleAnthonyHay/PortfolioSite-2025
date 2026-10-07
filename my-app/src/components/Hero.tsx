@@ -139,13 +139,6 @@ const Hero = () => {
                   View Resume
                 </a>
               </div>
-              <p className="mt-4 flex items-center gap-2 text-[13px] text-zinc-500">
-                <span className="relative flex h-2 w-2">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-                  <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
-                </span>
-                Online now. Ask about any project, my experience, or whether I fit your role, and get answers with sources in seconds.
-              </p>
             </motion.div>
 
             <motion.div
