@@ -1,35 +1,41 @@
 import { ChatOpenAI } from '@langchain/openai';
 
-export type ModelStage = 'fit' | 'extraction' | 'brief' | 'verification';
+export const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
+export type ModelStage = 'fit' | 'extraction' | 'brief' | 'verification' | 'chat' | 'evidence' | 'technology';
 // Bump the relevant version whenever that stage's prompt or interpretation changes.
 export const PROMPT_VERSIONS = { fit: 4, extraction: 2, brief: 1, verification: 2 } as const;
 
 export function stageModel(stage: ModelStage): string {
-  const fit = process.env.OPENAI_FIT_MODEL ?? process.env.OPENAI_FIT_JUDGE_MODEL ?? 'gpt-5.6-luna';
+  const fit = process.env.OPENAI_FIT_MODEL ?? process.env.OPENAI_FIT_JUDGE_MODEL ?? DEFAULT_AI_MODEL;
   return {
     fit,
     extraction: process.env.OPENAI_FIT_EXTRACTION_MODEL ?? fit,
-    brief: process.env.OPENAI_BRIEF_MODEL ?? 'gpt-4.1',
-    verification: process.env.OPENAI_VERIFICATION_MODEL ?? 'gpt-4.1',
+    brief: process.env.OPENAI_BRIEF_MODEL ?? DEFAULT_AI_MODEL,
+    verification: process.env.OPENAI_VERIFICATION_MODEL ?? DEFAULT_AI_MODEL,
+    chat: process.env.OPENAI_CHAT_MODEL ?? DEFAULT_AI_MODEL,
+    evidence: process.env.OPENAI_JUDGE_MODEL ?? DEFAULT_AI_MODEL,
+    technology: process.env.OPENAI_TECH_JUDGE_MODEL ?? DEFAULT_AI_MODEL,
   }[stage];
 }
 
 export function fitFallbackModel(): string {
-  // An empty value disables fallback, including during comparisons.
-  return process.env.OPENAI_FIT_FALLBACK_MODEL ?? 'gpt-4.1';
+  // Other models are opt-in; the production default stays entirely on Luna.
+  return process.env.OPENAI_FIT_FALLBACK_MODEL ?? '';
 }
 
-export function createStageModel(name: string, temperature = 0): ChatOpenAI {
+export function createStageModel(name: string, temperature = 0, options: { streaming?: boolean; maxTokens?: number } = {}): ChatOpenAI {
   const luna = name === 'gpt-5.6-luna';
   return new ChatOpenAI({
     model: name,
     temperature,
     timeout: 60_000,
     maxRetries: 0,
+    streaming: options.streaming,
+    maxTokens: luna ? undefined : options.maxTokens,
     configuration: { fetch: (input, init) => globalThis.fetch(input, init) },
     // This installed LangChain version adds temperature even when omitted.
     // Override it at serialization for Luna; seed is for the GPT-4.1 stages only.
-    modelKwargs: luna ? { temperature: undefined, reasoning_effort: 'low' } : { seed: 7 },
+    modelKwargs: luna ? { temperature: undefined, reasoning_effort: 'low', max_tokens: undefined, max_completion_tokens: options.maxTokens } : { seed: 7 },
   });
 }
 

@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { claimVerdict, markNeedsReview } from '../src/lib/recruiter-brief/verification';
-import { createStageModel, evaluationIdentity, extractionIdentity, PROMPT_VERSIONS, stageModel, withStageModel } from '../src/lib/fit-models';
+import { createStageModel, evaluationIdentity, extractionIdentity, fitFallbackModel, PROMPT_VERSIONS, stageModel, withStageModel } from '../src/lib/fit-models';
 import type { RoleMatch } from '../src/lib/recruiter-brief/types';
 
 process.env.LANGCHAIN_TRACING_V2 = 'false';
@@ -18,8 +18,11 @@ test('fit setting and legacy alias do not change writing or verification', () =>
   process.env.OPENAI_FIT_MODEL = 'gpt-5.6-luna';
   assert.equal(stageModel('fit'), 'gpt-5.6-luna');
   assert.equal(stageModel('extraction'), 'gpt-5.6-luna');
-  assert.equal(stageModel('brief'), 'gpt-4.1');
-  assert.equal(stageModel('verification'), 'gpt-4.1');
+  assert.equal(stageModel('brief'), 'gpt-5.6-luna');
+  assert.equal(stageModel('verification'), 'gpt-5.6-luna');
+  for (const stage of ['chat', 'evidence', 'technology'] as const) assert.equal(stageModel(stage), 'gpt-5.6-luna');
+  delete process.env.OPENAI_FIT_FALLBACK_MODEL;
+  assert.equal(fitFallbackModel(), '');
   delete process.env.OPENAI_FIT_MODEL;
   process.env.OPENAI_FIT_JUDGE_MODEL = 'gpt-4.1';
   assert.equal(stageModel('fit'), 'gpt-4.1');
@@ -40,7 +43,7 @@ test('cache identities change with model, fallback, extraction and verifier; con
   process.env.OPENAI_FIT_EXTRACTION_MODEL = 'gpt-4.1';
   assert.notEqual(extractionIdentity(), extraction);
   delete process.env.OPENAI_FIT_EXTRACTION_MODEL;
-  process.env.OPENAI_FIT_FALLBACK_MODEL = '';
+  process.env.OPENAI_FIT_FALLBACK_MODEL = 'gpt-4.1';
   assert.notEqual(evaluationIdentity(), luna);
   assert.equal(JSON.parse(evaluationIdentity())[1], PROMPT_VERSIONS.fit);
   assert.equal(JSON.parse(extractionIdentity())[1], PROMPT_VERSIONS.extraction);
@@ -51,6 +54,9 @@ test('Luna serializes low reasoning without temperature or seed; GPT-4.1 retains
   assert.equal(luna.reasoning_effort, 'low');
   assert.equal('temperature' in luna, false);
   assert.equal('seed' in luna, false);
+  const suggestions = JSON.parse(JSON.stringify(createStageModel('gpt-5.6-luna', 0.5, { maxTokens: 1024 }).invocationParams()));
+  assert.equal(suggestions.max_completion_tokens, 1024);
+  assert.equal('max_tokens' in suggestions, false);
   const original = createStageModel('gpt-4.1').invocationParams();
   assert.equal(original.temperature, 0);
   assert.equal(original.seed, 7);

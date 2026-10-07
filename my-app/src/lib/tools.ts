@@ -1,6 +1,6 @@
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
-import { createStageModel, withStageModel } from './fit-models';
+import { createStageModel, stageModel, withStageModel } from './fit-models';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import fs from 'fs/promises';
@@ -235,10 +235,10 @@ let judgeModel: ChatOpenAI | null = null;
 let technologyJudgeModel: ChatOpenAI | null = null;
 function getEvidenceJudge(namedTechnology: boolean): ChatOpenAI {
   if (namedTechnology) {
-    technologyJudgeModel ??= createStageModel(process.env.OPENAI_TECH_JUDGE_MODEL ?? 'gpt-4.1');
+    technologyJudgeModel ??= createStageModel(stageModel('technology'));
     return technologyJudgeModel;
   }
-  judgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_JUDGE_MODEL ?? 'gpt-4.1-mini', temperature: 0, modelKwargs: { seed: 7 } });
+  judgeModel ??= createStageModel(stageModel('evidence'));
   return judgeModel;
 }
 
