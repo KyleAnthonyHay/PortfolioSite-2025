@@ -311,7 +311,9 @@ async function judgeEvidence(
   questions: string[],
   perQuestion = 6,
   mode: 'evidence' | 'fit' = 'evidence',
-  mustMention: (RegExp[] | null)[] = []
+  mustMention: (RegExp[] | null)[] = [],
+  /** Terms whose sections are fetched by keyword without the quote having to name them (kinds of work). */
+  alsoFetch: (RegExp[] | null)[] = []
 ): Promise<JudgedItem[]> {
   // A long batch makes the judge skip items, and a skipped item would read as
   // a gap, so rows are judged three at a time.
@@ -319,7 +321,9 @@ async function judgeEvidence(
   const chunks: number[][] = [];
   for (let start = 0; start < questions.length; start += size) chunks.push(questions.slice(start, start + size).map((_, k) => start + k));
   const judged = await Promise.all(
-    chunks.map((indexes) => judgeChunk(indexes.map((i) => questions[i]), perQuestion, mode, indexes.map((i) => mustMention[i] ?? null)))
+    chunks.map((indexes) =>
+      judgeChunk(indexes.map((i) => questions[i]), perQuestion, mode, indexes.map((i) => mustMention[i] ?? null), indexes.map((i) => alsoFetch[i] ?? null))
+    )
   );
   return judged.flat();
 }
@@ -328,7 +332,8 @@ async function judgeChunk(
   questions: string[],
   perQuestion: number,
   mode: 'evidence' | 'fit',
-  mustMention: (RegExp[] | null)[]
+  mustMention: (RegExp[] | null)[],
+  alsoFetch: (RegExp[] | null)[] = []
 ): Promise<JudgedItem[]> {
   const empty: JudgedItem = { verdict: 'none', projects: [] };
   if (questions.length === 0) return [];
@@ -337,12 +342,12 @@ async function judgeChunk(
   // many similar sections can't crowd out another project's single strong one.
   // Semantic hits, plus (for a named technology) the sections that actually
   // name it, which dense search can rank below looser matches.
-  const sections = mustMention.some(Boolean) ? await getKnowledgeSections() : [];
+  const sections = mustMention.some(Boolean) || alsoFetch.some(Boolean) ? await getKnowledgeSections() : [];
   const hitLists = await Promise.all(
     questions.map((question, i) =>
       searchKnowledge(question, { recordType: 'project', topK: Math.min(perQuestion * 3, 30) })
         .then((hits) => {
-          const terms = mustMention[i];
+          const terms = mustMention[i] ?? alsoFetch[i];
           const named: KnowledgeHit[] = terms
             ? sections
                 .filter((section) => terms.some((term) => term.test(section.text)))
@@ -854,11 +859,12 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
   if (toJudge.length > 0) {
     // When a row names technologies, the quoted sentence has to name one of them.
     // Only when the row names the technology itself; "API design" or "agentic workflows" are kinds of work, not a tool to quote.
-    const named = toJudge.map(({ requirement }) => {
-      const skills = findSkillsInText(requirement).filter((match) => termPattern(match.skill.name).test(requirement) && !KINDS_OF_WORK.has(match.skill.name));
-      return skills.length > 0 ? skills.flatMap(safeVariants).map(termPattern) : null;
-    });
-    const judged = await judgeEvidence(toJudge.map((row) => row.requirement), 5, 'fit', named);
+    // Kinds of work (AI agents, prompt engineering) still pull the sections naming them, but the quote need not repeat the phrase.
+    const namedSkills = toJudge.map(({ requirement }) => findSkillsInText(requirement).filter((match) => termPattern(match.skill.name).test(requirement)));
+    const toTerms = (skills: SkillMatch[]) => (skills.length > 0 ? skills.flatMap(safeVariants).map(termPattern) : null);
+    const named = namedSkills.map((skills) => toTerms(skills.filter((match) => !KINDS_OF_WORK.has(match.skill.name))));
+    const kinds = namedSkills.map((skills) => toTerms(skills.filter((match) => KINDS_OF_WORK.has(match.skill.name))));
+    const judged = await judgeEvidence(toJudge.map((row) => row.requirement), 5, 'fit', named, kinds);
     const currentYear = new Date().getFullYear();
     toJudge.forEach(({ index, requirement, requiredYears }, i) => {
       const verdict = judged[i];
