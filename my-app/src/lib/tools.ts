@@ -7,7 +7,7 @@ import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
-import { CAREER_FACTS, RESUME_EVIDENCE } from './facts';
+import { CAREER_FACTS, WORK_EVIDENCE } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -224,6 +224,8 @@ export type Verdict = 'direct' | 'related' | 'none';
 export interface JudgedItem {
   verdict: Verdict;
   projects: { id: number; why: string; section: string }[];
+  /** In a fit check, work with no write-up (Cognizant, the internship) that supports the item. */
+  work?: { where: string; text: string }[];
 }
 
 let judgeModel: ChatOpenAI | null = null;
@@ -246,6 +248,10 @@ function excerpt(hit: KnowledgeHit): string {
   return text.length > 2400 ? `${text.slice(0, 2400)}…` : text;
 }
 
+function sourceLabel(source: 'résumé' | 'his account'): string {
+  return source === 'résumé' ? 'from his résumé' : 'in his own words, not yet on his résumé';
+}
+
 /** Retrieves candidate sections for each question and judges them in one model call. */
 /**
  * Extra rules when the items are job requirements: a recruiter reads "match"
@@ -266,6 +272,7 @@ These ITEMs are requirements from a job posting. Judge them the way a hiring man
 - A requirement naming specific tools (Redshift, Snowflake, dbt, Looker, Kubernetes) is fully met only when those tools, or ones the posting calls equivalent, are shown; general SQL in app migrations is partial for a data-warehouse SQL requirement. Analytics engineering means building analytics data models and pipelines, not keeping an app codebase tested. Partnering with finance teams means working with a finance function; building a payout tool for his own app is partial at most.
 - Schema design or migrations are not database reliability work or troubleshooting production databases.
 - Production means shipped to real users: a live App Store app or a deployed web app with users. SelahNote is production Swift and production iOS; count it as such whenever a row asks for production apps in Swift or iOS.
+- "Work history" excerpts are his jobs, which have no project write-up; cite them with their ref (e.g. "0.w1") under the same rules. A sentence about what his team does supports "related"; "direct" needs a sentence saying he did it himself.
 - When unsure between two verdicts, choose the lower one.
 ${CAREER_FACTS}`;
 
@@ -361,12 +368,16 @@ async function judgeChunk(
         })
     )
   );
-  if (hitLists.every((hits) => hits.length === 0)) return questions.map(() => empty);
+  // A fit check also reads his work history, which has no write-up: a QA
+  // requirement can be met by his Cognizant role, not only by a project.
+  const work = mode === 'fit' ? WORK_EVIDENCE : [];
+  if (hitLists.every((hits) => hits.length === 0) && work.length === 0) return questions.map(() => empty);
 
   const blocks = questions.map((question, i) => {
-    const lines = hitLists[i].map(
-      (hit, j) => `  [${i}.${j}] "${hit.projectName}" / ${hit.section}: ${excerpt(hit)}`
-    );
+    const lines = [
+      ...hitLists[i].map((hit, j) => `  [${i}.${j}] "${hit.projectName}" / ${hit.section}: ${excerpt(hit)}`),
+      ...work.map((item, k) => `  [${i}.w${k}] Work history / ${item.where}: ${item.text}`),
+    ];
     return `ITEM ${i}: ${question}\n${lines.join('\n') || '  (no excerpts)'}`;
   });
 
@@ -399,6 +410,17 @@ Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"ve
       if (!item) return empty;
       const verdict: Verdict = item.verdict === 'direct' || item.verdict === 'related' ? item.verdict : 'none';
       const seen = new Set<number>();
+      const terms = mustMention[i];
+      // Work-history refs ("0.w2") are checked like project quotes, minus the team-project rule.
+      const workRefs = (item.projects ?? []).flatMap((p) => {
+        const k = /^\d+\.w(\d+)$/.exec(String(p.ref ?? ''))?.[1];
+        const entry = k !== undefined ? work[Number(k)] : undefined;
+        const why = (p.why ?? '').trim();
+        if (!entry || !why || !quoteFound(p.quote ?? '', entry.text)) return [];
+        if (REJECTED.test(normalizeQuote(p.quote ?? '')) || /^(no|not|there is no|nothing)\b/i.test(why)) return [];
+        if (terms && terms.length > 0 && !terms.some((term) => term.test(normalizeQuote(p.quote ?? '')))) return [];
+        return [{ where: entry.where, text: entry.text, context: p.same_context === true }];
+      });
       const projects = (item.projects ?? []).flatMap((p) => {
         const j = Number(String(p.ref ?? '').split('.')[1]);
         const hit = Number.isInteger(j) ? hitLists[i][j] : undefined;
@@ -407,17 +429,21 @@ Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"ve
         const why = (p.why ?? '').trim();
         if (!quoteFound(p.quote ?? '', hit.text)) return [];
         if (REJECTED.test(quote) || /^(no|not|there is no|nothing)\b/i.test(why) || /\bon the team that\b|\bteam(mates)? (built|wrote)\b/i.test(why)) return [];
-        const terms = mustMention[i];
         if (terms && terms.length > 0 && !terms.some((term) => term.test(quote))) return [];
         // On team projects the sentence has to say it was his, unless it comes from the section listing his own commits.
         if (TEAM_PROJECT_IDS.has(hit.projectId) && !ATTRIBUTION.test(quote) && !/role/i.test(hit.section)) return [];
         seen.add(hit.projectId);
         return [{ id: hit.projectId, why, section: hit.section, context: mode !== 'fit' || p.same_context === true }];
       });
-      // In a fit check, "direct" needs at least one project doing it in the setting the requirement means.
-      const direct = verdict === 'direct' && projects.some((p) => p.context);
+      // In a fit check, "direct" needs at least one project or job doing it in the setting the requirement means.
+      const direct = verdict === 'direct' && (projects.some((p) => p.context) || workRefs.some((w) => w.context));
       const ordered = [...projects.filter((p) => p.context), ...projects.filter((p) => !p.context)].map(({ id, why, section }) => ({ id, why, section }));
-      return { verdict: projects.length === 0 ? 'none' : direct ? 'direct' : verdict === 'none' ? 'none' : 'related', projects: ordered };
+      const cited = projects.length + workRefs.length;
+      return {
+        verdict: cited === 0 ? 'none' : direct ? 'direct' : verdict === 'none' ? 'none' : 'related',
+        projects: ordered,
+        work: [...workRefs.filter((w) => w.context), ...workRefs.filter((w) => !w.context)].map(({ where, text }) => ({ where, text })),
+      };
     });
   } catch (error) {
     console.error('judgeEvidence: judge failed', error);
@@ -435,9 +461,9 @@ export const checkExperience = tool(
     // tools teammates built. The judge has to see his own use.
     const evidence = await gatherEvidence(technology);
     const [judged] = await judgeEvidence([`Kyle-Anthony's own hands-on use of ${technology}`], 6, 'evidence', [variantsFor(technology, evidence.skill).map(termPattern)]);
-    // Work on his résumé with no write-up (Cognizant, the internship, the hackathon) counts too.
+    // Work with no write-up (Cognizant, the internship, the hackathon) counts too.
     const patterns = variantsFor(technology, evidence.skill).map(termPattern);
-    const resume = RESUME_EVIDENCE.filter((item) => patterns.some((pattern) => pattern.test(item.text)));
+    const resume = WORK_EVIDENCE.filter((item) => patterns.some((pattern) => pattern.test(item.text)));
     const verdict = resume.length > 0 && judged?.verdict !== 'direct' ? 'direct' : judged?.verdict ?? 'none';
     const hasExperience = verdict === 'direct';
     const projects: EvidenceProject[] = (judged?.projects ?? []).slice(0, 4).map(({ id, why }) => ({ project: toCard(projectById(id)!), usage: why }));
@@ -446,12 +472,12 @@ export const checkExperience = tool(
 
     let content: string;
     if (resume.length > 0 && projects.length === 0) {
-      content = [`His résumé shows him using ${name} (no project write-up covers this work):`, ...resume.map((item) => `- ${item.where}: ${item.text}`)].join('\n');
+      content = [`His work history shows him using ${name} (no project write-up covers this work):`, ...resume.map((item) => `- ${item.where} (${sourceLabel(item.source)}): ${item.text}`)].join('\n');
     } else if (hasExperience) {
       content = [
         `Kyle-Anthony has used ${name}${evidence.since ? ` (listed since ${evidence.since}, about ${evidence.years} year${evidence.years === 1 ? '' : 's'}, mostly on personal and training projects)` : ''}:`,
         ...projects.map((p) => `- ${p.project.title}: ${p.usage}`),
-        ...resume.map((item) => `- ${item.where} (from his résumé): ${item.text}`),
+        ...resume.map((item) => `- ${item.where} (${sourceLabel(item.source)}): ${item.text}`),
       ].join('\n');
     } else if (verdict === 'related') {
       content = [`No project shows him using ${name} itself. Related work only:`, ...projects.map((p) => `- ${p.project.title}: ${p.usage}`)].join('\n');
@@ -830,13 +856,16 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
     toJudge.forEach(({ index, requirement, requiredYears }, i) => {
       const verdict = judged[i];
       if (!verdict || verdict.verdict === 'none') {
-        results[index] = { requirement, status: 'gap', evidence: 'Nothing in his projects shows this.', projects: [] };
+        results[index] = { requirement, status: 'gap', evidence: 'Nothing in his projects or work history shows this.', projects: [] };
         return;
       }
       const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
-      const lead = verdict.projects[0];
+      // A job has no write-up, so its own line is quoted rather than the judge's paraphrase.
+      const job = verdict.work?.[0];
+      const atJob = job ? `At ${job.where.replace(/^.* at |\s*\(.*\)$/g, '')}: ${job.text.replace(/^./, (c) => c.toLowerCase())}` : '';
+      const lead = verdict.projects[0] ?? { why: atJob };
       let status: FitStatus = verdict.verdict === 'direct' ? 'match' : 'related';
-      let evidence = `${lead.why}${status === 'related' ? ' (adjacent, not a direct match)' : ''}`;
+      let evidence = `${lead.why}${atJob && verdict.projects.length > 0 ? ` ${atJob}` : ''}${status === 'related' ? ' (adjacent, not a direct match)' : ''}`;
 
       // "3+ years of Swift": the judge settles use; the start year settles length.
       if (requiredYears !== null) {

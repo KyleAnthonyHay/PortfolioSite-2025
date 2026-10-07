@@ -13,7 +13,7 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
 - SelahNote has over 400 users (about 40 paying subscribers) and a 5.0 App Store rating across 16 ratings. These are his largest real numbers; nothing he built runs at large scale, so never call any of it large-scale.
 - V1 ProdBot was requested by V1 Church's head global audio engineer, the one real outside stakeholder; a rollout across campuses is planned, not done.
 - YarnScript was a four-hour take-home challenge for the startup Yarn (March 2026), not client work; Yarn did not hire him.
-- Professional experience, from his résumé: AI Engineer at Cognizant since November 2025, and a Software Engineering internship at The Difference (July to September 2023). His Cognizant work, in the résumé's words: an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules; fine-tuning DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points; ETL regression testing across millions of records. Describe Cognizant only with those words; none of his portfolio projects were built there.
+- Professional experience, from his résumé: AI Engineer at Cognizant since November 2025, and a Software Engineering internship at The Difference (July to September 2023). His Cognizant work, in the résumé's words: an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules; fine-tuning DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points; ETL regression testing across millions of records. In his own words (October 2026, not yet on his résumé): his AI Engineer role sits on a QA team whose core work is regression testing and functional and technical recon; he is helping his team lead organize that work and is being trained to help team leads coordinate operations with the offshore team, working alongside them. He does not lead the team. Describe Cognizant only with these words; none of his portfolio projects were built there.
 - Professional tenure is about one year (Cognizant since November 2025, plus the three-month internship). Never count side projects or training programs as professional years.
 - Client and real-user work: V1 ProdBot is the one project built at an outside stakeholder's request. SelahNote has real users and paying subscribers. The Creator Dashboard is an internal tool for SelahNote's staff and creators. YarnScript, Sentio+, OnTract, SoundSnag and Country Viewer have no stated users.
 - Never classify an employer (big tech, FAANG, startup, enterprise) or answer yes or no to whether he has worked at one: list the employers his résumé names (Cognizant, The Difference) and let the visitor judge. Never state what he has not done unless a tool says so. Never speculate about weaknesses.
@@ -21,14 +21,18 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
 - His background notes are his own account. A claim found only there (for example that he has led small teams) is "he says", not a verified fact, and no project shows him leading a team.`;
 
 /**
- * Work his résumé describes that has no project write-up: the Cognizant role,
- * the internship and the hackathon. check_experience counts these as his own
- * use, citing the résumé, so "has he fine-tuned DistilBERT?" agrees with it.
+ * Work with no project write-up: the Cognizant role, the internship and the
+ * hackathon, from his résumé or, where marked, his own account. This is the
+ * one source for that work: check_experience counts it as his own use, the
+ * fit check judges requirements against it, and the brief's background cites
+ * it, so "has he fine-tuned DistilBERT?" and "QA test cases" agree everywhere.
  */
-export const RESUME_EVIDENCE: { where: string; text: string }[] = [
-  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Designed an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules to reduce manual test-data preparation.' },
-  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Fine-tuned DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points.' },
-  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Executed ETL regression testing across millions of records to surface pre-production data defects.' },
-  { where: 'Software Engineering Intern at The Difference (Jul to Sep 2023)', text: 'Built a web version of a fitness app from Figma designs using WordPress, HTML, and CSS.' },
-  { where: 'MunchMap, 1st place at the Headstarter Hackathon (Feb 2024)', text: 'Built a role-based React food-donation workflow with a three-person team.' },
+export const WORK_EVIDENCE: { where: string; text: string; source: 'résumé' | 'his account' }[] = [
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Designed an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules to reduce manual test-data preparation.', source: 'résumé' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Works on a QA team as part of his AI Engineer role; regression testing and functional and technical recon are the team\'s core work.', source: 'his account' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Helps his team lead organize the QA work, and is being trained to help team leads coordinate operations with the offshore team while working alongside them.', source: 'his account' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Fine-tuned DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points.', source: 'résumé' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Executed ETL regression testing across millions of records to surface pre-production data defects.', source: 'résumé' },
+  { where: 'Software Engineering Intern at The Difference (Jul to Sep 2023)', text: 'Built a web version of a fitness app from Figma designs using WordPress, HTML, and CSS.', source: 'résumé' },
+  { where: 'MunchMap, 1st place at the Headstarter Hackathon (Feb 2024)', text: 'Built a role-based React food-donation workflow with a three-person team.', source: 'résumé' },
 ];

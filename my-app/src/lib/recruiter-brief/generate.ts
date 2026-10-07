@@ -1,4 +1,4 @@
-import { CAREER_FACTS } from '../facts';
+import { CAREER_FACTS, WORK_EVIDENCE } from '../facts';
 import fs from 'fs/promises';
 import path from 'path';
 import { ChatOpenAI } from '@langchain/openai';
@@ -160,7 +160,7 @@ function profileFacts(): EvidenceReference[] {
       id: 'P2',
       kind: 'profile',
       section: 'Experience to date',
-      excerpt: `Building software since 2022 (about ${year - 2022} years), mostly through personal and team projects. AI Engineer at Cognizant since November 2025 (synthetic-data testbed for a global data warehouse, a DistilBERT fine-tune that raised sentiment-analysis accuracy by 25 points, ETL regression testing across millions of records). Software Engineering Intern at The Difference, July to September 2023. Revature AI Engineering training program in January 2026, where OnTract and Sentio+ were built as team projects. Professional tenure is about one year.`,
+      excerpt: `Building software since 2022 (about ${year - 2022} years), mostly through personal and team projects. ${WORK_EVIDENCE.map((item) => `${item.where}${item.source === 'his account' ? ', in his own words' : ''}: ${item.text}`).join(' ')} Revature AI Engineering training program in January 2026, where OnTract and Sentio+ were built as team projects. Professional tenure is about one year.`,
     },
     { id: 'P3', kind: 'profile', section: 'Location and availability', excerpt: `Based in ${profile.location}. ${profile.availability.join('. ')}.` },
     { id: 'P4', kind: 'profile', section: 'Listed skills with start years', excerpt: skills },
