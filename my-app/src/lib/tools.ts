@@ -276,6 +276,7 @@ These ITEMs are requirements from a job posting. Judge them the way a hiring man
 - Schema design or migrations are not database reliability work or troubleshooting production databases.
 - Production means shipped to real users: a live App Store app or a deployed web app with users. SelahNote is production Swift and production iOS; count it as such whenever a row asks for production apps in Swift or iOS.
 - "Work history" excerpts are his jobs, which have no project write-up; cite them with their ref (e.g. "0.w1") under the same rules. A sentence about what his team does supports "related"; "direct" needs a sentence saying he did it himself.
+- Mentoring a friend outside work is "related" at most for mentoring, coaching or leading engineers or a team at work; it is never team leadership.
 - When unsure between two verdicts, choose the lower one.
 ${CAREER_FACTS}`;
 
@@ -696,7 +697,7 @@ export const getBackground = tool(
           ...profile.availability,
           IN_OFFICE,
           ...contactLinks.map((link) => `${link.label}: ${link.detail ?? link.href}`),
-          'Not stated anywhere: willingness to relocate, visa or sponsorship status, salary expectations, start date. If asked, say it is not stated and suggest asking him directly.',
+          'In his own words: does not need visa sponsorship and is willing to relocate for the right role. Not stated anywhere: salary expectations, start date. If asked about those, say they are not stated and suggest asking him directly.',
         ].join('\n');
         return pack({
           content,
@@ -880,7 +881,11 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
       const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
       // A job has no write-up, so its own line is quoted rather than the judge's paraphrase.
       const job = verdict.work?.[0];
-      const atJob = job ? `At ${job.where.replace(/^.* at |\s*\(.*\)$/g, '')}: ${job.text.replace(/^./, (c) => c.toLowerCase())}` : '';
+      const atJob = job
+        ? / at /.test(job.where)
+          ? `At ${job.where.replace(/^.* at |\s*\(.*\)$/g, '')}: ${job.text.replace(/^./, (c) => c.toLowerCase())}`
+          : `${job.where}: ${job.text}`
+        : '';
       const lead = verdict.projects[0] ?? { why: atJob };
       let status: FitStatus = verdict.verdict === 'direct' ? 'match' : 'related';
       let evidence = `${lead.why}${atJob && verdict.projects.length > 0 ? ` ${atJob}` : ''}${status === 'related' ? ' (adjacent, not a direct match)' : ''}`;

@@ -160,6 +160,7 @@ The SelahNote codebase and its history show the hard problems the system had to 
 - **Concurrency and account switching.** An architecture audit with full Swift concurrency checking found races. Examples: a late purchase result from a previous account updating the current one, an old cancellation clearing a newer note generation, and old WebRTC callbacks affecting a new call. Kyle added generation guards and moved ownership to the main actor.
 - **Platform limits.** Convex actions stop after ten minutes, so the voice worker hands off to a successor. Chat sources have explicit size caps that fail visibly instead of quietly cutting text.
 - **AI cost and latency.** Embedding cost is logged per request, and the batch detector was rebuilt around batching and bounded concurrency.
+- **A launch crash with no error message (in Kyle's words, October 2026).** After an update the app crashed on launch without any error. Only a few things run at launch: Convex sync hydration and sign-in. Sign-in had barely changed since development, while the database structure changes almost every update, so Kyle suspected the data side. It turned out to be a hydration failure. He audited the codebase, found the cause, fixed it and shipped the fix within a day.
 
 [NEEDS KYLE: hardest part in your words]
 

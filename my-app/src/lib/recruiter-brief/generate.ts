@@ -561,7 +561,7 @@ export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
  * Bump when the matching rules change in a way that should re-judge saved
  * postings; changes to the facts, skills or write-ups re-judge on their own.
  */
-const FIT_RULES_VERSION = 2;
+const FIT_RULES_VERSION = 3;
 
 let knowledgeHash: Promise<string> | null = null;
 
