@@ -61,6 +61,12 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
   return { text: lines.join('\n'), postingTitle };
 }
 
+/** A spoken question: the answer is read aloud by the voice model, the cards still go to the chat. */
+const VOICE_SECTION = `
+
+## Voice call
+This question was spoken on a voice call. Your answer is read aloud by a voice model while any cards appear in the chat on screen. Answer in one to three short spoken sentences: no Markdown, lists, headings, links or URLs, and no project page paths. When a card is shown, name it in a few words ("the fit report is on screen") and let it carry the detail. For booking time or leaving a note, say the card is ready for them to check and confirm; never say a meeting was booked or a note was sent.`;
+
 function systemPrompt(visitor = ''): string {
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const projectNames = catalog.map((p) => p.title).join(', ');
@@ -262,14 +268,15 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 export async function* runAgent(
   userMessage: string,
   history: ConversationMessage[],
-  options: { signal?: AbortSignal; context?: VisitorContext; conversationId?: string } = {}
+  options: { signal?: AbortSignal; context?: VisitorContext; conversationId?: string; voice?: boolean } = {}
 ): AsyncGenerator<ChatEvent> {
-  const { signal, context, conversationId } = options;
+  const { signal, context, conversationId, voice } = options;
   const visitor = await visitorSection(context);
   const messages: BaseMessage[] = [
-    new SystemMessage(systemPrompt(visitor.text)),
+    new SystemMessage(systemPrompt(visitor.text) + (voice ? VOICE_SECTION : '')),
     ...toLangChain(history.slice(-12)),
-    new HumanMessage(userMessage),
+    // The reminder rides on the model's copy only; tools still see the visitor's own words.
+    new HumanMessage(voice ? `${userMessage}\n\n[Spoken on the call. Reply in at most three short spoken sentences: no lists, no Markdown.]` : userMessage),
   ];
 
   const cited = new Set<number>();
