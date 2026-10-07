@@ -61,6 +61,8 @@ export default defineSchema({
     endedAt: v.optional(v.number()),
     chargedMs: v.optional(v.number()),
     closeReason: v.optional(v.string()),
+    /** A development call that doesn't count against the day (see voice.reserve). */
+    unlimited: v.optional(v.boolean()),
   })
     .index('by_key_status', ['key', 'status'])
     .index('by_provider', ['providerSessionId']),

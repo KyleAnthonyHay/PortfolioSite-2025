@@ -54,8 +54,10 @@ async function openSession(ctx: QueryCtx, key: string): Promise<Doc<'voiceSessio
 async function settle(ctx: MutationCtx, session: Doc<'voiceSessions'>, reason: string, now: number): Promise<number> {
   if (session.status === 'closed') return session.chargedMs ?? 0;
   const charged = session.startedAt ? Math.min(Math.max(0, now - session.startedAt), session.reservedMs) : 0;
-  const day = await dayRow(ctx, session.key, session.day);
-  await ctx.db.patch(day._id, { usedMs: day.usedMs + charged });
+  if (!session.unlimited) {
+    const day = await dayRow(ctx, session.key, session.day);
+    await ctx.db.patch(day._id, { usedMs: day.usedMs + charged });
+  }
   await ctx.db.patch(session._id, { status: 'closed', endedAt: now, chargedMs: charged, closeReason: reason });
   // The browser may be gone: make sure the provider stops too. Harmless if it already closed.
   if (session.providerSessionId) await ctx.scheduler.runAfter(0, internal.voiceWorker.closeProvider, { providerSessionId: session.providerSessionId });
@@ -85,8 +87,8 @@ export const allowance = query({
  * (a reconnect from the same tab) or it has stopped heartbeating.
  */
 export const reserve = mutation({
-  args: { serverKey: v.string(), key: v.string(), replace: v.optional(v.string()) },
-  handler: async (ctx, { serverKey, key, replace }) => {
+  args: { serverKey: v.string(), key: v.string(), replace: v.optional(v.string()), unlimited: v.optional(v.boolean()) },
+  handler: async (ctx, { serverKey, key, replace, unlimited: asked }) => {
     if (!authorized(serverKey)) throw new Error('Not allowed');
     const now = Date.now();
     const open = await openSession(ctx, key);
@@ -96,10 +98,13 @@ export const reserve = mutation({
       await settle(ctx, open, open._id === replace ? 'reconnected' : 'abandoned', now);
     }
     const day = nyDay(now);
+    // Development testing: a full-length call that isn't counted. Needs the site to ask (it only does outside
+    // production, with VOICE_DEV_UNLIMITED=1) and this deployment to allow it (VOICE_ALLOW_UNLIMITED=1, never set on prod).
+    const unlimited = Boolean(asked) && process.env.VOICE_ALLOW_UNLIMITED === '1';
     const row = await dayRow(ctx, key, day);
-    const remaining = remainingFor(row.usedMs);
+    const remaining = unlimited ? allowanceMs() : remainingFor(row.usedMs);
     if (remaining < MIN_CALL_MS) return { ok: false as const, error: 'VOICE_NO_TIME' as const, resetAt: nextReset(now) };
-    const sessionId = await ctx.db.insert('voiceSessions', { key, day, status: 'reserved', createdAt: now, reservedMs: remaining, lastHeartbeat: now });
+    const sessionId = await ctx.db.insert('voiceSessions', { key, day, status: 'reserved', createdAt: now, reservedMs: remaining, lastHeartbeat: now, ...(unlimited ? { unlimited } : {}) });
     // A reservation the provider never accepted is released, uncharged.
     await ctx.scheduler.runAfter(SWEEP_MS, internal.voice.sweep, { sessionId });
     return { ok: true as const, sessionId, reservedMs: remaining };

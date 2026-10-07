@@ -146,6 +146,8 @@ Smoke test (production, on a phone and a laptop):
 4. Hang up → "Call ended · m:ss" and typing still works. `curl` step 1 again → remaining went down by about the call's length.
 5. IP header check (could not be tested locally): from two different networks (Wi-Fi and phone data), `/api/voice` must report separate allowances; sending a fake `X-Forwarded-For` header from curl must not change the allowance you get.
 
+Local testing without the limit: `VOICE_DEV_UNLIMITED=1` in `my-app/.env.local` plus `VOICE_ALLOW_UNLIMITED=1` in the Convex dev env gives every local call a full, uncounted ten minutes. Never set `VOICE_ALLOW_UNLIMITED` on prod; the site also ignores the flag in a production build. To reset a key instead: `npx convex run voice:adjustUsage '{"key":"<key>","usedMs":0}'`.
+
 Kyle decides:
 1. Cost: GPT-Live bills connected time (SelahNote's reports used about 5¢ a minute) plus 15 seconds at every call setup, so one visitor's full day is roughly 50¢ plus the agent's own tokens. A busy day of many visitors multiplies that; `VOICE_DAILY_SECONDS` lowers it without a deploy.
 2. Visitors behind one office or campus network share one IP, so they share the ten minutes and only one of them can be on a call at a time.

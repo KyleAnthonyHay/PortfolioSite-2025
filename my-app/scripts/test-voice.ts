@@ -5,6 +5,7 @@ import { nextReset, nyDay } from '../convex/voiceDay';
 import { clientIp, visitorKey } from '../src/lib/voice/visitor';
 import { spokenText } from '../src/lib/voice/live';
 import { correctProjectNames } from '../src/lib/voice/names';
+import { devUnlimited } from '../src/lib/voice/ledger';
 
 test('the allowance day is New York’s and resets at its midnight, across DST', () => {
   const cases: [string, string, string][] = [
@@ -59,6 +60,19 @@ test('misheard project names are corrected, ordinary words are not', () => {
   assert.equal(correctProjectNames('Has he built a country viewer app?'), 'Has he built a Country Viewer app?');
   assert.equal(correctProjectNames('Does he do contract work?'), 'Does he do contract work?');
   assert.equal(correctProjectNames('Is he a fit for a role that needs Swift and SwiftUI?'), 'Is he a fit for a role that needs Swift and SwiftUI?');
+});
+
+test('the development bypass is off in production whatever the env says', () => {
+  const env = process.env as Record<string, string | undefined>;
+  const before = env.NODE_ENV;
+  env.VOICE_DEV_UNLIMITED = '1';
+  env.NODE_ENV = 'production';
+  assert.equal(devUnlimited(), false);
+  env.NODE_ENV = 'development';
+  assert.equal(devUnlimited(), true);
+  delete env.VOICE_DEV_UNLIMITED;
+  assert.equal(devUnlimited(), false);
+  env.NODE_ENV = before;
 });
 
 test('answers are spoken without Markdown or links', () => {

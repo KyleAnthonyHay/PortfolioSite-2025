@@ -20,6 +20,11 @@ function serverKey(): string {
   return key;
 }
 
+/** Local testing without the daily limit. Never in a production build, whatever the env says. */
+export function devUnlimited(): boolean {
+  return process.env.NODE_ENV !== 'production' && process.env.VOICE_DEV_UNLIMITED === '1';
+}
+
 /** Convex ids are opaque strings; reject anything that isn't shaped like one before it reaches a query. */
 export function sessionIdFrom(value: unknown): VoiceSessionId | null {
   return typeof value === 'string' && /^[a-z0-9]{20,40}$/.test(value) ? (value as VoiceSessionId) : null;
@@ -27,7 +32,8 @@ export function sessionIdFrom(value: unknown): VoiceSessionId | null {
 
 export const ledger = {
   allowance: (key: string) => convex().query(api.voice.allowance, { serverKey: serverKey(), key }),
-  reserve: (key: string, replace?: VoiceSessionId) => convex().mutation(api.voice.reserve, { serverKey: serverKey(), key, ...(replace ? { replace } : {}) }),
+  reserve: (key: string, replace?: VoiceSessionId) =>
+    convex().mutation(api.voice.reserve, { serverKey: serverKey(), key, ...(replace ? { replace } : {}), ...(devUnlimited() ? { unlimited: true } : {}) }),
   attach: (sessionId: VoiceSessionId, providerSessionId: string) => convex().mutation(api.voice.attach, { serverKey: serverKey(), sessionId, providerSessionId }),
   fail: (sessionId: VoiceSessionId) => convex().mutation(api.voice.fail, { serverKey: serverKey(), sessionId }),
   heartbeat: (key: string, sessionId: VoiceSessionId) => convex().mutation(api.voice.heartbeat, { serverKey: serverKey(), key, sessionId }),
