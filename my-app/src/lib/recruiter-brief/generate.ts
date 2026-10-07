@@ -305,6 +305,9 @@ function ceilingFromRead(fit: FitAssessment, matches: RoleMatch[]): Recommendati
   const requiredGaps = matches.filter((m) => m.required && m.assessment === 'gap');
   const hardGap = requiredGaps.some((m) => HARD_REQUIREMENT.test(m.requirement));
   switch (fit.read) {
+    case 'potential fit: pending confirmation':
+    case 'needs review: verification incomplete':
+      return 'conditional';
     case 'strong fit':
       return 'advance';
     case 'good fit with some gaps':
@@ -324,7 +327,7 @@ const NEXT_STEP: Record<RecommendationLevel, RegExp> = {
 };
 
 function defaultRecommendation(level: RecommendationLevel, matches: RoleMatch[]): { nextStep: string; rationale: string } {
-  if (level !== 'decline' && matches.some((match) => match.verificationStatus === 'unknown')) return { nextStep: 'Phone screen only if the unknown requirements can be verified', rationale: 'Some requirements need review; an incomplete verification is neither proof of a match nor proof of missing experience.' };
+  if (level !== 'decline' && matches.some((match) => match.assessment === 'relevant' || match.verificationStatus === 'unknown')) return { nextStep: 'Phone screen only if the open requirements can be confirmed', rationale: 'Some requirements need confirmation with Kyle-Anthony. The available portfolio may be incomplete; unconfirmed experience is not a known shortfall.' };
   const gaps = matches.filter((m) => m.required && m.assessment === 'gap' && m.verificationStatus !== 'unknown').map((m) => m.requirement);
   const list = gaps.slice(0, 2).map((g) => `"${g}"`).join(' and ');
   switch (level) {
@@ -332,8 +335,8 @@ function defaultRecommendation(level: RecommendationLevel, matches: RoleMatch[])
       return {
         nextStep: 'Not a fit for this role',
         rationale: gaps.length
-          ? `The posting's core requirements, including ${list}, are not shown anywhere in his portfolio.`
-          : 'Too few of the posting’s requirements are shown in his portfolio.',
+          ? `The posting's core requirements, including ${list}, have documented shortfalls.`
+          : 'The documented shortfalls need to be weighed against the requirements of this role.',
       };
     case 'conditional':
       return {
@@ -368,6 +371,7 @@ function writerPrompt(ceiling: RecommendationLevel, hasPosting: boolean): string
   return `You write a recruiter brief about a software engineer, Kyle-Anthony Hay, for a recruiter to forward to a hiring manager. You are an evaluator, not his advocate: a single overstated claim makes the whole brief worthless to them.
 
 Rules:
+- The available portfolio may be incomplete. Labels are Supported match (strong), Needs confirmation (relevant), and Confirmed gap (gap). Missing documentation never proves missing experience. Do not assume he has never used a framework or fulfilled a requirement merely because the evidence does not mention it. Ask to confirm unrecorded experience. OR alternatives require only one suitable alternative.
 - Use only the EVIDENCE items. Every candidateSummary, reason, project line and standout signal cites the ids of the items that directly support it in "evidenceIds". If nothing supports a point, leave it out.
 - Never upgrade: a training-program project is not a job, a team project is not solo work, a personal-use app is not a shipped product, a planned feature is not a built one. Use numbers (users, counts, dates) only when an item states them. No percentages, scores or ratings.
 - ${hasPosting ? 'Role Match is already decided by the fit check (the F items); you cannot change it. Never present a requirement marked gap as a strength, and do not call a "relevant" row a match.' : 'There is no job posting, so this is a general brief shaped by the recruiter context.'}
@@ -381,7 +385,7 @@ Write:
 - standoutSignal: the single most compelling differentiator for this role (title under 7 words, explanation 1-2 sentences), or null if nothing stands out honestly.
 - validationAreas: 2-5 things to validate in an interview, phrased neutrally ("Depth of ...", "Professional tenure relative to ..."). Cover every required gap and every required requirement that is only relevant.
 - interviewQuestions: 3 questions, each with a one-sentence rationale. At least one leads into his strongest evidence; at least one probes the biggest gap or open question.
-- recommendation: "level" is one of ${allowed.map((l) => `"${l}"`).join(', ')} (no higher). nextStep wording by level: advance = "Technical screen"; screen = "Recruiter phone screen"; conditional = "Phone screen only if <specific condition>"; decline = "Not a fit for this role". rationale: 1-2 sentences grounded in the evidence. ${ceiling === 'decline' ? 'The portfolio does not show the job this role is built around, or too few of its requirements; say so plainly and name the main gaps.' : 'If the required gaps are in years, domain, degree or the job function itself, choose conditional or decline.'}
+- recommendation: "level" is one of ${allowed.map((l) => `"${l}"`).join(', ')} (no higher). nextStep wording by level: advance = "Technical screen"; screen = "Recruiter phone screen"; conditional = "Phone screen only if <specific condition>"; decline = "Not a fit for this role". rationale: 1-2 sentences grounded in the evidence. ${ceiling === 'decline' ? 'Name the documented shortfall that prevents this recommendation. Never describe missing documentation as a known lack of experience.' : 'If the required gaps are in years, domain, degree or the job function itself, choose conditional or decline.'}
 
 Return JSON: {"candidateSummary":{"text":"","evidenceIds":[]},"reasonsToConsider":[{"title":"","explanation":"","evidenceIds":[]}],"projects":[{"projectId":0,"relevance":"","evidence":[""],"evidenceIds":[]}],"standoutSignal":{"title":"","explanation":"","evidenceIds":[]},"validationAreas":[""],"interviewQuestions":[{"question":"","rationale":""}],"recommendation":{"level":"","nextStep":"","rationale":""}}`;
 }
@@ -458,7 +462,7 @@ function clean(text: string | undefined): string {
 /* ------------------------------------------------------------------------ */
 
 function readFor(matches: RoleMatch[]): FitAssessment['read'] {
-  if (matches.some((match) => match.verificationStatus === 'unknown')) return 'needs review: verification incomplete';
+  if (matches.some((match) => match.verificationStatus === 'unknown') || matches.some((match) => match.assessment === 'relevant') && !matches.some((match) => match.assessment === 'gap')) return 'potential fit: pending confirmation';
   const strong = matches.filter((m) => m.assessment === 'strong').length;
   const relevant = matches.filter((m) => m.assessment === 'relevant').length;
   const gap = matches.length - strong - relevant;
@@ -486,17 +490,18 @@ export async function auditRoleMatches(matches: RoleMatch[], items: EvidenceRefe
     return `ROW ${k}: "${match.requirement}"\nFit check said: ${match.assessment === 'strong' ? 'met' : 'partly met'} — ${match.evidence}\nProjects named: ${match.projectIds.map((id) => projectById(id)?.title).join(', ') || 'none'}\n${sections.map((item) => `  [${item.id}] ${item.projectName} / ${item.section}: ${item.excerpt}`).join('\n')}`;
   });
   const parsed = await askJson<{ rows?: { index?: number; met?: string; projects?: string[]; basis?: string }[] }>(
-    `You audit a job-fit check for Kyle-Anthony Hay the way a skeptical hiring manager would. For each ROW decide from its excerpts and the BACKGROUND only:
-- "met": "full" when the excerpts show him doing every part of the requirement; "partial" when they show some of it or adjacent work; "none" when they show nothing he did.
+    `You audit a job-fit check for Kyle-Anthony Hay using a potentially incomplete portfolio. Missing evidence cannot establish missing experience. For each ROW decide from its excerpts and the BACKGROUND only:
+- "met": "full" when the excerpts show him doing every required part of the requirement; OR alternatives and lists introduced by "such as" or "e.g." require one suitable alternative, not all examples. AND requires all parts. "partial" when they show some of it or adjacent work; "none" when they show nothing he did.
 - "projects": the named projects that show it as HIS work. On team projects (OnTract, Sentio+) count only what the excerpts attribute to him or to his solo rebuild; a tech-stack or skills list, or what teammates built, does not count.
 - "basis": under 22 words, a positive statement of what he did that supports the row (no notes about missing evidence; empty if "none").
 Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects. A requirement naming specific tools (Redshift, Snowflake, dbt, Looker, Kubernetes) is fully met only when those tools, or ones the posting calls equivalent, are shown; general SQL in app migrations is partial for a data-warehouse SQL requirement. Analytics engineering means building analytics data models and pipelines, not keeping an app codebase tested. Partnering with finance teams means working with a finance function; building a payout tool for his own app is partial at most. Schema work or migrations are not assessing database reliability or troubleshooting production databases. Business terms keep their business meaning: a payout ledger or subscription tracking is not revenue or growth analytics, owning his own app is not running an executive review, embeddings are not a metrics layer. Personal traits and ways of working (curiosity, juggling work streams, thriving in ambiguity) are "partial" at most unless an excerpt describes exactly that.
 ${FACTS}
+Unknown or partially shown work needs confirmation with the candidate; it is not a confirmed gap.
 JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"..."}]}`,
     `BACKGROUND:\n${background.map((item) => `[${item.id}] ${item.section}: ${item.excerpt}`).join('\n')}\n\n${blocks.join('\n\n')}`,
     0, 'verification'
   );
-  const cap: Record<string, MatchLevel> = { full: 'strong', partial: 'relevant', none: 'gap' };
+  const cap: Record<string, MatchLevel> = { full: 'strong', partial: 'relevant', none: 'relevant' };
   const order: MatchLevel[] = ['gap', 'relevant', 'strong'];
   rows.forEach(({ match }, k) => {
     const verdicts = Array.isArray(parsed.rows) ? parsed.rows.filter((candidate) => candidate?.index === k) : [];
@@ -507,8 +512,8 @@ JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"
     const keep = new Set((row.projects ?? []).map((name) => findProjectByName(name)?.id).filter((id): id is number => typeof id === 'number'));
     match.projectIds = match.projectIds.filter((id) => keep.has(id));
     const basis = clean(row.basis);
-    if (match.assessment === 'gap') {
-      match.evidence = 'Not shown in the portfolio.';
+    if (row.met === 'none') {
+      match.evidence = 'Not documented in the available portfolio. Confirm his experience directly; missing evidence is not proof of a gap.';
       match.projectIds = [];
     } else if (basis && !/^(no |there is no|nothing|not )/i.test(basis)) {
       match.evidence = basis;
@@ -577,7 +582,7 @@ export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
  * Bump when the matching rules change in a way that should re-judge saved
  * postings; changes to the facts, skills or write-ups re-judge on their own.
  */
-const FIT_RULES_VERSION = 4;
+const FIT_RULES_VERSION = 5;
 
 let knowledgeHash: Promise<string> | null = null;
 
@@ -773,7 +778,8 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
 
   // 5. Recommendation within the fit check's bounds.
   const asked = (['advance', 'screen', 'conditional', 'decline'] as RecommendationLevel[]).find((l) => l === draft.recommendation?.level);
-  const level: RecommendationLevel = asked && RANK[asked] <= RANK[ceiling] ? asked : ceiling;
+  const hasConfirmedGap = roleMatches.some((match) => match.required && match.assessment === 'gap' && match.verificationStatus !== 'unknown');
+  const level: RecommendationLevel = asked === 'decline' && !hasConfirmedGap ? ceiling : asked && RANK[asked] <= RANK[ceiling] ? asked : ceiling;
   const nextStep = clean(draft.recommendation?.nextStep);
   const rationale = clean(draft.recommendation?.rationale);
   brief.recommendation =
@@ -890,12 +896,12 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
       : 'Software developer building AI-powered web and iOS products. See the role match below for what the portfolio does and does not show.';
   }
 
-  // Every required gap gets a line in Validate, in case the writer skipped one.
+  // Every required shortfall or unconfirmed requirement needs an interview check.
   const significant = (text: string) => text.toLowerCase().split(/[^a-z0-9+#.]+/).filter((word) => word.length > 3);
-  for (const match of roleMatches.filter((m) => m.required && m.assessment === 'gap')) {
+  for (const match of roleMatches.filter((m) => m.required && (m.assessment === 'gap' || m.assessment === 'relevant'))) {
     const words = significant(match.requirement);
     const covered = brief.validationAreas.some((area) => words.filter((word) => area.toLowerCase().includes(word)).length >= Math.min(2, words.length));
-    if (!covered && brief.validationAreas.length < 6) brief.validationAreas.push(`${match.requirement}: ${match.verificationStatus === 'unknown' ? 'unknown; needs review' : 'not shown in the portfolio'}.`);
+    if (!covered && brief.validationAreas.length < 6) brief.validationAreas.push(`${match.requirement}: ${match.assessment === 'relevant' || match.verificationStatus === 'unknown' ? 'confirm with Kyle-Anthony; the portfolio may be incomplete' : match.evidence}.`);
   }
 
   // The portfolio can't answer logistics; say so rather than guess.

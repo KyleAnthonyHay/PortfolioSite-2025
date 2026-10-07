@@ -21,6 +21,7 @@ import CallEndedEntry from './voice/CallEndedEntry';
 import CallCard from './voice/CallCard';
 import { useVoiceCall, type Delegation } from './voice/useVoiceCall';
 import type { CallEndReason } from './voice/types';
+import type { AgentTask, TaskSnapshot } from '@/lib/tasks/types';
 
 interface UserMessage {
   id: string;
@@ -34,6 +35,10 @@ interface UserMessage {
 
 interface AssistantMessage {
   id: string;
+  taskId?: string;
+  taskRevision?: number;
+  taskUpdatedAt?: number;
+  taskStatus?: AgentTask['status'];
   role: 'assistant';
   content: string;
   steps: ActivityStep[];
@@ -140,7 +145,7 @@ const widgetNames: Partial<Record<Widget['kind'], string>> = {
 /** The chat as plain messages for the note's transcript: prose, plus what cards were shown. */
 function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
   return messages
-    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call')
+    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call' && (m.role !== 'assistant' || (m.status === 'done' && m.taskStatus !== 'canceled' && m.taskStatus !== 'failed')))
     .map((m) => {
       if (m.role === 'user') return { role: m.role, content: m.content };
       const cards = m.widgets.map((w) => {
@@ -158,17 +163,18 @@ function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
 /** The chat as the agent's history. A turn that only asked a question has no prose; it sends the question so the agent knows what the next message answers. */
 function toHistory(messages: ChatMessage[]): ConversationMessage[] {
   return messages
-    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call')
+    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call' && (m.role !== 'assistant' || (m.status === 'done' && m.taskStatus !== 'canceled' && m.taskStatus !== 'failed')))
     .map((m) => {
+      const arrival = { id: m.id, receivedAt: m.role === 'user' ? m.at : m.endedAt ?? m.startedAt, channel: m.voice ? 'voice' as const : 'typed' as const };
       if (m.role === 'assistant' && !m.content.trim()) {
         const asked = m.widgets.find((w) => w.kind === 'question');
-        if (asked && asked.kind === 'question') return { role: m.role, content: `[Asked the visitor: ${asked.question}]` };
+        if (asked && asked.kind === 'question') return { ...arrival, role: m.role, content: `[Asked the visitor: ${asked.question}]` };
       }
       if (m.role === 'assistant') {
         const projectCards = m.widgets.flatMap((w) => (w.kind === 'project' ? [w.project.id] : []));
-        if (projectCards.length > 0) return { role: m.role, content: m.content, projectCards };
+        if (projectCards.length > 0) return { ...arrival, role: m.role, content: m.content, projectCards };
       }
-      return { role: m.role, content: m.content };
+      return { ...arrival, role: m.role, content: m.content };
     })
     .filter((m) => m.content.trim().length > 0);
 }
@@ -246,7 +252,7 @@ export default function ChatInterface() {
   const archiveRef = useRef<StoredChat<ChatMessage>[]>([]);
   const conversationRef = useRef('');
   const messagesRef = useRef<ChatMessage[]>([]);
-  const abortRef = useRef<AbortController | null>(null);
+  const [conversationId, setConversationId] = useState('');
   const hasSentInitialRef = useRef(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
@@ -269,6 +275,7 @@ export default function ChatInterface() {
     visitorRef.current = stored;
     setVisitor(stored);
     conversationRef.current = loadConversationId();
+    setConversationId(conversationRef.current);
     archiveRef.current = loadArchive<ChatMessage>();
     setArchive(archiveRef.current);
     setIsHydrated(true);
@@ -380,95 +387,53 @@ export default function ChatInterface() {
     el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
   };
 
+  const lastUserSpeechRef = useRef(0);
+  const pendingRequestsRef = useRef(new Set<string>());
+  const deliveryRef = useRef<{ taskId: string; revision: number; token: string; conversationId: string; startedAt: number; heardSpeech: boolean } | null>(null);
+  const deliveryPendingRef = useRef(false);
+  const settleDelivery = useCallback((interrupted: boolean) => {
+    const delivery = deliveryRef.current;
+    if (!delivery) return;
+    deliveryRef.current = null;
+    void fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'settleDelivery', ...delivery, interrupted }) }).catch(() => {});
+  }, []);
+
   const send = useCallback(
     async (text: string, options?: { replaceFromIndex?: number; voice?: Delegation & { userId: string | null } }) => {
       const trimmed = text.trim();
       if (!trimmed) return;
-      abortRef.current?.abort();
-
+      const conversationId = conversationRef.current;
       const voice = options?.voice;
-      const base =
-        options?.replaceFromIndex !== undefined
-          ? messagesRef.current.slice(0, options.replaceFromIndex)
-          : messagesRef.current;
-      // A spoken question is already on screen as the visitor's voice bubble; the history stops before it.
-      const spokenIndex = voice?.userId ? base.findIndex((m) => m.id === voice.userId) : -1;
-      const history = toHistory(spokenIndex >= 0 ? base.slice(0, spokenIndex) : base);
-
-      const assistantId = newId();
-      const assistant: AssistantMessage = { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now(), ...(voice ? { voice: true } : {}) };
-      const next: ChatMessage[] =
-        spokenIndex >= 0
-          ? [...base, assistant]
-          : [...base, { id: newId(), role: 'user', content: trimmed, at: Date.now(), ...(voice ? { voice: true } : {}) }, assistant];
-      stickToBottomRef.current = true;
+      const requestId = voice?.delegationId ?? newId();
+      if (pendingRequestsRef.current.has(requestId)) return;
+      pendingRequestsRef.current.add(requestId);
+      const base = options?.replaceFromIndex !== undefined ? messagesRef.current.slice(0, options.replaceFromIndex) : messagesRef.current;
+      const spokenIndex = voice?.userId ? base.findIndex(m => m.id === voice.userId) : -1;
+      const history = toHistory(spokenIndex >= 0 ? base.filter((_, index) => index !== spokenIndex) : base);
+      const assistantId = `request-${requestId}`;
+      const assistant: AssistantMessage = { id: assistantId, role: 'assistant', content: '', steps: [{ id: 'understand', tool: 'coordinate', label: 'Understanding your request', status: 'running' }], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now() };
+      const next: ChatMessage[] = spokenIndex >= 0 ? [...base, assistant] : [...base, { id: newId(), role: 'user', content: trimmed, at: Date.now(), ...(voice ? { voice: true } : {}) }, assistant];
+      messagesRef.current = next;
       setMessages(next);
-
-      const controller = new AbortController();
-      abortRef.current = controller;
-
-      const update = (fn: (m: AssistantMessage) => AssistantMessage) =>
-        setMessages((prev) =>
-          prev.map((m) => (m.id === assistantId && m.role === 'assistant' ? fn(m) : m))
-        );
-
+      stickToBottomRef.current = true;
+      const sessionId = voice?.sessionId ?? callSessionRef.current?.();
+      if (!voice && sessionId) void fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'context', phase: 'received', sessionId, user: trimmed }) }).catch(() => {});
       try {
-        const response = await fetch(voice ? '/api/voice/delegate' : '/api/chat', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            message: trimmed,
-            history,
-            context: visitorRef.current ?? undefined,
-            conversationId: conversationRef.current,
-            ...(voice ? { sessionId: voice.sessionId, delegationId: voice.delegationId } : {}),
-          }),
-          signal: controller.signal,
+        const response = await fetch('/api/tasks', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: trimmed, requestId, history, conversationId, context: visitorRef.current ?? undefined,
+            receivedAt: spokenIndex >= 0 && base[spokenIndex].role === 'user' ? (base[spokenIndex] as UserMessage).at : Date.now(),
+            voice: !!voice, ...(sessionId ? { sessionId } : {}), ...(voice ? { delegationId: voice.delegationId } : {}) }),
         });
-        if (!response.ok || !response.body) throw new Error(`Request failed (${response.status})`);
-
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer = '';
-        for (;;) {
-          const { value, done } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-          for (const line of lines) {
-            if (!line.trim()) continue;
-            const event = JSON.parse(line) as ChatEvent;
-            update((m) => applyEvent(m, event));
-          }
-        }
-        update((m) => (m.status === 'streaming' ? { ...m, status: 'done', endedAt: m.endedAt ?? Date.now() } : m));
-        // Typed during a call: let the voice know what was said, so the two stay one conversation.
-        const callSession = callSessionRef.current?.();
-        if (!voice && callSession) {
-          const answered = messagesRef.current.find((m) => m.id === assistantId);
-          void fetch('/api/voice', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'context', sessionId: callSession, user: trimmed, assistant: answered?.role === 'assistant' ? answered.content : '' }),
-          }).catch(() => {});
-        }
-      } catch (error) {
-        if ((error as Error).name === 'AbortError') {
-          update((m) => ({ ...m, status: 'done' }));
-        } else {
-          console.error('Chat error:', error);
-          update((m) => ({
-            ...m,
-            status: 'error',
-            content: m.content || 'Sorry, something went wrong while answering. Please try again.',
-          }));
-        }
+        if (!response.ok) throw new Error('Request was not accepted');
+        // Results arrive from persistent tasks, independently of this acknowledgement.
+        if (conversationRef.current === conversationId) setMessages(prev => prev.filter(m => m.id !== assistantId));
+      } catch {
+        if (conversationRef.current === conversationId) setMessages(prev => prev.map(m => m.id === assistantId && m.role === 'assistant' ? { ...m, status: 'error', steps: [], content: 'I could not accept that request. Please try again.' } : m));
       } finally {
-        if (abortRef.current === controller) abortRef.current = null;
+        pendingRequestsRef.current.delete(requestId);
       }
-    },
-    []
+    }, []
   );
 
   // Spoken turns. The visitor's speech becomes a voice bubble as it is
@@ -479,16 +444,18 @@ export default function ChatInterface() {
   // left out until the voice has gone quiet after the answer.
   const voiceUserRef = useRef<{ id: string; at: number } | null>(null);
   const voiceReplyRef = useRef<{ id: string; at: number } | null>(null);
-  const handedOffUserRef = useRef<string | null>(null);
+  const handedOffUserRef = useRef(new Map<string, string | null>());
   const readingRef = useRef<{ done: boolean; at: number } | null>(null);
   const call = useVoiceCall({
     history: () => toHistory(messagesRef.current),
     onUserSpeech: (delta) => {
       const now = Date.now();
+      lastUserSpeechRef.current = now;
+      settleDelivery(true);
       const open = voiceUserRef.current;
       if (open && now - open.at < 1800) {
         voiceUserRef.current = { id: open.id, at: now };
-        setMessages((prev) => prev.map((m) => (m.id === open.id && m.role === 'user' ? { ...m, content: m.content + delta } : m)));
+        setMessages((prev) => { const next = prev.map((m) => (m.id === open.id && m.role === 'user' ? { ...m, content: m.content + delta } : m)); messagesRef.current = next; return next; });
         return;
       }
       // Recognition noise on its own (a lone symbol or comma) doesn't start a bubble.
@@ -496,10 +463,14 @@ export default function ChatInterface() {
       const fresh = newId();
       voiceUserRef.current = { id: fresh, at: now };
       stickToBottomRef.current = true;
-      setMessages((prev) => [...prev, { id: fresh, role: 'user', voice: true, content: delta.trimStart(), at: now }]);
+      const next: ChatMessage[] = [...messagesRef.current, { id: fresh, role: 'user', voice: true, content: delta.trimStart(), at: now }];
+      messagesRef.current = next;
+      setMessages(next);
     },
     onAssistantSpeech: (delta) => {
       const now = Date.now();
+      if (deliveryRef.current) { deliveryRef.current.heardSpeech = true; return; }
+      if (deliveryPendingRef.current) return;
       const reading = readingRef.current;
       if (reading) {
         if (!reading.done || now - reading.at < 3000) {
@@ -522,22 +493,25 @@ export default function ChatInterface() {
         { id: fresh, role: 'assistant', voice: true, content: delta.trimStart(), steps: [], widgets: [], sources: [], suggestions: [], status: 'done', startedAt: now, endedAt: now },
       ]);
     },
-    onHandOff: () => {
+    onHandOff: (delegationId) => {
       readingRef.current = { done: false, at: Date.now() };
-      handedOffUserRef.current = voiceUserRef.current?.id ?? null;
+      handedOffUserRef.current.set(delegationId, voiceUserRef.current?.id ?? null);
       voiceUserRef.current = null;
       voiceReplyRef.current = null;
     },
     onDelegation: (delegation) => {
-      const userId = handedOffUserRef.current;
-      handedOffUserRef.current = null;
+      const userId = handedOffUserRef.current.get(delegation.delegationId) ?? null;
+      handedOffUserRef.current.delete(delegation.delegationId);
       const bubble = userId ? messagesRef.current.find((m) => m.id === userId) : undefined;
       const question = delegation.text || (bubble?.role === 'user' ? bubble.content : '');
+      const reading = readingRef.current;
       void send(question.trim() || '(The visitor spoke, but the words were not transcribed.)', { voice: { ...delegation, userId } }).finally(() => {
-        if (readingRef.current) readingRef.current = { done: true, at: Date.now() };
+        if (readingRef.current === reading) readingRef.current = { done: true, at: Date.now() };
       });
     },
     onEnded: ({ durationMs, reason }) => {
+      settleDelivery(true);
+      handedOffUserRef.current.clear();
       voiceUserRef.current = null;
       voiceReplyRef.current = null;
       readingRef.current = null;
@@ -546,7 +520,76 @@ export default function ChatInterface() {
     },
     onNotice: setNotice,
   });
-  callSessionRef.current = call.sessionId;
+  useEffect(() => { callSessionRef.current = call.sessionId; }, [call.sessionId]);
+  const callStateRef = useRef({ active: call.active, phase: call.phase });
+  useEffect(() => { callStateRef.current = { active: call.active, phase: call.phase }; }, [call.active, call.phase]);
+  useEffect(() => {
+    if (!isHydrated) return;
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout>;
+    const poll = async () => {
+      const conversationId = conversationRef.current;
+      let busy = false;
+      try {
+        const response = await fetch(`/api/tasks?conversationId=${encodeURIComponent(conversationId)}`);
+        if (!response.ok) throw new Error('Task state unavailable');
+        const snapshot = await response.json() as TaskSnapshot;
+        if (stopped || conversationRef.current !== conversationId) return;
+        busy = snapshot.turns.length > 0 || snapshot.tasks.some(task => ['queued','running'].includes(task.status));
+        setMessages(prev => {
+          const pending = new Set(snapshot.turns.map(turn => `request-${turn.input.requestId}`));
+          const next = prev.filter(m => !m.id.startsWith('request-') || pending.has(m.id) || pendingRequestsRef.current.has(m.id.slice(8)) || m.role !== 'assistant' || m.status === 'error');
+          let changed = next.length !== prev.length;
+          for (const task of snapshot.tasks) {
+            const id = `task-${task.id}`;
+            const index = next.findIndex(m => m.id === id);
+            const previous = index >= 0 && next[index].role === 'assistant' ? next[index] as AssistantMessage : undefined;
+            if (previous?.taskRevision === task.revision && previous?.taskUpdatedAt === task.updatedAt && previous?.taskStatus === task.status) continue;
+            let message: AssistantMessage = { id, taskId: task.id, taskRevision: task.revision, taskUpdatedAt: task.updatedAt, taskStatus: task.status, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: previous?.startedAt ?? task.updatedAt, ...(task.input.voice ? { voice: true } : {}) };
+            for (const event of task.events) message = applyEvent(message, event);
+            if (task.status === 'canceled') message = { ...message, content: message.content ? `${message.content}\n\nThis task was canceled.` : 'This task was canceled.', status: 'done' };
+            else if (task.status === 'failed') message = { ...message, status: 'error' };
+            else if (task.status === 'completed' || task.status === 'waiting') message = { ...message, status: 'done', endedAt: task.updatedAt };
+            else message = { ...message, status: 'streaming' };
+            changed = true;
+            if (index >= 0) next[index] = message;
+            else next.push(message);
+          }
+          if (!changed) return prev;
+          messagesRef.current = next;
+          return next;
+        });
+        const delivery = deliveryRef.current;
+        const currentCall = callStateRef.current;
+        if (delivery && ((!currentCall.active) || (delivery.heardSpeech && currentCall.phase === 'listening') || Date.now() - delivery.startedAt > 85_000)) settleDelivery(!currentCall.active || !delivery.heardSpeech);
+        const sessionId = callSessionRef.current?.();
+        if (sessionId && currentCall.active && currentCall.phase !== 'speaking' && !deliveryRef.current && !deliveryPendingRef.current && !snapshot.turns.length && Date.now() - lastUserSpeechRef.current > 1800) {
+          const ready = snapshot.tasks.some(task => task.input.sessionId === sessionId && task.delivery === 'pending' && ['completed','waiting','failed'].includes(task.status));
+          if (ready) {
+            deliveryPendingRef.current = true;
+            try {
+              const sent = await fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'deliver', conversationId, sessionId }) });
+              if (!sent.ok) { setNotice('The answer is in the chat, but voice delivery was not confirmed.'); }
+              else {
+                const result = await sent.json();
+                if (result.delivery) {
+                  deliveryRef.current = { ...result.delivery, conversationId, startedAt: Date.now(), heardSpeech: false };
+                  if (conversationRef.current !== conversationId || Date.now() - lastUserSpeechRef.current < 1800) settleDelivery(true);
+                }
+              }
+            } finally { deliveryPendingRef.current = false; }
+          }
+        }
+      } catch {
+        // Keep saved results visible during a temporary network interruption.
+      } finally {
+        if (!stopped) timer = setTimeout(() => void poll(), busy || callStateRef.current.active ? 750 : 3000);
+      }
+    };
+    void poll();
+    return () => { stopped = true; clearTimeout(timer); };
+  }, [isHydrated, settleDelivery]);
+
   // Only the most recent call's log is kept, so only its row offers to copy it.
   const lastCallId = messages.reduce<string | null>((id, m) => (m.role === 'call' ? m.id : id), null);
 
@@ -579,11 +622,13 @@ export default function ChatInterface() {
     send(text);
   };
 
-  const handleStop = () => abortRef.current?.abort();
+  const handleStop = () => {
+    settleDelivery(true);
+    void fetch('/api/tasks', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'stop', conversationId: conversationRef.current }) }).catch(() => setNotice('Could not stop the tasks. Please try again.'));
+  };
 
   const handleNewChat = (options?: { discard?: boolean }) => {
     if (call.active) call.hangUp();
-    abortRef.current?.abort();
     if (!options?.discard) stashCurrent();
     setMessages([]);
     updateVisitor(null);
@@ -593,6 +638,7 @@ export default function ChatInterface() {
       // Storage unavailable; a fresh id below is enough.
     }
     conversationRef.current = loadConversationId();
+    setConversationId(conversationRef.current);
     setInput('');
     inputRef.current?.focus();
   };
@@ -602,10 +648,10 @@ export default function ChatInterface() {
     const chat = archiveRef.current.find((item) => item.id === id);
     if (!chat || id === conversationRef.current) return;
     if (call.active) call.hangUp();
-    abortRef.current?.abort();
     stashCurrent();
     updateArchive(archiveRef.current.filter((item) => item.id !== id));
     conversationRef.current = chat.id;
+    setConversationId(chat.id);
     try {
       localStorage.setItem(CONVERSATION_KEY, chat.id);
     } catch {
@@ -668,7 +714,7 @@ export default function ChatInterface() {
               <ChatSwitcher
                 current={
                   userMessages.length > 0
-                    ? { id: conversationRef.current, title: chatTitle(messages), updatedAt: Math.max(...messages.map(messageTime).filter((t): t is number => t !== undefined), 0) || Date.now() }
+                    ? { id: conversationId, title: chatTitle(messages), updatedAt: Math.max(...messages.map(messageTime).filter((t): t is number => t !== undefined), 0) }
                     : null
                 }
                 parked={archive.map((chat) => ({ id: chat.id, title: chatTitle(chat.messages), updatedAt: chat.updatedAt }))}

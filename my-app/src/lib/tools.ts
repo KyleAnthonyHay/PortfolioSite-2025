@@ -263,7 +263,10 @@ export let judgeFailures = 0;
  * as "has done this job", so building software near a domain is not enough.
  */
 const FIT_RUBRIC = `
-These ITEMs are requirements from a job posting. Judge them the way a hiring manager would:
+These ITEMs are requirements from a job posting. Judge only the supplied evidence; the portfolio is not a complete history of the candidate.
+- An OR list is alternatives: "React, Angular, or Vue" is met by documented React use alone. "Such as" and "e.g." introduce examples, not a demand for every framework. AND requires every part. Keep stated years and proficiency separate from the alternative itself.
+- No evidence means unconfirmed, never proof he has not done it.
+Judge them the way a hiring manager would:
 - "direct" only when an excerpt shows Kyle-Anthony doing that exact kind of work.
 - Building software for a domain is not experience as a practitioner in it: a billing ledger or payout tool is not finance or accounting experience; a dashboard is not data science or analytics experience.
 - A requirement that names a profession or job function (data scientist, analyst, designer, product manager, sales, finance) is "direct" only if the excerpts show him working in that function; otherwise "related" at most.
@@ -800,12 +803,12 @@ function shortcut(requirement: string): Shortcut {
 
   if (/\b(graduat(?:e[sd]?|ing|ion)|class of|currently enrolled|current student)\b/i.test(lower) &&
       /\b(recent|within|between|after|before|by|20\d{2}|current|enrolled|student)\b/i.test(lower)) {
-    return { requirement: text, status: 'gap', verificationStatus: 'unknown', evidence: 'B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.', projects: [] };
+    return { requirement: text, status: 'related', verificationStatus: 'unknown', evidence: 'B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.', projects: [] };
   }
 
   if (/\bgpa\b|grade point/i.test(lower)) {
     const asked = /(\d\.\d+)/.exec(text)?.[1];
-    if (GPA === null) return { requirement: text, status: 'gap', evidence: 'His GPA is not stated: ask him.', projects: [] };
+    if (GPA === null) return { requirement: text, status: 'related', evidence: 'His GPA is not stated: confirm it with him.', projects: [] };
     const met = !asked || GPA >= parseFloat(asked);
     return { requirement: text, status: met ? 'match' : 'gap', evidence: `Undergraduate GPA ${GPA} (his own words), B.S. Computer Science, CUNY Hunter College (2024).`, projects: [] };
   }
@@ -815,7 +818,7 @@ function shortcut(requirement: string): Shortcut {
     const advanced = /\b(master'?s?|m\.?sc?\b|ph\.?d|doctorate|graduate degree|mba)/i.test(lower);
     const bachelorAccepted = /\b(bachelor|b\.?s\.?\b|b\.?a\.?\b|undergraduate)/i.test(lower);
     if (advanced && !bachelorAccepted) {
-      return { requirement: text, status: 'gap', evidence: 'His highest degree is a B.S. in Computer Science (CUNY Hunter College, 2024).', projects: [] };
+      return { requirement: text, status: 'related', evidence: 'The portfolio documents a B.S. in Computer Science (CUNY Hunter College, 2024). Confirm whether he has the advanced degree required.', projects: [] };
     }
     const otherField = /\b(statistics|mathematics|math|economics|finance|physics|accounting|biology|chemistry|business)\b/i.test(lower);
     const csNamed = /\b(computer science|cs\b|software|computer engineering)/i.test(lower);
@@ -824,7 +827,7 @@ function shortcut(requirement: string): Shortcut {
       const loose = /\b(related|equivalent|technical|stem|quantitative)\b/i.test(lower);
       return {
         requirement: text,
-        status: loose ? 'related' : 'gap',
+        status: 'related',
         evidence: `His degree is a B.S. in Computer Science, not one of the fields named${loose ? '; whether it counts as related is for the team to judge' : ''}.`,
         projects: [],
       };
@@ -834,7 +837,7 @@ function shortcut(requirement: string): Shortcut {
 
   if (/\b(relocat\w*|on-?site|in[- ]office|hybrid|remote|based in|located in|work authori[sz]ation|authori[sz]ed to work|visas?|sponsorship|citizen\w*|green card|permanent resident|security clearance|time ?zones?|travel\w*)\b/i.test(lower)) {
     const arrangement = workArrangement(text);
-    return { requirement: text, status: arrangement.met ? 'match' : 'gap', evidence: arrangement.evidence, projects: [] };
+    return { requirement: text, status: arrangement.met ? 'match' : 'related', evidence: arrangement.evidence, projects: [] };
   }
 
   // Years of experience in general, in industry, or in a job function: tenure, not a technology.
@@ -842,14 +845,14 @@ function shortcut(requirement: string): Shortcut {
     const skills = findSkillsInText(text).filter((match) => termPattern(match.skill.name).test(text));
     const professional = /\b(professional|industry|industrial|full[- ]time|commercial)\b|\bas an? [a-z]/i.test(lower);
     if (skills.length === 0 || professional) {
-      return { requirement: text, status: requiredYears <= 1 ? 'match' : 'gap', evidence: PROFESSIONAL_TENURE, projects: [] };
+      return { requirement: text, status: requiredYears <= 1 ? 'match' : 'related', evidence: `${PROFESSIONAL_TENURE} ${requiredYears > 1 ? 'Confirm whether additional professional experience meets the required tenure; this portfolio may be incomplete.' : ''}`, projects: [] };
     }
   }
 
   return { judge: true, requirement: text, requiredYears };
 }
 
-export type FitRead = 'needs review: verification incomplete' | 'strong fit' | 'good fit with some gaps' | 'partial fit: real gaps to weigh' | 'weak fit for this role';
+export type FitRead = 'potential fit: pending confirmation' | 'needs review: verification incomplete' | 'strong fit' | 'good fit with some gaps' | 'partial fit: real gaps to weigh' | 'weak fit for this role';
 
 export interface FitAssessment {
   requirements: FitRequirement[];
@@ -899,11 +902,11 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
     toJudge.forEach(({ index, requirement, requiredYears }, i) => {
       const verdict = judged[i];
       if (!verdict || verdict.verificationStatus === 'unknown') {
-        results[index] = { requirement, status: 'gap', verificationStatus: 'unknown', evidence: 'Unknown — needs review: a complete evidence verdict is unavailable.', projects: [] };
+        results[index] = { requirement, status: 'related', verificationStatus: 'unknown', evidence: 'Unknown — needs review: a complete evidence verdict is unavailable.', projects: [] };
         return;
       }
       if (verdict.verdict === 'none') {
-        results[index] = { requirement, status: 'gap', evidence: 'Nothing in his projects or work history shows this.', projects: [] };
+        results[index] = { requirement, status: 'related', evidence: 'Not documented in the available portfolio. Confirm his experience directly; missing evidence is not proof of a gap.', projects: [] };
         return;
       }
       const projects = verdict.projects.slice(0, 3).map(({ id }) => toCard(projectById(id)!));
@@ -916,7 +919,7 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
         : '';
       const lead = verdict.projects[0] ?? { why: atJob };
       let status: FitStatus = verdict.verdict === 'direct' ? 'match' : 'related';
-      let evidence = `${lead.why}${atJob && verdict.projects.length > 0 ? ` ${atJob}` : ''}${status === 'related' ? ' (adjacent, not a direct match)' : ''}`;
+      let evidence = `${lead.why}${atJob && verdict.projects.length > 0 ? ` ${atJob}` : ''}${status === 'related' ? ' (the documented work supports part of this; confirm the remaining requirement)' : ''}`;
 
       // "3+ years of Swift": the judge settles use; the start year settles length.
       if (requiredYears !== null) {
@@ -929,8 +932,8 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
           status = 'related';
           evidence = `${lead.why} How long he has used it isn't recorded.`;
         } else if (years < requiredYears) {
-          status = requiredYears - years <= 1 && status === 'match' ? 'related' : 'gap';
-          evidence = `${lead.why} About ${years} year${years === 1 ? '' : 's'} of use, mostly on personal and training projects, against ${requiredYears} asked.`;
+          status = 'related';
+          evidence = `${lead.why} About ${years} year${years === 1 ? '' : 's'} of use, mostly on personal and training projects, against ${requiredYears} asked. Confirm any earlier or additional use; the recorded start year may not cover his full history.`;
         } else {
           evidence = `${lead.why} About ${years} years of use, mostly on personal and training projects.`;
         }
@@ -952,7 +955,8 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
 
   const score = (summary.match + summary.related * 0.5) / Math.max(1, results.length);
   const read: FitRead = results.some((row) => row.verificationStatus === 'unknown')
-    ? 'needs review: verification incomplete'
+    ? 'potential fit: pending confirmation'
+    : summary.related > 0 && summary.gap === 0 ? 'potential fit: pending confirmation'
     : score >= 0.85 && summary.gap === 0
       ? 'strong fit'
       : score >= 0.65
@@ -1544,6 +1548,8 @@ export const allTools = [
 export function describeToolCall(name: string, args: Record<string, unknown>): { running: string; done: string } {
   const str = (key: string) => (typeof args[key] === 'string' ? (args[key] as string) : '');
   switch (name) {
+    case 'check_chat_updates':
+      return { running: 'Checking new chat messages', done: 'Checked messages received since the last answer' };
     case 'check_experience':
       return { running: `Checking ${str('technology')} experience`, done: `Checked ${str('technology')} experience` };
     case 'get_experience':

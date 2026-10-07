@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { sanitizeHistory } from '@/lib/chat-request';
-import { createLiveSession, sendToSession } from '@/lib/voice/live';
+import { createLiveSession, sendToSession, limitedLiveText } from '@/lib/voice/live';
 import { ledger, sessionIdFrom } from '@/lib/voice/ledger';
 import { visitorKey } from '@/lib/voice/visitor';
 
@@ -99,17 +99,23 @@ async function start(key: string, body: Record<string, unknown>): Promise<Respon
 /** A typed exchange during a call, so the voice knows what was said in text. */
 async function context(key: string, body: Record<string, unknown>): Promise<Response> {
   const sessionId = sessionIdFrom(body.sessionId);
-  const state = sessionId ? await ledger.owned(key, sessionId) : null;
-  if (!state || state.status !== 'live' || !state.providerSessionId) return Response.json({ ok: false });
-  const user = typeof body.user === 'string' ? body.user.slice(0, 600) : '';
+  if (!sessionId) return Response.json({ ok: false }, { status: 400 });
+  const completed = body.phase === 'completed';
+  const state = await ledger.owned(key, sessionId);
+  if (!state || state.status !== 'live' || !state.providerSessionId) return Response.json({ ok: false }, { status: 409 });
+  if (body.phase === 'interrupt') return Response.json({ ok: true });
+  const user = typeof body.user === 'string' ? body.user.slice(0, 1200) : '';
   const assistant = typeof body.assistant === 'string' ? body.assistant.slice(0, 900) : '';
   if (!user) return Response.json({ ok: false });
-  await sendToSession(state.providerSessionId, [
-    {
-      type: 'session.thinking.append',
-      delegation_id: null,
-      content: `The visitor typed in the chat during the call: "${user}". The agent answered in the chat: "${assistant}". Do not repeat this aloud unless they ask about it.`,
-    },
-  ]);
+  await sendToSession(state.providerSessionId, [{
+    type: 'session.thinking.append',
+    delegation_id: null,
+    content: limitedLiveText(completed
+      ? `The agent completed the latest typed request. Answer: "${assistant}". Do not repeat aloud unless asked.`
+      : `A NEW typed message just arrived: "${user}". Its answer is pending. Existing tasks continue unless the backend coordinator explicitly updates or cancels them. A link or pasted description here has been received; a promise to send one is not a new posting. Do not use an older posting for a promised new one.`),
+  }], 6_000, async () => {
+    const latest = await ledger.owned(key, sessionId);
+    return latest?.status === 'live';
+  });
   return Response.json({ ok: true });
 }

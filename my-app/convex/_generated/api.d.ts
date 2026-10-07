@@ -10,6 +10,7 @@
 
 import type * as postings from "../postings.js";
 import type * as recruiterBriefs from "../recruiterBriefs.js";
+import type * as tasks from "../tasks.js";
 import type * as voice from "../voice.js";
 import type * as voiceDay from "../voiceDay.js";
 import type * as voiceWorker from "../voiceWorker.js";
@@ -23,6 +24,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   postings: typeof postings;
   recruiterBriefs: typeof recruiterBriefs;
+  tasks: typeof tasks;
   voice: typeof voice;
   voiceDay: typeof voiceDay;
   voiceWorker: typeof voiceWorker;

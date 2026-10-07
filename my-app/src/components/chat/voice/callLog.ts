@@ -6,7 +6,7 @@
  * channel, gaps in the agent's audio, transport stats, reconnects, and
  * anything the console printed while the call ran.
  *
- * Development builds only. The last call's log is kept in sessionStorage so it
+ * Development builds or ?voiceDebug=1. The last call's log is kept in sessionStorage so it
  * survives a reload; "Copy call log" on the card or on the "Call ended" row
  * copies it as plain text.
  */
@@ -15,9 +15,9 @@ const STORAGE_KEY = 'voice:last-call-log';
 const MAX_LINES = 5000;
 const MAX_DETAIL = 400;
 
-/** Development builds only; a production build never logs a call. */
+/** Development builds, or an explicit local diagnostic opt-in. No logs are uploaded. */
 export function callLogEnabled(): boolean {
-  return typeof window !== 'undefined' && process.env.NODE_ENV !== 'production';
+  return typeof window !== 'undefined' && (process.env.NODE_ENV !== 'production' || new URLSearchParams(window.location.search).get('voiceDebug') === '1');
 }
 
 function short(value: unknown): string {

@@ -6,7 +6,7 @@ import { PdfBrandHeader, pdfPalette, pdfTheme } from '@/components/brief/PdfThem
 
 type FitReport = Extract<Widget, { kind: 'fit_report' }>;
 
-const labels = { match: 'Match', related: 'Related', gap: 'Gap' } as const;
+const labels = { match: 'Supported match', related: 'Needs confirmation', gap: 'Confirmed gap' } as const;
 const site = 'https://kyleanthonyhay.com';
 const s = StyleSheet.create({
   page: pdfTheme.page,
@@ -14,7 +14,7 @@ const s = StyleSheet.create({
   eyebrow: { ...pdfTheme.eyebrow, marginBottom: 6 },
   title: { fontSize: 20, fontFamily: 'Helvetica-Bold', lineHeight: 1.2, marginBottom: 7 },
   meta: { fontSize: 9, color: '#52525b', marginTop: 3 },
-  tally: { marginTop: 12, flexDirection: 'row', gap: 6 },
+  tally: { marginTop: 12, flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   row: { ...pdfTheme.card, padding: 10, marginBottom: 6 },
   rowTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 5 },
   requirement: { flex: 1, fontFamily: 'Helvetica-Bold', paddingRight: 16 },
@@ -41,14 +41,14 @@ export function FitReportPdf({ report, context, createdAt }: { report: FitReport
           <Text style={s.meta}>Visitor: {describeVisitor(context)}</Text>
           <Text style={s.meta}>Generated {date} ET</Text>
           <View style={s.tally}>{(['match', 'related', 'gap'] as const).map((status) => (
-            <Text key={status} style={[pdfTheme.badge, { color: pdfPalette[status].color, backgroundColor: pdfPalette[status].background }]}>{report.summary[status]} {status}</Text>
+            <Text key={status} style={[pdfTheme.badge, { color: pdfPalette[status].color, backgroundColor: pdfPalette[status].background }]}>{report.summary[status]} {labels[status]}</Text>
           ))}</View>
         </View>
         {report.requirements.map((row, index) => (
           <View key={index} style={s.row} wrap={false}>
             <View style={s.rowTop}>
               <Text style={s.requirement}>{index + 1}. {row.requirement}</Text>
-              <Text style={[s.status, { color: pdfPalette[row.status].color, backgroundColor: pdfPalette[row.status].background }]}>{row.verificationStatus === 'unknown' ? 'Needs review' : labels[row.status]}</Text>
+              <Text style={[s.status, { color: pdfPalette[row.status].color, backgroundColor: pdfPalette[row.status].background }]}>{row.verificationStatus === 'unknown' ? 'Needs confirmation' : labels[row.status]}</Text>
             </View>
             <Text style={s.evidence}>{row.evidence}</Text>
             {row.projects.length > 0 && <View style={s.projects}>{row.projects.map((project) => (

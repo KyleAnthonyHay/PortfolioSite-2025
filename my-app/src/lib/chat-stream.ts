@@ -3,6 +3,7 @@ import type { ChatEvent, ConversationMessage, VisitorContext } from './chat-even
 
 export interface AgentTurn {
   message: string;
+  receivedAt?: number;
   history: ConversationMessage[];
   context?: VisitorContext;
   conversationId?: string;
@@ -27,7 +28,7 @@ export function agentStream(signal: AbortSignal, turn: AgentTurn, onEvent?: (eve
         }
       };
       try {
-        for await (const event of runAgent(turn.message, turn.history, { signal, context: turn.context, conversationId: turn.conversationId, voice: turn.voice })) {
+        for await (const event of runAgent(turn.message, turn.history, { signal, receivedAt: turn.receivedAt, context: turn.context, conversationId: turn.conversationId, voice: turn.voice })) {
           if (signal.aborted) break;
           send(event);
           await onEvent?.(event);

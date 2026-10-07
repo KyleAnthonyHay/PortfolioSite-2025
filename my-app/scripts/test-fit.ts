@@ -93,10 +93,10 @@ test('missing, invalid, duplicated and wrong-index claim verdicts are unknown', 
 test('incomplete audit cannot retain a positive match or project attribution', () => {
   const row: RoleMatch = { requirement: 'Kubernetes', assessment:'strong', evidence:'Claimed evidence',required:true,projectIds:[1] };
   markNeedsReview(row);
-  assert.equal(row.assessment, 'gap');
+  assert.equal(row.assessment, 'relevant');
   assert.equal(row.verificationStatus, 'unknown');
   assert.deepEqual(row.projectIds, []);
-  assert.match(row.evidence, /needs review/i);
+  assert.match(row.evidence, /needs confirmation/i);
 });
 
 test('degree and missing experience shortcuts do not turn graduation uncertainty into eligibility', async () => {
@@ -105,7 +105,8 @@ test('degree and missing experience shortcuts do not turn graduation uncertainty
   assert.equal(report.requirements[0].status, 'match');
   assert.equal(report.requirements[1].verificationStatus, 'unknown');
   assert.notEqual(report.requirements[1].status, 'match');
-  assert.equal(report.requirements[2].status, 'gap');
+  assert.equal(report.requirements[2].status, 'related');
+  assert.match(report.requirements[2].evidence, /additional professional experience/i);
 });
 
 test('real verification pipeline with omitted verdict removes the claim and counts unknown', async () => {
@@ -123,16 +124,27 @@ test('real audit pipeline marks an omitted row unknown instead of preserving str
   const row: RoleMatch = {requirement:'Production Kubernetes',assessment:'strong',evidence:'Unsupported claim',required:true,projectIds:[1]};
   await auditRoleMatches([row], []);
   assert.equal(row.verificationStatus, 'unknown');
-  assert.equal(row.assessment, 'gap');
+  assert.equal(row.assessment, 'relevant');
 });
 
 test('unknown rows never upgrade a confirmed missing core requirement', async () => {
   const { ceilingFor } = await import('../src/lib/recruiter-brief/generate');
   const rows: RoleMatch[] = [
-    {requirement:'Senior SRE experience',assessment:'gap',evidence:'Not shown',required:true,core:true,projectIds:[]},
+    {requirement:'Senior SRE experience',assessment:'gap',evidence:'He confirmed he has not worked as an SRE',required:true,core:true,projectIds:[]},
     {requirement:'Graduation eligibility',assessment:'gap',verificationStatus:'unknown',evidence:'Needs review',required:true,projectIds:[]},
   ];
   const fit = {requirements:[],summary:{match:0,related:0,gap:2},read:'needs review: verification incomplete' as const};
   assert.equal(ceilingFor(fit, rows, 0), 'decline');
   assert.equal(ceilingFor(fit, rows.slice(1)), 'conditional');
+});
+
+test('an audit finding no evidence requests confirmation instead of declaring a gap', async () => {
+  globalThis.fetch = async () => Response.json({id:'mock',object:'chat.completion',created:0,model:'gpt-4.1',choices:[{index:0,message:{role:'assistant',content:'{"rows":[{"index":0,"met":"none","projects":[],"basis":""}]}'},finish_reason:'stop'}],usage:{prompt_tokens:1,completion_tokens:1,total_tokens:2}});
+  const { auditRoleMatches, ceilingFor } = await import('../src/lib/recruiter-brief/generate');
+  const row: RoleMatch = { requirement:'Angular experience', assessment:'strong', evidence:'Claimed experience', required:true, core:true, projectIds:[1] };
+  await auditRoleMatches([row], []);
+  assert.equal(row.assessment, 'relevant');
+  assert.match(row.evidence, /missing evidence is not proof of a gap/i);
+  assert.deepEqual(row.projectIds, []);
+  assert.equal(ceilingFor({requirements:[],summary:{match:0,related:1,gap:0},read:'potential fit: pending confirmation'}, [row], 0), 'conditional');
 });
