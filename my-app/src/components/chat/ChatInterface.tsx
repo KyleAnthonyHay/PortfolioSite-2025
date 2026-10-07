@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowDown, ArrowLeft, Briefcase, Check, Copy, Plus, RefreshCw, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, Briefcase, Check, Copy, RefreshCw, X } from 'lucide-react';
 import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
@@ -15,6 +15,8 @@ import Markdown from './Markdown';
 import SourcePills from './SourcePills';
 import WidgetRenderer from './widgets';
 import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
+import ChatSwitcher from './ChatSwitcher';
+import { chatTitle, loadArchive, MAX_CHATS, saveArchive, stampFor, type StoredChat } from './chat-history';
 
 interface UserMessage {
   id: string;
@@ -165,15 +167,6 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
   }
 }
 
-/** "9:28 AM" today, otherwise "Oct 6 at 1:21 PM", like a Messages thread. */
-function stampFor(ms: number): string {
-  const date = new Date(ms);
-  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  const today = new Date();
-  if (date.toDateString() === today.toDateString()) return time;
-  return `${date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} at ${time}`;
-}
-
 const STAMP_GAP_MS = 10 * 60_000;
 
 function messageTime(message: ChatMessage): number | undefined {
@@ -212,6 +205,9 @@ export default function ChatInterface() {
   // Null until the visitor answers or skips the opening question.
   const [visitor, setVisitor] = useState<VisitorContext | null>(null);
   const visitorRef = useRef<VisitorContext | null>(null);
+  // Chats parked by "New chat" or by switching away, newest first.
+  const [archive, setArchive] = useState<StoredChat<ChatMessage>[]>([]);
+  const archiveRef = useRef<StoredChat<ChatMessage>[]>([]);
   const conversationRef = useRef('');
   const messagesRef = useRef<ChatMessage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
@@ -234,8 +230,32 @@ export default function ChatInterface() {
     visitorRef.current = stored;
     setVisitor(stored);
     conversationRef.current = loadConversationId();
+    archiveRef.current = loadArchive<ChatMessage>();
+    setArchive(archiveRef.current);
     setIsHydrated(true);
   }, []);
+
+  const updateArchive = useCallback((next: StoredChat<ChatMessage>[]) => {
+    const trimmed = next.slice(0, MAX_CHATS);
+    archiveRef.current = trimmed;
+    setArchive(trimmed);
+    saveArchive(trimmed);
+  }, []);
+
+  /** Park the chat on screen so it can be reopened from the switcher. Empty chats are dropped. */
+  const stashCurrent = useCallback(() => {
+    const current = messagesRef.current;
+    if (!current.some((m) => m.role === 'user')) return;
+    const settled = current.map((m) => (m.role === 'assistant' && m.status === 'streaming' ? { ...m, status: 'done' as const } : m));
+    const times = settled.map(messageTime).filter((t): t is number => t !== undefined);
+    const parked: StoredChat<ChatMessage> = {
+      id: conversationRef.current,
+      messages: settled.slice(-MAX_STORED),
+      context: visitorRef.current,
+      updatedAt: times.length > 0 ? Math.max(...times) : Date.now(),
+    };
+    updateArchive([parked, ...archiveRef.current.filter((chat) => chat.id !== parked.id)]);
+  }, [updateArchive]);
 
   const updateVisitor = useCallback((next: VisitorContext | null) => {
     visitorRef.current = next;
@@ -425,6 +445,7 @@ export default function ChatInterface() {
 
   const handleNewChat = () => {
     abortRef.current?.abort();
+    stashCurrent();
     setMessages([]);
     updateVisitor(null);
     try {
@@ -436,6 +457,27 @@ export default function ChatInterface() {
     setInput('');
     inputRef.current?.focus();
   };
+
+  /** Bring a parked chat back; the one on screen is parked in its place. */
+  const openChat = (id: string) => {
+    const chat = archiveRef.current.find((item) => item.id === id);
+    if (!chat || id === conversationRef.current) return;
+    abortRef.current?.abort();
+    stashCurrent();
+    updateArchive(archiveRef.current.filter((item) => item.id !== id));
+    conversationRef.current = chat.id;
+    try {
+      localStorage.setItem(CONVERSATION_KEY, chat.id);
+    } catch {
+      // Storage unavailable; the id still lives in the ref for this visit.
+    }
+    updateVisitor(chat.context);
+    stickToBottomRef.current = true;
+    setMessages(chat.messages);
+    setInput('');
+  };
+
+  const removeChat = (id: string) => updateArchive(archiveRef.current.filter((item) => item.id !== id));
 
   const regenerate = (assistantIndex: number) => {
     const user = messagesRef.current[assistantIndex - 1];
@@ -478,15 +520,18 @@ export default function ChatInterface() {
 
           <div className="flex items-center gap-2">
             {isHydrated && <BriefButton ready={briefReady} busy={isStreaming} briefId={briefId} onMake={makeBrief} />}
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={handleNewChat}
-                aria-label="New chat"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200/60 bg-white text-zinc-600 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.12)] transition-all hover:text-zinc-900 active:scale-[0.97] sm:w-auto sm:gap-1.5 sm:px-3.5 sm:text-[12px]"
-              >
-                <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> <span className="hidden sm:inline">New chat</span>
-              </button>
+            {isHydrated && (messages.length > 0 || archive.length > 0) && (
+              <ChatSwitcher
+                current={
+                  userMessages.length > 0
+                    ? { id: conversationRef.current, title: chatTitle(messages), updatedAt: Math.max(...messages.map(messageTime).filter((t): t is number => t !== undefined), 0) || Date.now() }
+                    : null
+                }
+                parked={archive.map((chat) => ({ id: chat.id, title: chatTitle(chat.messages), updatedAt: chat.updatedAt }))}
+                onNew={handleNewChat}
+                onOpen={openChat}
+                onRemove={removeChat}
+              />
             )}
           </div>
         </div>
