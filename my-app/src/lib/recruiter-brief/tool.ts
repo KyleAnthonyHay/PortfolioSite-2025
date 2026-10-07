@@ -32,12 +32,12 @@ export async function findPosting(
   userMessage: string,
   history: ConversationMessage[],
   context?: VisitorContext
-): Promise<{ text?: string; title?: string; note?: string }> {
+): Promise<{ text?: string; title?: string; note?: string; url?: string }> {
   // Tool arguments are model-generated. Only accept posting text and links
   // the visitor actually supplied; optional fields may otherwise be invented.
   const shared = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join('\n');
   const normalized = (value: string) => value.replace(/\s+/g, ' ').trim();
-  if (args.jobDescription && args.jobDescription.trim().length >= 200 && normalized(userMessage).includes(normalized(args.jobDescription))) return { text: args.jobDescription.trim() };
+  if (args.jobDescription && args.jobDescription.trim().length >= 200 && normalized(userMessage).includes(normalized(args.jobDescription))) return { text: args.jobDescription.trim(), url: userMessage.match(URL_PATTERN)?.[0] };
   if (args.jobUrl && !shared.includes(args.jobUrl)) args = { ...args, jobUrl: undefined };
 
   const visitorMessages = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content).reverse()];
@@ -49,17 +49,17 @@ export async function findPosting(
   // The newest of a pasted posting and a shared link wins; a link is tried first only when it came later.
   const pastedIndex = pasted ? visitorMessages.indexOf(pasted) : Infinity;
   const linkIndex = visitorMessages.findIndex((m) => /https?:\/\//i.test(m));
-  if (pasted && (linkIndex === -1 || pastedIndex <= linkIndex) && !args.jobUrl) return { text: pasted };
+  if (pasted && (linkIndex === -1 || pastedIndex <= linkIndex) && !args.jobUrl) return { text: pasted, url: pasted.match(URL_PATTERN)?.[0] };
 
   for (const url of [...new Set(urls)].slice(0, 3)) {
     const posting = await readJobPosting(url).catch(() => null);
-    if (posting?.ok) return { text: posting.text, title: posting.title };
+    if (posting?.ok) return { text: posting.text, title: posting.title, url };
     if (posting && !posting.ok && url === urls[0]) {
-      if (pasted) return { text: pasted, note: `The link ${url} could not be read (${posting.reason}); the pasted description was used.` };
-      return { note: `The posting at ${url} could not be read: ${posting.reason}.` };
+      if (pasted) return { text: pasted, url, note: `The link ${url} could not be read (${posting.reason}); the pasted description was used.` };
+      return { url, note: `The posting at ${url} could not be read: ${posting.reason}.` };
     }
   }
-  return pasted ? { text: pasted } : {};
+  return pasted ? { text: pasted, url: pasted.match(URL_PATTERN)?.[0] } : {};
 }
 
 /** Built per chat turn, so it can find the posting the visitor already shared. */
@@ -105,7 +105,7 @@ export function makeRecruiterBriefTool(options: {
       return JSON.stringify({
         content,
         citedProjectIds: view.projects.map((p) => p.id),
-        widget: { kind: 'recruiter_brief', view },
+        widget: { kind: 'recruiter_brief', view, jobUrl: posting.url },
       });
     },
     {
