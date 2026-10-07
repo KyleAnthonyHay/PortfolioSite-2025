@@ -17,10 +17,10 @@ import { makeFitTool, sameRole } from './fit-tool';
 import { looksLikePosting } from './recruiter-brief/tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
+import { createStageModel, stageModel } from './fit-models';
 
 const MAX_TOOL_ROUNDS = 4;
-// gpt-4.1-mini follows the fact and honesty rules far more reliably than gpt-4o-mini, at a similar price.
-const MODEL_NAME = process.env.OPENAI_CHAT_MODEL ?? 'gpt-4.1-mini';
+const MODEL_NAME = stageModel('chat');
 
 /** What the intake step told us, as a prompt section. The posting is read once and cached. */
 async function visitorSection(context?: VisitorContext): Promise<{ text: string; postingTitle?: string }> {
@@ -118,7 +118,7 @@ Only discuss Kyle-Anthony, his work, skills, and background. For anything else, 
 let baseModel: ChatOpenAI | null = null;
 function getBaseModel(): ChatOpenAI {
   if (!baseModel) {
-    baseModel = new ChatOpenAI({ model: MODEL_NAME, temperature: 0.4, streaming: true });
+    baseModel = createStageModel(MODEL_NAME, 0.4, { streaming: true });
   }
   return baseModel;
 }
@@ -230,7 +230,8 @@ function toSource(id: number): SourceRef | null {
 }
 
 async function suggestFollowUps(userMessage: string, answer: string): Promise<string[]> {
-  const model = new ChatOpenAI({ model: MODEL_NAME, temperature: 0.5, maxTokens: 150 }).bind({
+  // The completion budget includes Luna's reasoning as well as the short JSON answer.
+  const model = createStageModel(MODEL_NAME, 0.5, { maxTokens: 1024 }).bind({
     response_format: { type: 'json_object' },
   });
   const response = await model.invoke([

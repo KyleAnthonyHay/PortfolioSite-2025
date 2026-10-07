@@ -34,8 +34,8 @@ Rules
 | `NOTIFY_EMAIL` | no | `haykyle917@gmail.com` (`profile.email`) |
 | `NEXT_PUBLIC_SITE_URL` | no | `https://kyleanthonyhay.com` (used in brief PDF footer/links) |
 | `NEXT_PUBLIC_CALENDLY_URL` | Kyle decides | unset = `book_time` has no link |
-| `OPENAI_CHAT_MODEL` | no | `gpt-4.1-mini` |
-| `OPENAI_FIT_JUDGE_MODEL` / `OPENAI_JUDGE_MODEL` / `OPENAI_BRIEF_MODEL` | no | `gpt-4.1` / `gpt-4.1-mini` / `gpt-4.1` |
+| `OPENAI_CHAT_MODEL` | no | `gpt-5.6-luna` |
+| `OPENAI_FIT_JUDGE_MODEL` / `OPENAI_JUDGE_MODEL` / `OPENAI_BRIEF_MODEL` | no | `gpt-5.6-luna` for all stages |
 | `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT` | optional | LangSmith tracing |
 | `PORTFOLIO_CONTENT_DIR`, `PORTFOLIO_KNOWLEDGE_DIR` | no | `../backend/project-descriptions[/knowledge]` relative to `my-app` |
 | `PINECONE_NAMESPACE` | no | only read by `src/lib/pinecone.ts`, which nothing imports |
@@ -72,7 +72,7 @@ Add:
 4. `BRIEF_WRITE_KEY` = prod key from Convex step 3
 5. `RESEND_API_KEY`; `RESEND_FROM` only if the domain is verified; `NOTIFY_EMAIL` only if Kyle picks a non-default address
 6. `NEXT_PUBLIC_CALENDLY_URL` once Kyle gives it
-7. Optional: `OPENAI_CHAT_MODEL=gpt-4.1-mini`, `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`
+7. Optional: `OPENAI_CHAT_MODEL=gpt-5.6-luna`, `LANGCHAIN_TRACING_V2`, `LANGCHAIN_API_KEY`, `LANGCHAIN_PROJECT`
 
 Check: the Production list shows every name above. `NEXT_PUBLIC_*` values are baked in at build time, so a new deploy is needed after any change (step 6 covers it).
 
@@ -119,3 +119,7 @@ The site reads namespace `knowledge` from the same index locally and in prod, an
 5. DNS host for the domain (blocks Resend domain verification and `RESEND_FROM`).
 6. Railway: keep or remove the service, since `backend/` has no server (step 4).
 7. Whether to delete the unused Supabase keys from `my-app/.env.local` and the old Pinecone `portfolio` namespace.
+
+## October 7 Luna release
+
+All portfolio AI operations now default to `gpt-5.6-luna`: chat/tool selection, follow-up suggestions, evidence searches, fit judging, posting extraction, brief writing, and role/claim verification. Production must leave the stage model overrides unset or set them to Luna. The fit fallback is disabled unless explicitly configured. See `my-app/TESTING.md` for the complete setting list. Earlier current-state notes above describe the original setup and may be stale.

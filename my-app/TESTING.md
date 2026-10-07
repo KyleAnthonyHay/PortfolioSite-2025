@@ -22,16 +22,18 @@ The user-provided Resend free-plan budget is 3,000 emails/month and 100/day. Loc
 | --- | --- | --- |
 | `OPENAI_FIT_MODEL` | `gpt-5.6-luna` | Fit evidence judgments |
 | `OPENAI_FIT_EXTRACTION_MODEL` | Fit model | Posting requirement extraction |
-| `OPENAI_FIT_FALLBACK_MODEL` | `gpt-4.1` | Fit/extraction request failure fallback; empty disables |
-| `OPENAI_BRIEF_MODEL` | `gpt-4.1` | Brief writing only |
-| `OPENAI_VERIFICATION_MODEL` | `gpt-4.1` | Role audit and brief claim verification |
-| `OPENAI_TECH_JUDGE_MODEL` | `gpt-4.1` | Named-technology evidence searches outside fit checks |
-| `OPENAI_JUDGE_MODEL` | `gpt-4.1-mini` | Other evidence searches, unchanged |
-| `OPENAI_CHAT_MODEL` | `gpt-4.1-mini` | Chat, unchanged |
+| `OPENAI_FIT_FALLBACK_MODEL` | unset | Optional fit/extraction fallback; disabled by default |
+| `OPENAI_BRIEF_MODEL` | `gpt-5.6-luna` | Brief writing only |
+| `OPENAI_VERIFICATION_MODEL` | `gpt-5.6-luna` | Role audit and brief claim verification |
+| `OPENAI_TECH_JUDGE_MODEL` | `gpt-5.6-luna` | Named-technology evidence searches outside fit checks |
+| `OPENAI_JUDGE_MODEL` | `gpt-5.6-luna` | Other evidence searches |
+| `OPENAI_CHAT_MODEL` | `gpt-5.6-luna` | Chat, tool selection, and follow-up suggestions |
+
+The saved comparison is historical evidence for the fit-only migration; the subsequent full migration also moves chat, evidence searches, writing, and verification to Luna.
 
 The legacy `OPENAI_FIT_JUDGE_MODEL` remains a fit-model alias when `OPENAI_FIT_MODEL` is unset. Set `OPENAI_FIT_MODEL=gpt-4.1` to roll fit checks back; optionally pin extraction separately. Brief/verification settings are independent, so changing the writer does not change verification.
 
-Luna uses `reasoning_effort: low` with no temperature or seed; GPT-4.1 retains the previous temperature/seed settings. Existing JSON outputs and quote/evidence validation are preserved. A request/JSON parse failure can use the fallback. A missing or invalid verdict is unknown, never supported.
+Luna uses `reasoning_effort: low` with no temperature or seed; GPT-4.1 retains the previous temperature/seed settings. Existing JSON outputs and quote/evidence validation are preserved. A request/JSON parse failure can use a fallback only when explicitly configured. All production AI operations default to Luna. Follow-up suggestions use a 1,024-token completion budget that includes reasoning. A missing or invalid verdict is unknown, never supported.
 
 Extraction and evaluation caches include model settings and prompt versions. Bump the stage's `PROMPT_VERSIONS` in `fit-models.ts` whenever its prompt or interpretation changes. Evaluations also retain the existing facts/knowledge hash. Unknown, failed and fallback evaluations are not reused as successful primary-model evaluations, including chat-to-brief reuse. Old persistent entries remain stored but no longer match the new keys.
 
