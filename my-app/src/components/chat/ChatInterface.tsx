@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowDown, ArrowLeft, Briefcase, Check, Copy, RefreshCw, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, AudioLines, Briefcase, Check, Copy, RefreshCw, X } from 'lucide-react';
 import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
@@ -17,6 +17,9 @@ import WidgetRenderer from './widgets';
 import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
 import ChatSwitcher from './ChatSwitcher';
 import { chatTitle, loadArchive, MAX_CHATS, saveArchive, stampFor, type StoredChat } from './chat-history';
+import CallEndedEntry from './voice/CallEndedEntry';
+import CallCard from './voice/CallCard';
+import type { CallEndReason } from './voice/types';
 
 interface UserMessage {
   id: string;
@@ -24,6 +27,8 @@ interface UserMessage {
   content: string;
   /** Client clock, for the time stamps between messages. */
   at?: number;
+  /** Spoken on a call rather than typed. */
+  voice?: boolean;
 }
 
 interface AssistantMessage {
@@ -40,9 +45,20 @@ interface AssistantMessage {
   /** Client clock: when the turn started and when the answer (or the turn) first landed. */
   startedAt?: number;
   endedAt?: number;
+  /** Came from a call: the agent's answer to a spoken question, or the voice's own small talk. */
+  voice?: boolean;
 }
 
-type ChatMessage = UserMessage | AssistantMessage;
+/** The "Call ended" line a call leaves in the chat. Never sent to the agent. */
+interface CallMessage {
+  id: string;
+  role: 'call';
+  at: number;
+  durationMs: number;
+  reason: CallEndReason;
+}
+
+type ChatMessage = UserMessage | AssistantMessage | CallMessage;
 
 const STORAGE_KEY = 'portfolio-chat-v2';
 const CONTEXT_KEY = 'portfolio-chat-context';
@@ -123,6 +139,7 @@ const widgetNames: Partial<Record<Widget['kind'], string>> = {
 /** The chat as plain messages for the note's transcript: prose, plus what cards were shown. */
 function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
   return messages
+    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call')
     .map((m) => {
       if (m.role === 'user') return { role: m.role, content: m.content };
       const cards = m.widgets.map((w) => {
@@ -170,7 +187,7 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
 const STAMP_GAP_MS = 10 * 60_000;
 
 function messageTime(message: ChatMessage): number | undefined {
-  return message.role === 'user' ? message.at : message.startedAt;
+  return message.role === 'assistant' ? message.startedAt : message.at;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -354,6 +371,7 @@ export default function ChatInterface() {
       // A turn that only asked a question has no prose; send the question
       // itself so the agent knows what the visitor's next message answers.
       const history: ConversationMessage[] = base
+        .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call')
         .map((m) => {
           if (m.role === 'assistant' && !m.content.trim()) {
             const asked = m.widgets.find((w) => w.kind === 'question');
@@ -596,6 +614,14 @@ export default function ChatInterface() {
                 const time = messageTime(message);
                 const previous = index > 0 ? messageTime(messages[index - 1]) : undefined;
                 const stamp = time !== undefined && (previous === undefined || time - previous > STAMP_GAP_MS) ? stampFor(time) : null;
+                if (message.role === 'call') {
+                  return (
+                    <motion.div key={message.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
+                      {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
+                      <CallEndedEntry durationMs={message.durationMs} reason={message.reason} />
+                    </motion.div>
+                  );
+                }
                 return message.role === 'user' ? (
                   <motion.div
                     key={message.id}
@@ -606,6 +632,7 @@ export default function ChatInterface() {
                     {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
                     <div className="flex justify-end">
                       <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-accent-blue px-4 py-2.5 text-[16px] leading-[1.4] text-white">
+                        {message.voice && <AudioLines aria-label="Spoken" className="-mt-0.5 mr-1.5 inline h-3.5 w-3.5 opacity-75" />}
                         {message.content}
                       </div>
                     </div>
@@ -629,6 +656,7 @@ export default function ChatInterface() {
                     {message.content && (
                       <div className="flex">
                         <div className="max-w-[88%] rounded-[22px] rounded-bl-md bg-zinc-100 px-4 py-2.5">
+                          {message.voice && !message.steps.length && <AudioLines aria-label="Spoken" className="mb-1 h-3.5 w-3.5 text-zinc-400" />}
                           <Markdown content={message.content} streaming={message.status === 'streaming'} />
                         </div>
                       </div>
@@ -733,7 +761,12 @@ export default function ChatInterface() {
         onStop={handleStop}
         isStreaming={isStreaming}
         inputRef={inputRef}
+        onTalk={() => {}}
       />
+      {/* PROTOTYPE: static card for the first review; replaced by the live call in the next step. */}
+      {searchParams.get('callPreview') && (
+        <CallCard phase="speaking" muted={false} remainingMs={298_000} level={0.5} warning="five" onDismissWarning={() => {}} onMute={() => {}} onHangUp={() => {}} />
+      )}
       <BriefNudge
         engaged={fitShown || userMessages.length >= 3}
         ready={briefReady}

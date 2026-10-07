@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type RefObject } from 'react';
-import { ArrowUp, Square } from 'lucide-react';
+import { ArrowUp, AudioLines, Square } from 'lucide-react';
 import { useMediaQuery } from '@/lib/use-media-query';
 
 /**
@@ -105,9 +105,11 @@ interface ComposerProps {
   onStop: () => void;
   isStreaming: boolean;
   inputRef: RefObject<HTMLTextAreaElement | null>;
+  /** Starts a voice call; hidden while one is running. */
+  onTalk?: () => void;
 }
 
-export default function Composer({ value, onChange, onSend, onCommand, onStop, isStreaming, inputRef }: ComposerProps) {
+export default function Composer({ value, onChange, onSend, onCommand, onStop, isStreaming, inputRef, onTalk }: ComposerProps) {
   const [highlighted, setHighlighted] = useState(0);
   const [dismissed, setDismissed] = useState(false);
 
@@ -201,6 +203,18 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
               enterKeyHint="send"
               className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] sm:text-[15px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
             />
+            {onTalk && !value.trim() && (
+              <button
+                type="button"
+                onClick={onTalk}
+                aria-label="Talk to my AI"
+                title="Talk to my AI"
+                className="flex h-9 shrink-0 items-center gap-1.5 rounded-full bg-accent-blue/10 px-3 text-[14px] font-medium text-accent-blue transition-colors hover:bg-accent-blue/15 active:scale-[0.97]"
+              >
+                <AudioLines className="h-4 w-4" strokeWidth={2.2} />
+                <span className="max-sm:hidden">Talk</span>
+              </button>
+            )}
             {isStreaming ? (
               <button
                 type="button"
