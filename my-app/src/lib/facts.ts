@@ -20,7 +20,7 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
 - Client and real-user work: V1 ProdBot is the one project built at an outside stakeholder's request. SelahNote has real users and paying subscribers. The Creator Dashboard is an internal tool for SelahNote's staff and creators. YarnScript, Sentio+, OnTract, SoundSnag and Country Viewer have no stated users.
 - Never classify an employer (big tech, FAANG, startup, enterprise) or answer yes or no to whether he has worked at one: list the employers his résumé names (Cognizant, The Difference) and let the visitor judge. Never state what he has not done unless a tool says so. Never speculate about weaknesses.
 - Also from his résumé: first place at the Headstarter Hackathon (MunchMap, February 2024, three-person team); top 5% of applicants in the Yarn challenge.
-- Work arrangement, in his own words (October 2026): he is willing to work in the office five days a week, does not need visa sponsorship, and is willing to relocate for the right role. He is based in Brooklyn, New York. Salary and start date are not stated.
+- Work arrangement, in his own words (October 2026): he is willing to work in the office five days a week anywhere in the New York City metro area (New York and New Jersey), and also five days a week in another state if he relocates; he does not need visa sponsorship and is willing to relocate for the right role. He is based in Brooklyn, New York. Salary and start date are not stated.
 - His background notes are his own account. A claim found only there (for example that he has led small teams) is "he says", not a verified fact, and no project shows him leading a team.`;
 
 /**
@@ -43,7 +43,7 @@ export const WORK_EVIDENCE: { where: string; text: string; source: 'résumé' | 
 ];
 
 /** His answer on office attendance, in his own words (October 2026). */
-export const IN_OFFICE = 'Willing to work in the office five days a week (his own words).';
+export const IN_OFFICE = 'Willing to work in the office five days a week, in the New York City metro area or after relocating (his own words).';
 const AUTHORIZED = 'Does not need visa sponsorship (his own words).';
 const RELOCATE = 'Willing to relocate for the right role (his own words).';
 
@@ -61,6 +61,6 @@ export function workArrangement(condition: string): { met: boolean; evidence: st
   if (/\b(remote|telecommute|distributed)\b/.test(text) && !inOffice) {
     return { met: false, evidence: `${base} ${IN_OFFICE} Whether fully remote suits him is not stated: ask him.` };
   }
-  const local = /\b(new york|nyc|brooklyn|manhattan)\b/.test(text);
+  const local = /\b(new york|nyc|brooklyn|manhattan|queens|bronx|staten island|new jersey|nj|jersey city|hoboken|newark)\b/.test(text);
   return { met: true, evidence: [base, inOffice ? IN_OFFICE : '', local ? '' : RELOCATE].filter(Boolean).join(' ') };
 }
