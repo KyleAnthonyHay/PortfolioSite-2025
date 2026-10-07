@@ -668,7 +668,7 @@ export function useVoiceCall(handlers: Handlers) {
     remainingMs,
     level,
     warning,
-    /** The call log is on (outside production, or by localStorage.voiceLog = "1"). */
+    /** The call log is on (development builds only). */
     logging,
     sessionId: () => sessionRef.current,
     dismissWarning: () => setWarning(null),
