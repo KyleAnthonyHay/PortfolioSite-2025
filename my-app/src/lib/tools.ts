@@ -9,6 +9,7 @@ import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
 import { CAREER_FACTS, GPA, HIRING_DETAILS, WORK_ARRANGEMENT, WORK_EVIDENCE, workArrangement } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
+import { isGitHubRepoUrl, isPublicRepo } from './github';
 import {
   catalog,
   findProjectByName,
@@ -608,10 +609,13 @@ export const getProject = tool(
     }
     const trimmed = body.length > 7000 ? `${body.slice(0, 7000)}\n[truncated]` : body;
 
+    // A private repo's link is never handed out; the project page still describes the work.
+    const source = project.github && (await isPublicRepo(project.github)) ? `Source: ${project.github}` : null;
     const content = [
       `# ${project.title} — ${project.tagline} (${project.category})`,
       project.link ? `Live: ${project.link}` : null,
-      project.github ? `Source: ${project.github}` : null,
+      source,
+      project.github && !source ? 'The source code is in a private repository; do not share a GitHub link for it. If asked, say it is private and offer the website instead.' : null,
       trimmed || project.overview,
     ]
       .filter(Boolean)
@@ -1152,11 +1156,15 @@ export const getProjectResource = tool(
       return pack({ content: `No project named "${name}". Available projects: ${catalog.map((p) => p.title).join(', ')}.`, citedProjectIds: [] });
     }
 
-    const raw = [
+    const listed = [
       ...(project.link ? [{ type: 'website', title: `${project.title} website`, url: project.link }] : []),
       ...(project.github ? [{ type: 'github', title: `${project.title} on GitHub`, url: project.github }] : []),
       ...(await getProjectResources(project.id)),
     ];
+    // Only repositories anyone can open are offered; a private one is left out entirely.
+    const visibility = await Promise.all(listed.map((r) => (isGitHubRepoUrl(r.url) ? isPublicRepo(r.url) : Promise.resolve(true))));
+    const raw = listed.filter((_, i) => visibility[i]);
+    const privateRepo = listed.length !== raw.length;
     // Every link comes back; a requested type just goes first.
     const unique = [...new Map(raw.map((r) => [r.url.replace(/\/$/, ''), r])).values()].sort(
       (a, b) => Number(b.type === type) - Number(a.type === type)
@@ -1184,13 +1192,15 @@ export const getProjectResource = tool(
       return pack({
         content: `${project.title} has no public ${type && type !== 'any' ? type : 'link'}${
           project.category === 'macOS Apps' ? ' (it is a personal-use Mac app)' : ''
-        }. Link its page on this site exactly as [its project page](${project.href}), a relative link with no domain.`,
+        }${privateRepo ? '; its source code is in a private repository, so say so and do not give a GitHub link' : ''}. Link its page on this site exactly as [its project page](${project.href}), a relative link with no domain.`,
         citedProjectIds: [project.id],
       });
     }
 
     return pack({
-      content: `Link cards are shown for ${project.title}: ${resources.map((r) => r.type).join(', ')}. Do not list or repeat the links in prose; one short sentence is enough.`,
+      content: `Link cards are shown for ${project.title}: ${resources.map((r) => r.type).join(', ')}.${
+        privateRepo ? ' Its source code is in a private repository: if they asked for the GitHub link, say it is private; never give one.' : ''
+      } Do not list or repeat the links in prose; one short sentence is enough.`,
       citedProjectIds: [project.id],
       widget: { kind: 'resources', project: toCard(project), resources },
     });
