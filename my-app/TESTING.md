@@ -5,12 +5,14 @@ Run commands from `my-app` after installing dependencies in both `my-app` and `b
 Default local checks make no live AI calls and send no real email:
 
 - `npm run test:fit`: regression tests with mocked model responses; real network is blocked.
+- `npm run test:chat`: exercises the actual chat route with mocked streaming tool calls, tool results, answer text, and follow-ups. Reproduces Luna's rejection if function tools use low reasoning.
 - `npm run eval:fit`: read the saved comparison, without loading the model pipeline.
 - `npm run preview:emails`: render both existing email templates and PDF attachments from saved AI judgments. Resend requests are captured locally and mocked. Outputs, including JSON suitable for UI fixtures, are in `.data/email-previews/`. Brief prose is fixed layout data, not newly generated AI output.
 - `npm run typecheck` and `npm run build`: compiler/build checks.
 
 Explicit live opt-ins:
 
+- `npm run smoke:chat -- --live-ai`: live Luna conversations covering greetings, project lists, follow-ups, evidence searches, clarification, fit extraction/judging, and brief writing/verification. Convex reads/writes are mocked and email is disabled; this does not verify deployed persistence or email delivery.
 - `npm run eval:fit -- --live-ai`: paid model-quality/latency/cost comparison. Uses the configured OpenAI and Pinecone keys. Disables LangSmith tracing, Convex persistence and model fallback. No Resend calls. Replays each retrieval response for the second model and saves results in `evals/fit-comparison.json`.
 - `npm run preview:emails -- --send-email=fit` (or `brief`): **delivery check only**. Uses saved AI results and sends exactly one selected template through the configured Resend account/recipients; the other template remains mocked. Never use real sends for layout iteration.
 
@@ -33,7 +35,7 @@ The saved comparison is historical evidence for the fit-only migration; the subs
 
 The legacy `OPENAI_FIT_JUDGE_MODEL` remains a fit-model alias when `OPENAI_FIT_MODEL` is unset. Set `OPENAI_FIT_MODEL=gpt-4.1` to roll fit checks back; optionally pin extraction separately. Brief/verification settings are independent, so changing the writer does not change verification.
 
-Luna uses `reasoning_effort: low` with no temperature or seed; GPT-4.1 retains the previous temperature/seed settings. Existing JSON outputs and quote/evidence validation are preserved. A request/JSON parse failure can use a fallback only when explicitly configured. All production AI operations default to Luna. Follow-up suggestions use a 1,024-token completion budget that includes reasoning. A missing or invalid verdict is unknown, never supported.
+Luna’s tool-using chat stage uses `reasoning_effort: none`, required by Chat Completions when function tools are present. Analysis and follow-up generation use `low`. All Luna requests omit temperature and seed; optional GPT-4.1 overrides retain the previous temperature/seed settings. Existing JSON outputs and quote/evidence validation are preserved. A request/JSON parse failure can use a fallback only when explicitly configured. All production AI operations default to Luna. Follow-up suggestions use a 1,024-token completion budget that includes reasoning. A missing or invalid verdict is unknown, never supported.
 
 Extraction and evaluation caches include model settings and prompt versions. Bump the stage's `PROMPT_VERSIONS` in `fit-models.ts` whenever its prompt or interpretation changes. Evaluations also retain the existing facts/knowledge hash. Unknown, failed and fallback evaluations are not reused as successful primary-model evaluations, including chat-to-brief reuse. Old persistent entries remain stored but no longer match the new keys.
 
