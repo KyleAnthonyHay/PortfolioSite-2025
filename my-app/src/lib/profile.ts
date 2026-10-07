@@ -24,7 +24,8 @@ export const profile = {
     'AI/ML engineering and RAG systems',
     'Vector databases and LLM orchestration',
   ],
-  email: 'haykyle917@gmail.com',
+  email: 'kyleanthonyhay@gmail.com',
+  emailCc: 'haykyle917@gmail.com',
   resumePdf: '/Kyle-Anthony_Resume.pdf',
   resumePage: '/resume',
   contactPage: '/contact',
@@ -153,7 +154,7 @@ export const journey: JourneyNode[] = [
 ];
 
 export const contactLinks: ContactLink[] = [
-  { kind: 'email', label: 'Email', href: `mailto:${profile.email}`, detail: profile.email },
+  { kind: 'email', label: 'Email', href: `mailto:${profile.email}?cc=${profile.emailCc}`, detail: profile.email },
   { kind: 'linkedin', label: 'LinkedIn', href: 'https://www.linkedin.com/in/kyle-anthonyhay/' },
   { kind: 'github', label: 'GitHub', href: 'https://github.com/KyleAnthonyHay' },
   { kind: 'resume', label: 'Résumé (PDF)', href: profile.resumePdf },

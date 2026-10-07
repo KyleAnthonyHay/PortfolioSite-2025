@@ -1459,7 +1459,7 @@ export const sendNote = tool(
 /** Page count and size of the résumé PDF in public/, for the card's caption. */
 async function resumeFileFacts(): Promise<{ pages?: number; size?: string }> {
   try {
-    const file = await fs.readFile(path.join(process.cwd(), 'public', profile.resumePdf.replace(/^\//, '')));
+    const file = await fs.readFile(/* turbopackIgnore: true */ path.join(process.cwd(), 'public', profile.resumePdf.replace(/^\//, '')));
     // The page tree's root carries the total in /Count; outlines can too, so prefer the /Pages one.
     const text = file.toString('latin1');
     const count = text.match(/\/Type\s*\/Pages\b[^>]*?\/Count\s+(\d+)/) ?? text.match(/\/Count\s+(\d+)/);

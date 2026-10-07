@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Check, Mail, Send } from 'lucide-react';
+import { profile } from '@/lib/profile';
 import type { ConversationMessage, VisitorContext, Widget } from '@/lib/chat-events';
 import { ArcSpinner } from '../ActivitySteps';
 
@@ -38,7 +39,7 @@ export function NoteWidget({ widget, chat }: { widget: Extract<Widget, { kind: '
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(email.trim());
   const canSend = message.trim().length > 1 && (emailValid || !widget.configured) && state !== 'sending';
 
-  const mailto = `mailto:${widget.fallbackEmail}?subject=${encodeURIComponent(`Note from ${name.trim() || 'a portfolio visitor'}`)}&body=${encodeURIComponent(message.trim())}`;
+  const mailto = `mailto:${widget.fallbackEmail}?cc=${encodeURIComponent(profile.emailCc)}&subject=${encodeURIComponent(`Note from ${name.trim() || 'a portfolio visitor'}`)}&body=${encodeURIComponent(message.trim())}`;
 
   const send = async () => {
     if (!canSend) return;

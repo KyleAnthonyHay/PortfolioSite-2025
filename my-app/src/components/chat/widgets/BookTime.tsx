@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { ArrowUpRight, CalendarDays, Mail } from 'lucide-react';
+import { profile } from '@/lib/profile';
 import type { Widget } from '@/lib/chat-events';
 
 /**
@@ -37,7 +38,7 @@ export function BookTimeWidget({ widget }: { widget: Extract<Widget, { kind: 'bo
           </a>
         ) : (
           <a
-            href={`mailto:${email}?subject=${encodeURIComponent('Scheduling a call')}`}
+            href={`mailto:${email}?cc=${encodeURIComponent(profile.emailCc)}&subject=${encodeURIComponent('Scheduling a call')}`}
             className="inline-flex h-8 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800"
           >
             <Mail className="h-3.5 w-3.5" />

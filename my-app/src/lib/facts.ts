@@ -14,7 +14,7 @@ const profileFile =
 function readOwnAccount(): { topic: string; text: string }[] {
   let raw = '';
   try {
-    raw = fs.readFileSync(profileFile, 'utf-8');
+    raw = fs.readFileSync(/* turbopackIgnore: true */ profileFile, 'utf-8');
   } catch {
     console.warn(`kyle-profile.md not found at ${profileFile}; his own-account facts are left out`);
     return [];

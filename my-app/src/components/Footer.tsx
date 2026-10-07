@@ -1,10 +1,12 @@
 'use client';
 
+import { profile } from '@/lib/profile';
+
 import Link from 'next/link';
 import { FaLinkedin, FaInstagram, FaTwitter, FaEnvelope, FaMedium } from 'react-icons/fa';
 
 const links = [
-  { href: 'mailto:haykyle917@gmail.com', icon: FaEnvelope, label: 'Email', detail: 'haykyle917@gmail.com' },
+  { href: `mailto:${profile.email}?cc=${encodeURIComponent(profile.emailCc)}`, icon: FaEnvelope, label: 'Email', detail: profile.email },
   { href: 'https://www.linkedin.com/in/kyle-anthonyhay/', icon: FaLinkedin, label: 'LinkedIn', detail: 'Professional background', external: true },
   { href: 'https://www.instagram.com/kyleanthonyhay/', icon: FaInstagram, label: 'Instagram', detail: 'Behind the scenes', external: true },
   { href: 'https://x.com/KyleAnthonyHay', icon: FaTwitter, label: 'X / Twitter', detail: 'Developer journey', external: true },
@@ -23,7 +25,7 @@ const Footer = () => {
             <span className="text-zinc-400">something useful.</span>
           </h2>
           <a
-            href="mailto:haykyle917@gmail.com"
+            href={`mailto:${profile.email}?cc=${encodeURIComponent(profile.emailCc)}`}
             className="mt-8 inline-flex h-12 items-center gap-2 rounded-xl bg-zinc-900 px-6 text-sm font-medium text-white transition-all duration-200 hover:bg-zinc-800 active:scale-[0.98]"
           >
             Email me

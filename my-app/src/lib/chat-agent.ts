@@ -245,7 +245,6 @@ export async function* runAgent(
 ): AsyncGenerator<ChatEvent> {
   const { signal, context, conversationId } = options;
   const visitor = await visitorSection(context);
-  let postingTitle = visitor.postingTitle;
   const messages: BaseMessage[] = [
     new SystemMessage(systemPrompt(visitor.text)),
     ...toLangChain(history.slice(-12)),
@@ -298,7 +297,15 @@ export async function* runAgent(
       }
     }
 
-    const toolCalls = gathered?.tool_calls ?? [];
+    // Project names are not technologies. Correct this common model routing
+    // mistake before invoking the experience judge or showing a negative card.
+    const toolCalls = (gathered?.tool_calls ?? []).map((call) => {
+      if (call.name !== 'check_experience' || typeof call.args?.technology !== 'string') return call;
+      const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const technology = normalize(call.args.technology);
+      const project = catalog.find((item) => [item.title, ...item.aliases, ...item.corpusNames].some((name) => normalize(name) === technology));
+      return project ? { ...call, name: 'get_project', args: { name: project.title, query: userMessage } } : call;
+    });
     if (toolCalls.length === 0) break;
 
     messages.push(new AIMessage({ content: roundText, tool_calls: toolCalls }));

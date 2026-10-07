@@ -1,3 +1,4 @@
+import { profile } from '@/lib/profile';
 import Image from 'next/image';
 import type { MatchLevel } from '@/lib/recruiter-brief/types';
 import type { BriefView } from '@/lib/recruiter-brief/view';
@@ -49,7 +50,7 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
               {link.label}
             </a>
           ))}
-          <a href={`mailto:${candidate.email}`} className="transition-colors hover:text-zinc-900">
+          <a href={`mailto:${candidate.email}?cc=${encodeURIComponent(profile.emailCc)}`} className="transition-colors hover:text-zinc-900">
             Email
           </a>
         </div>

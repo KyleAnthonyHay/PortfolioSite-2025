@@ -1,3 +1,4 @@
+import { profile } from '@/lib/profile';
 import path from 'path';
 import { Document, Font, Image, Link, Page, StyleSheet, Text, View } from '@react-pdf/renderer';
 import type { MatchLevel } from '@/lib/recruiter-brief/types';
@@ -101,7 +102,7 @@ export default function BriefPdf({ view }: { view: BriefView }) {
                 {link.label}
               </Link>
             ))}
-            <Link src={`mailto:${candidate.email}`} style={s.link}>
+            <Link src={`mailto:${candidate.email}?cc=${encodeURIComponent(profile.emailCc)}`} style={s.link}>
               Email
             </Link>
           </View>

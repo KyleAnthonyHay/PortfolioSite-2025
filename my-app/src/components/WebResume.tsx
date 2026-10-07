@@ -1,5 +1,7 @@
 'use client';
 
+import { profile } from '@/lib/profile';
+
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'motion/react';
@@ -64,7 +66,7 @@ const WebResume = () => {
                 {[
                   { href: 'https://github.com/KyleAnthonyHay', icon: 'github' },
                   { href: 'https://linkedin.com/in/kyle-anthonyhay', icon: 'linkedin' },
-                  { href: 'mailto:haykyle917@gmail.com', icon: 'email' },
+                  { href: `mailto:${profile.email}?cc=${encodeURIComponent(profile.emailCc)}`, icon: 'email' },
                 ].map((social) => (
                   <Link
                     key={social.icon}

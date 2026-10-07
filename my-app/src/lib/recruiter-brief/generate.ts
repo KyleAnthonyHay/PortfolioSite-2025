@@ -151,11 +151,11 @@ let rolesPromise: Promise<Map<number, string>> | null = null;
 /** The `role:` line from each write-up's front matter: solo, or what he did on a team. */
 function projectRoles(): Promise<Map<number, string>> {
   rolesPromise ??= fs
-    .readdir(knowledgeDir)
+    .readdir(/* turbopackIgnore: true */ knowledgeDir)
     .then(async (files) => {
       const roles = new Map<number, string>();
       for (const file of files.filter((name) => name.endsWith('.md') && name !== 'README.md')) {
-        const raw = await fs.readFile(path.join(knowledgeDir, file), 'utf-8');
+        const raw = await fs.readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ knowledgeDir, file), 'utf-8');
         const name = /^project:\s*(.+)$/m.exec(raw)?.[1].trim().replace(/^"|"$/g, '');
         const role = /^role:\s*(.+)$/m.exec(raw)?.[1].trim().replace(/^"|"$/g, '');
         const project = name ? findProjectByName(name) : null;

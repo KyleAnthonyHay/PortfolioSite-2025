@@ -67,13 +67,13 @@ let sectionsPromise: Promise<KnowledgeSection[]> | null = null;
 export function getKnowledgeSections(): Promise<KnowledgeSection[]> {
   if (!sectionsPromise) {
     sectionsPromise = fs
-      .readdir(knowledgeDir)
+      .readdir(/* turbopackIgnore: true */ knowledgeDir)
       .then((files) =>
         Promise.all(
           files
             .filter((file) => file.endsWith('.md') && file !== 'README.md')
             .sort()
-            .map(async (file) => parseFile(await fs.readFile(path.join(knowledgeDir, file), 'utf-8')))
+            .map(async (file) => parseFile(await fs.readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ knowledgeDir, file), 'utf-8')))
         )
       )
       .then((all) => all.flat())
@@ -162,13 +162,13 @@ export interface RawResource {
 /** Links from <slug>.resources.json, keyed by catalog project id. */
 export async function getProjectResources(projectId: number): Promise<RawResource[]> {
   try {
-    const files = await fs.readdir(knowledgeDir);
+    const files = await fs.readdir(/* turbopackIgnore: true */ knowledgeDir);
     for (const file of files.filter((name) => name.endsWith('.md') && name !== 'README.md')) {
-      const raw = await fs.readFile(path.join(knowledgeDir, file), 'utf-8');
+      const raw = await fs.readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ knowledgeDir, file), 'utf-8');
       const name = /^project:\s*(.+)$/m.exec(raw)?.[1].trim().replace(/^"|"$/g, '');
       if (!name || findProjectByName(name)?.id !== projectId) continue;
       const resources = await fs
-        .readFile(path.join(knowledgeDir, file.replace(/\.md$/, '.resources.json')), 'utf-8')
+        .readFile(/* turbopackIgnore: true */ path.join(/* turbopackIgnore: true */ knowledgeDir, file.replace(/\.md$/, '.resources.json')), 'utf-8')
         .then((text) => JSON.parse(text) as RawResource[])
         .catch(() => [] as RawResource[]);
       return resources.filter((r) => typeof r.url === 'string' && /^https:\/\//.test(r.url));

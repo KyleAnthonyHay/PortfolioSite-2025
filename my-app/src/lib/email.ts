@@ -35,6 +35,7 @@ export async function emailKyle(message: {
       body: JSON.stringify({
         from: process.env.RESEND_FROM || "Kyle's Agent <onboarding@resend.dev>",
         to: [process.env.NOTIFY_EMAIL || profile.email],
+        cc: [profile.emailCc].filter((email) => email !== (process.env.NOTIFY_EMAIL || profile.email)),
         subject: message.subject,
         html: message.html,
         text: message.text,

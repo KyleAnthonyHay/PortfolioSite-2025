@@ -33,7 +33,12 @@ export async function findPosting(
   history: ConversationMessage[],
   context?: VisitorContext
 ): Promise<{ text?: string; title?: string; note?: string }> {
-  if (args.jobDescription && args.jobDescription.trim().length >= 200) return { text: args.jobDescription.trim() };
+  // Tool arguments are model-generated. Only accept posting text and links
+  // the visitor actually supplied; optional fields may otherwise be invented.
+  const shared = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join('\n');
+  const normalized = (value: string) => value.replace(/\s+/g, ' ').trim();
+  if (args.jobDescription && args.jobDescription.trim().length >= 200 && normalized(userMessage).includes(normalized(args.jobDescription))) return { text: args.jobDescription.trim() };
+  if (args.jobUrl && !shared.includes(args.jobUrl)) args = { ...args, jobUrl: undefined };
 
   const visitorMessages = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content).reverse()];
   const urls = [args.jobUrl, ...visitorMessages.flatMap((m) => m.match(URL_PATTERN) ?? []), context?.jobUrl].filter(
@@ -75,8 +80,8 @@ export function makeRecruiterBriefTool(options: {
 
       const record = await generateRecruiterBrief({
         jobDescription: posting.text,
-        roleTitle: posting.title ?? roleTitle ?? options.context?.role,
-        companyName,
+        roleTitle: posting.title ?? (roleTitle && options.userMessage.toLowerCase().includes(roleTitle.toLowerCase()) ? roleTitle : options.context?.role),
+        companyName: companyName && options.userMessage.toLowerCase().includes(companyName.toLowerCase()) ? companyName : undefined,
         recruiterContext,
         knownRequirements: known,
         evaluation,
