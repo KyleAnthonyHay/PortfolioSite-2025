@@ -1,3 +1,4 @@
+import { evaluationIdentity } from './fit-models';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
 import type { ConversationMessage, FitRequirement, VisitorContext } from './chat-events';
@@ -15,7 +16,8 @@ import { findPosting, looksLikePosting } from './recruiter-brief/tool';
 const evaluations = new Map<string, FitEvaluation>();
 
 export function lastEvaluation(conversationId?: string): FitEvaluation | undefined {
-  return conversationId ? evaluations.get(conversationId) : undefined;
+  const value = conversationId ? evaluations.get(conversationId) : undefined;
+  return value?.evaluationIdentity === evaluationIdentity() && !value.needsReview && !value.usedFallback ? value : undefined;
 }
 
 const URL_IN_TEXT = /https?:\/\/\S+/i;
@@ -95,6 +97,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
           requirement: `${match.requirement}${match.required ? '' : ' (nice-to-have)'}`,
           status: STATUS_FOR[match.assessment],
           evidence: match.evidence,
+          verificationStatus: match.verificationStatus,
           projects: match.projectIds.map((id) => projectById(id)).filter((p) => p !== undefined && p !== null).map((p) => toCard(p!)),
         })),
         ...evaluation.logistics.map((item) => {
@@ -117,7 +120,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
         `Fit assessment${title ? ` for ${title}` : ''}: ${summary.match} match, ${summary.related} related, ${summary.gap} gap out of ${rows.length}.`,
         `Overall read: ${read}. Recommended next step: ${describeCeiling(evaluation)}. State this read and next step as written; never call it a stronger fit.`,
         evaluation.logistics.some((item) => !workArrangement(item).met) ? 'Location and work-arrangement gaps are things he has not stated; say they need asking, not that he fails them.' : '',
-        ...rows.map((r) => `- [${r.status.toUpperCase()}] ${r.requirement} — ${r.evidence}`),
+        ...rows.map((r) => `- [${r.verificationStatus === 'unknown' ? 'NEEDS REVIEW' : r.status.toUpperCase()}] ${r.requirement} — ${r.evidence}`),
         'Strengths first, then gaps, then the read. Do not call other tools in this turn.',
       ]
         .filter(Boolean)

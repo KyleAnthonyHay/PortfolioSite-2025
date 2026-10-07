@@ -2,7 +2,8 @@ import { CAREER_FACTS, WORK_EVIDENCE, workArrangement } from '../facts';
 import { createHash } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
-import { ChatOpenAI } from '@langchain/openai';
+import { evaluationIdentity, extractionIdentity, fitFallbacks, withStageModel, type ModelStage } from '../fit-models';
+import { claimVerdict, markNeedsReview, type ClaimVerdict } from './verification';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import { assessRequirements, judgeFailures, type FitAssessment } from '../tools';
 import { getKnowledgeSections, searchKnowledge, type KnowledgeHit } from '../knowledge';
@@ -51,16 +52,13 @@ function scrub(text: string): string {
     .trim();
 }
 
-function model(temperature = 0.2): ChatOpenAI {
-  return new ChatOpenAI({ model: process.env.OPENAI_BRIEF_MODEL ?? 'gpt-4.1', temperature, modelKwargs: { seed: 7 } });
-}
-
-async function askJson<T>(system: string, user: string, temperature = 0.2): Promise<T> {
-  const response = await model(temperature)
-    .bind({ response_format: { type: 'json_object' } })
-    .invoke([new SystemMessage(system), new HumanMessage(user)]);
-  const text = typeof response.content === 'string' ? response.content : '';
-  return JSON.parse(text) as T;
+async function askJson<T>(system: string, user: string, temperature = 0.2, stage: ModelStage = 'brief'): Promise<T> {
+  return withStageModel(stage, async (model) => {
+    const response = await model.bind({ response_format: { type: 'json_object' } })
+      .invoke([new SystemMessage(system), new HumanMessage(user)]);
+    const text = typeof response.content === 'string' ? response.content : '';
+    return JSON.parse(text) as T;
+  }, temperature);
 }
 
 /* ------------------------------------------------------------------------ */
@@ -86,18 +84,22 @@ const extractions = new Map<string, Promise<ExtractedPosting>>();
  * `npm run postings:forget` clears a posting so it is extracted again.
  */
 async function savedExtraction(text: string): Promise<ExtractedPosting> {
-  const hash = createHash('sha256').update(text.replace(/\s+/g, ' ').trim()).digest('hex').slice(0, 16);
+  const hash = createHash('sha256').update(JSON.stringify([extractionIdentity(), text.replace(/\s+/g, ' ').trim()])).digest('hex').slice(0, 16);
   const saved = await getSavedPosting<ExtractedPosting>(hash);
   if (saved) return saved;
+  const fallbacksBefore = fitFallbacks;
   const extracted = await extractRequirementsOnce(text);
+  if (fitFallbacks !== fallbacksBefore) return extracted;
   await savePosting({ hash, roleTitle: extracted.roleTitle, companyName: extracted.companyName, extracted });
   return extracted;
 }
 
 function extractRequirements(jobDescription: string): Promise<ExtractedPosting> {
-  const key = jobDescription.trim();
+  const key = JSON.stringify([extractionIdentity(), jobDescription.trim()]);
   if (!extractions.has(key)) {
-    const run = savedExtraction(key);
+    const before = fitFallbacks;
+    const run = savedExtraction(jobDescription.trim());
+    run.then(() => { if (fitFallbacks !== before) extractions.delete(key); }, () => extractions.delete(key));
     extractions.set(key, run);
     run.catch(() => extractions.delete(key));
     if (extractions.size > 200) extractions.delete(extractions.keys().next().value!);
@@ -121,8 +123,9 @@ Traits and ways of working the posting asks for (analytical thinking, time manag
 Return the role title and the hiring company exactly as the posting states them, or null.
 JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": string, "requirements": [{"text": string, "required": boolean}], "logistics": [string]}`,
     jobDescription.slice(0, 14000),
-    0
+    0, 'extraction'
   );
+  if (!Array.isArray(parsed.requirements) || !parsed.requirements.length) throw new Error('Posting extraction returned no requirements');
   const requirements = (parsed.requirements ?? [])
     .filter((r): r is { text: string; required?: boolean } => typeof r.text === 'string' && r.text.trim().length > 1)
     // Softening a row the posting states plainly would flatter him, so with no optional wording anywhere every row is required.
@@ -284,11 +287,16 @@ const RANK: Record<RecommendationLevel, number> = { decline: 0, conditional: 1, 
 const HARD_REQUIREMENT = /\d+\s*\+?\s*(?:years?|yrs?)|degree|bachelor|master|ph\.?d|\bas an?\b|experience (?:as|in)\b/i;
 
 /** The most positive next step the fit check allows. */
-function ceilingFor(fit: FitAssessment | null, matches: RoleMatch[], coreIndex?: number): RecommendationLevel {
+export function ceilingFor(fit: FitAssessment | null, matches: RoleMatch[], coreIndex?: number): RecommendationLevel {
   if (!fit || matches.length === 0) return 'screen';
   // Not having done the job itself caps everything else, however many skills line up.
   const core = coreIndex !== undefined ? matches[coreIndex] : undefined;
-  if (core?.assessment === 'gap') return 'decline';
+  if (core?.assessment === 'gap' && core.verificationStatus !== 'unknown') return 'decline';
+  if (matches.some((match) => match.verificationStatus === 'unknown')) {
+    const known = matches.filter((match) => match.verificationStatus !== 'unknown');
+    const bound = known.length ? ceilingFromRead({ ...fit, read: readFor(known) }, known) : 'conditional';
+    return RANK[bound] < RANK.conditional ? bound : 'conditional';
+  }
   const bySkills = ceilingFromRead(fit, matches);
   return core?.assessment === 'relevant' && RANK[bySkills] > RANK.conditional ? 'conditional' : bySkills;
 }
@@ -316,7 +324,8 @@ const NEXT_STEP: Record<RecommendationLevel, RegExp> = {
 };
 
 function defaultRecommendation(level: RecommendationLevel, matches: RoleMatch[]): { nextStep: string; rationale: string } {
-  const gaps = matches.filter((m) => m.required && m.assessment === 'gap').map((m) => m.requirement);
+  if (level !== 'decline' && matches.some((match) => match.verificationStatus === 'unknown')) return { nextStep: 'Phone screen only if the unknown requirements can be verified', rationale: 'Some requirements need review; an incomplete verification is neither proof of a match nor proof of missing experience.' };
+  const gaps = matches.filter((m) => m.required && m.assessment === 'gap' && m.verificationStatus !== 'unknown').map((m) => m.requirement);
   const list = gaps.slice(0, 2).map((g) => `"${g}"`).join(' and ');
   switch (level) {
     case 'decline':
@@ -390,12 +399,12 @@ function evidenceBlock(items: EvidenceReference[]): string {
 interface Claim {
   text: string;
   evidenceIds: string[];
-  apply: (verdict: 'supported' | 'overstated' | 'unsupported', fixed?: string) => void;
+  apply: (verdict: ClaimVerdict, fixed?: string) => void;
 }
 
 /** A second model reads each claim beside only the items it cites. */
-async function verifyClaims(claims: Claim[], items: EvidenceReference[]): Promise<{ rewritten: number; removed: number }> {
-  if (claims.length === 0) return { rewritten: 0, removed: 0 };
+export async function verifyClaims(claims: Claim[], items: EvidenceReference[]): Promise<{ rewritten: number; removed: number; unknown: number }> {
+  if (claims.length === 0) return { rewritten: 0, removed: 0, unknown: 0 };
   const byId = new Map(items.map((item) => [item.id, item]));
   const blocks = claims.map((claim, i) => {
     const cited = claim.evidenceIds.map((id) => byId.get(id)).filter((item): item is EvidenceReference => Boolean(item));
@@ -415,25 +424,22 @@ Role match lines: judge the whole requirement, not the "Basis" alone. "Fully met
 Interview questions are claims only in what they presuppose about his work. Recommendations and validation notes may state gaps; judge only what they say he has done. Be strict.
 JSON: {"items":[{"index":0,"verdict":"supported|overstated|unsupported","fixed":"..."}]}`,
     blocks.join('\n\n'),
-    0
+    0, 'verification'
   );
 
   let rewritten = 0;
   let removed = 0;
+  let unknown = 0;
   claims.forEach((claim, i) => {
-    const item = parsed.items?.find((candidate) => candidate.index === i);
-    const verdict = item?.verdict === 'overstated' || item?.verdict === 'unsupported' ? item.verdict : 'supported';
-    // A "fix" that only says what isn't there is a removal.
-    const raw = item?.fixed?.trim();
-    const fixed = raw && !/^(no evidence|there is no|nothing|not (shown|supported|stated)|the evidence does not)/i.test(raw) ? raw : undefined;
-    if (verdict === 'overstated' && fixed) rewritten += 1;
-    if (verdict === 'unsupported') {
+    const { verdict, fixed } = claimVerdict(parsed.items, i);
+    if (verdict === 'unknown') unknown += 1;
+    if (verdict !== 'supported') {
       if (fixed) rewritten += 1;
       else removed += 1;
     }
     claim.apply(verdict, fixed);
   });
-  return { rewritten, removed };
+  return { rewritten, removed, unknown };
 }
 
 const BANNED = /\d+(?:\.\d+)?\s*%|\bpercent\b/i;
@@ -452,6 +458,7 @@ function clean(text: string | undefined): string {
 /* ------------------------------------------------------------------------ */
 
 function readFor(matches: RoleMatch[]): FitAssessment['read'] {
+  if (matches.some((match) => match.verificationStatus === 'unknown')) return 'needs review: verification incomplete';
   const strong = matches.filter((m) => m.assessment === 'strong').length;
   const relevant = matches.filter((m) => m.assessment === 'relevant').length;
   const gap = matches.length - strong - relevant;
@@ -465,7 +472,7 @@ function readFor(matches: RoleMatch[]): FitAssessment['read'] {
  * read against the write-ups (with who-did-what) settles each row. Rows can
  * only stay or move down.
  */
-async function auditRoleMatches(matches: RoleMatch[], items: EvidenceReference[]): Promise<void> {
+export async function auditRoleMatches(matches: RoleMatch[], items: EvidenceReference[]): Promise<void> {
   // Rows about years of using a named technology are settled by his start year, which the excerpts can't show.
   const yearsOfTech = (requirement: string) => /\d+\s*\+?\s*(?:(?:-|–|—|to)\s*\d+\s*)?(?:years?|yrs?)/i.test(requirement) && !/\b(professional|industry|as an?)\b/i.test(requirement);
   const rows = matches.map((match, i) => ({ match, i })).filter(({ match }) => match.assessment !== 'gap' && !yearsOfTech(match.requirement));
@@ -487,14 +494,15 @@ Strictness: years since he started using a language are not experience doing the
 ${FACTS}
 JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"..."}]}`,
     `BACKGROUND:\n${background.map((item) => `[${item.id}] ${item.section}: ${item.excerpt}`).join('\n')}\n\n${blocks.join('\n\n')}`,
-    0
+    0, 'verification'
   );
   const cap: Record<string, MatchLevel> = { full: 'strong', partial: 'relevant', none: 'gap' };
   const order: MatchLevel[] = ['gap', 'relevant', 'strong'];
   rows.forEach(({ match }, k) => {
-    const row = parsed.rows?.find((candidate) => candidate.index === k);
-    if (!row) return;
-    const level = cap[row.met ?? ''] ?? match.assessment;
+    const verdicts = Array.isArray(parsed.rows) ? parsed.rows.filter((candidate) => candidate?.index === k) : [];
+    const row = verdicts.length === 1 ? verdicts[0] : undefined;
+    if (!row || !['full', 'partial', 'none'].includes(row.met ?? '')) { markNeedsReview(match); return; }
+    const level = cap[row.met!];
     if (order.indexOf(level) < order.indexOf(match.assessment)) match.assessment = level;
     const keep = new Set((row.projects ?? []).map((name) => findProjectByName(name)?.id).filter((id): id is number => typeof id === 'number'));
     match.projectIds = match.projectIds.filter((id) => keep.has(id));
@@ -534,6 +542,9 @@ export interface FitEvaluation {
   read?: FitAssessment['read'];
   ceiling: RecommendationLevel;
   broadQuery: string;
+  evaluationIdentity: string;
+  needsReview?: boolean;
+  usedFallback?: boolean;
 }
 
 /**
@@ -547,10 +558,15 @@ const evaluationCache = new Map<string, { at: number; result: Promise<FitEvaluat
 const EVALUATION_TTL = 60 * 60 * 1000;
 
 export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
-  const key = JSON.stringify([input.jobDescription?.trim() ?? '', input.knownRequirements ?? [], input.recruiterContext ?? '']);
+  const key = JSON.stringify([evaluationIdentity(), input.jobDescription?.trim() ?? '', input.knownRequirements ?? [], input.recruiterContext ?? '', input.roleTitle ?? '', input.companyName ?? '']);
   const hit = evaluationCache.get(key);
   if (hit && Date.now() - hit.at < EVALUATION_TTL) return hit.result;
+  const failuresBefore = judgeFailures;
+  const fallbacksBefore = fitFallbacks;
   const result = savedEvaluation(key, input);
+  result.then((value) => {
+    if (value.needsReview || judgeFailures !== failuresBefore || fitFallbacks !== fallbacksBefore) evaluationCache.delete(key);
+  }, () => evaluationCache.delete(key));
   evaluationCache.set(key, { at: Date.now(), result });
   result.catch(() => evaluationCache.delete(key));
   if (evaluationCache.size > 200) evaluationCache.delete(evaluationCache.keys().next().value!);
@@ -561,7 +577,7 @@ export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
  * Bump when the matching rules change in a way that should re-judge saved
  * postings; changes to the facts, skills or write-ups re-judge on their own.
  */
-const FIT_RULES_VERSION = 3;
+const FIT_RULES_VERSION = 4;
 
 let knowledgeHash: Promise<string> | null = null;
 
@@ -590,9 +606,11 @@ async function savedEvaluation(inputKey: string, input: FitInput): Promise<FitEv
     return { ...parsed, evidence: { ...parsed.evidence, fitIds: new Map(parsed.evidence.fitIds) } };
   }
   const failuresBefore = judgeFailures;
+  const fallbacksBefore = fitFallbacks;
   const evaluation = await evaluateFitOnce(input);
+  if (fitFallbacks !== fallbacksBefore) evaluation.usedFallback = true;
   // A failed search reads as a gap; don't keep a verdict made during an outage.
-  if (judgeFailures !== failuresBefore) return evaluation;
+  if (evaluation.needsReview || judgeFailures !== failuresBefore || fitFallbacks !== fallbacksBefore) return evaluation;
   await saveEvaluation({
     evaluationKey,
     roleTitle: evaluation.roleTitle,
@@ -648,6 +666,7 @@ async function evaluateFitOnce(input: FitInput): Promise<FitEvaluation> {
       required: requirements[i]?.required ?? true,
       core: i === coreIndex || undefined,
       projectIds: row.projects.map((p) => p.id),
+      ...(row.verificationStatus ? { verificationStatus: row.verificationStatus } : {}),
     })) ?? [];
   let read = fit?.read;
   if (fit) {
@@ -655,6 +674,7 @@ async function evaluateFitOnce(input: FitInput): Promise<FitEvaluation> {
       await auditRoleMatches(roleMatches, evidence.items);
     } catch (error) {
       console.error('recruiter brief: role match audit failed', error);
+      roleMatches.filter((match) => match.assessment !== 'gap').forEach(markNeedsReview);
     }
     read = readFor(roleMatches);
     // Not having done the job itself caps the read, as it caps the recommendation.
@@ -668,7 +688,7 @@ async function evaluateFitOnce(input: FitInput): Promise<FitEvaluation> {
   }
   const ceiling = ceilingFor(fit && read ? { ...fit, read } : null, roleMatches, coreIndex);
 
-  return { roleTitle, companyName, requirements, coreIndex, logistics, fit, evidence, roleMatches, read, ceiling, broadQuery };
+  return { roleTitle, companyName, requirements, coreIndex, logistics, fit, evidence, roleMatches, read, ceiling, broadQuery, evaluationIdentity: evaluationIdentity(), needsReview: roleMatches.some((match) => match.verificationStatus === 'unknown') };
 }
 
 /** How the chat's fit card reads the brief's levels. */
@@ -694,7 +714,8 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
   const jobDescription = input.jobDescription?.trim() || undefined;
 
   // 1-2. Requirements, fit check, audit and bounds: reused from the chat's fit check when there was one.
-  const evaluation = input.evaluation ?? (await evaluateFit({ ...input, jobDescription }));
+  const evaluation = input.evaluation?.evaluationIdentity === evaluationIdentity() && !input.evaluation.needsReview && !input.evaluation.usedFallback
+    ? input.evaluation : await evaluateFit({ ...input, jobDescription });
   const { roleTitle, companyName, fit, evidence, roleMatches, read, ceiling, logistics } = evaluation;
   void logistics;
 
@@ -840,12 +861,13 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
     },
   });
 
-  let verification = { rewritten: 0, removed: 0 };
+  let verification = { rewritten: 0, removed: 0, unknown: 0 };
   try {
     verification = await verifyClaims(claims, evidence.items);
   } catch (error) {
     // Unchecked claims are not shipped: fall back to the parts the fit check decided.
     console.error('recruiter brief: claim check failed', error);
+    verification = { rewritten: 0, removed: claims.length, unknown: claims.length };
     brief.reasonsToConsider = [];
     brief.projects = [];
     brief.standoutSignal = null;
@@ -854,6 +876,7 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
     brief.recommendation = { level: brief.recommendation.level, ...defaultRecommendation(brief.recommendation.level, roleMatches) };
   }
 
+  if (verification.unknown || evaluation.needsReview) brief.validationAreas.unshift('Needs review: some claims or fit rows could not be verified; unknown claims were withheld.');
   brief.reasonsToConsider = brief.reasonsToConsider.filter((r) => r.title && r.explanation);
   brief.projects = brief.projects
     .map((p) => ({ ...p, evidence: p.evidence.map(clean).filter(Boolean) }))
@@ -872,7 +895,7 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
   for (const match of roleMatches.filter((m) => m.required && m.assessment === 'gap')) {
     const words = significant(match.requirement);
     const covered = brief.validationAreas.some((area) => words.filter((word) => area.toLowerCase().includes(word)).length >= Math.min(2, words.length));
-    if (!covered && brief.validationAreas.length < 6) brief.validationAreas.push(`${match.requirement}: not shown in the portfolio.`);
+    if (!covered && brief.validationAreas.length < 6) brief.validationAreas.push(`${match.requirement}: ${match.verificationStatus === 'unknown' ? 'unknown; needs review' : 'not shown in the portfolio'}.`);
   }
 
   // The portfolio can't answer logistics; say so rather than guess.
@@ -888,7 +911,7 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
     roleTitle,
     companyName,
     jobDescription,
-    generatedBrief: { ...brief, verification: { checked: claims.length, ...verification } },
+    generatedBrief: { ...brief, verification: { checked: claims.length - verification.unknown, ...verification } },
     evidenceReferences: evidence.items,
     version: BRIEF_VERSION,
   };

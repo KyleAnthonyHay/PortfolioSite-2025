@@ -50,7 +50,7 @@ export function RecruiterBriefWidget({ widget }: { widget: Extract<Widget, { kin
             <li key={match.requirement} className="flex items-start gap-2.5 px-3 py-2">
               <span className={`mt-[5px] h-2 w-2 shrink-0 rounded-full ${dot[match.assessment]}`} />
               <span className="min-w-0 flex-1 text-[13px] leading-snug text-zinc-700">{match.requirement}</span>
-              <span className="shrink-0 text-[11px] text-zinc-400">{MATCH_LABEL[match.assessment]}</span>
+              <span className="shrink-0 text-[11px] text-zinc-400">{match.verificationStatus === 'unknown' ? 'Needs review' : MATCH_LABEL[match.assessment]}</span>
             </li>
           ))}
           {!open && brief.roleMatches.length > 6 && (

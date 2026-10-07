@@ -1,5 +1,6 @@
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
+import { createStageModel, withStageModel } from './fit-models';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
 import fs from 'fs/promises';
@@ -224,20 +225,18 @@ export type Verdict = 'direct' | 'related' | 'none';
 
 export interface JudgedItem {
   verdict: Verdict;
+  verificationStatus?: 'unknown';
   projects: { id: number; why: string; section: string }[];
   /** In a fit check, work with no write-up (Cognizant, the internship) that supports the item. */
   work?: { where: string; text: string }[];
 }
 
 let judgeModel: ChatOpenAI | null = null;
-let fitJudgeModel: ChatOpenAI | null = null;
-function getJudge(mode: 'evidence' | 'fit' = 'evidence'): ChatOpenAI {
-  // Fit checks are what recruiters act on, and the small model kept counting
-  // adjacent work as a match, so they get the larger model.
-  if (mode === 'fit') {
-    // A fixed seed so the same posting gets the same rows run to run.
-    fitJudgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_FIT_JUDGE_MODEL ?? 'gpt-4.1', temperature: 0, modelKwargs: { seed: 7 } });
-    return fitJudgeModel;
+let technologyJudgeModel: ChatOpenAI | null = null;
+function getEvidenceJudge(namedTechnology: boolean): ChatOpenAI {
+  if (namedTechnology) {
+    technologyJudgeModel ??= createStageModel(process.env.OPENAI_TECH_JUDGE_MODEL ?? 'gpt-4.1');
+    return technologyJudgeModel;
   }
   judgeModel ??= new ChatOpenAI({ model: process.env.OPENAI_JUDGE_MODEL ?? 'gpt-4.1-mini', temperature: 0, modelKwargs: { seed: 7 } });
   return judgeModel;
@@ -393,10 +392,7 @@ async function judgeChunk(
   });
 
   try {
-    // A named technology gets the larger model: the small one quotes "SwiftUI" for "Swift".
-    const response = await getJudge(mode === 'fit' || mustMention.some(Boolean) ? 'fit' : 'evidence')
-      .bind({ response_format: { type: 'json_object' } })
-      .invoke([
+    const messages = [
         new SystemMessage(
           `You check a software engineer's portfolio for evidence. The engineer is Kyle-Anthony Hay. For each ITEM, read only its excerpts and decide:
 - "direct": an excerpt shows Kyle-Anthony himself built, used, or did this (on team projects, only the parts the excerpt attributes to him or the team he was on).
@@ -411,14 +407,21 @@ Being on the team that built something is not his use of it. When the ITEM names
 Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"verdict":"direct|related|none","projects":[{"ref":"0.3","quote":"...","why":"..."${mode === 'fit' ? ',"same_context":true' : ''}}]}]}`
         ),
         new HumanMessage(blocks.join('\n\n')),
-      ]);
-    const text = typeof response.content === 'string' ? response.content : '';
-    const parsed = JSON.parse(text) as {
+      ];
+    const invoke = async (model: ChatOpenAI) => {
+      const response = await model.bind({ response_format: { type: 'json_object' } }).invoke(messages);
+      return JSON.parse(typeof response.content === 'string' ? response.content : '');
+    };
+    const parsed = (mode === 'fit' ? await withStageModel('fit', invoke) : await invoke(getEvidenceJudge(mustMention.some(Boolean)))) as {
       items?: { index?: number; verdict?: string; projects?: { ref?: string; quote?: string; why?: string; same_context?: boolean }[] }[];
     };
     return questions.map((_, i) => {
-      const item = parsed.items?.find((candidate) => candidate.index === i);
-      if (!item) return empty;
+      const rows = Array.isArray(parsed.items) ? parsed.items.filter((candidate) => candidate?.index === i) : [];
+      const item = rows.length === 1 ? rows[0] : undefined;
+      if (!item || !['direct', 'related', 'none'].includes(item.verdict ?? '')) {
+        judgeFailures++;
+        return { ...empty, verificationStatus: 'unknown' };
+      }
       const verdict: Verdict = item.verdict === 'direct' || item.verdict === 'related' ? item.verdict : 'none';
       const seen = new Set<number>();
       const terms = mustMention[i];
@@ -459,7 +462,7 @@ Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"ve
   } catch (error) {
     judgeFailures++;
     console.error('judgeEvidence: judge failed', error);
-    return questions.map(() => empty);
+    return questions.map(() => ({ ...empty, verificationStatus: 'unknown' as const }));
   }
 }
 
@@ -790,6 +793,11 @@ function shortcut(requirement: string): Shortcut {
   const yearsMatch = YEARS_PATTERN.exec(text);
   const requiredYears = yearsMatch ? parseInt(yearsMatch[1], 10) : null;
 
+  if (/\b(graduat(?:e[sd]?|ing|ion)|class of|currently enrolled|current student)\b/i.test(lower) &&
+      /\b(recent|within|between|after|before|by|20\d{2}|current|enrolled|student)\b/i.test(lower)) {
+    return { requirement: text, status: 'gap', verificationStatus: 'unknown', evidence: 'B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.', projects: [] };
+  }
+
   if (/\bgpa\b|grade point/i.test(lower)) {
     const asked = /(\d\.\d+)/.exec(text)?.[1];
     if (GPA === null) return { requirement: text, status: 'gap', evidence: 'His GPA is not stated: ask him.', projects: [] };
@@ -836,7 +844,7 @@ function shortcut(requirement: string): Shortcut {
   return { judge: true, requirement: text, requiredYears };
 }
 
-export type FitRead = 'strong fit' | 'good fit with some gaps' | 'partial fit: real gaps to weigh' | 'weak fit for this role';
+export type FitRead = 'needs review: verification incomplete' | 'strong fit' | 'good fit with some gaps' | 'partial fit: real gaps to weigh' | 'weak fit for this role';
 
 export interface FitAssessment {
   requirements: FitRequirement[];
@@ -885,7 +893,11 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
     const currentYear = new Date().getFullYear();
     toJudge.forEach(({ index, requirement, requiredYears }, i) => {
       const verdict = judged[i];
-      if (!verdict || verdict.verdict === 'none') {
+      if (!verdict || verdict.verificationStatus === 'unknown') {
+        results[index] = { requirement, status: 'gap', verificationStatus: 'unknown', evidence: 'Unknown — needs review: a complete evidence verdict is unavailable.', projects: [] };
+        return;
+      }
+      if (verdict.verdict === 'none') {
         results[index] = { requirement, status: 'gap', evidence: 'Nothing in his projects or work history shows this.', projects: [] };
         return;
       }
@@ -934,8 +946,9 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
   };
 
   const score = (summary.match + summary.related * 0.5) / Math.max(1, results.length);
-  const read: FitRead =
-    score >= 0.85 && summary.gap === 0
+  const read: FitRead = results.some((row) => row.verificationStatus === 'unknown')
+    ? 'needs review: verification incomplete'
+    : score >= 0.85 && summary.gap === 0
       ? 'strong fit'
       : score >= 0.65
         ? 'good fit with some gaps'
