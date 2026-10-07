@@ -32,9 +32,6 @@ const Projects = () => {
               Products I&apos;ve shipped
             </h2>
           </div>
-          <p className="max-w-[44ch] text-sm leading-relaxed text-zinc-500">
-            Applications built for companies, for my church, and for myself. The ones marked live are running today.
-          </p>
         </motion.div>
 
         <div className="grid grid-cols-1 md:grid-cols-12 gap-5">
