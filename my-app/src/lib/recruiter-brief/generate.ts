@@ -1,4 +1,4 @@
-import { CAREER_FACTS, WORK_EVIDENCE } from '../facts';
+import { CAREER_FACTS, WORK_EVIDENCE, workArrangement } from '../facts';
 import { createHash } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
@@ -879,13 +879,7 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
   for (const item of logistics) {
     if (brief.validationAreas.length >= 7) break;
     const label = item.replace(/\.$/, '');
-    brief.validationAreas.push(
-      /new york|nyc|brooklyn/i.test(item)
-        ? `${label}: he is based in ${profile.location} and open to hybrid or on-site roles.`
-        : /remote|telecommute/i.test(item) && !/office|on-?site|hybrid/i.test(item)
-          ? `${label}: his portfolio lists hybrid and on-site roles; ask whether remote suits him.`
-          : `${label}: he is based in ${profile.location} and open to hybrid or on-site roles; relocation is not stated, so ask him.`
-    );
+    brief.validationAreas.push(`${label}: ${workArrangement(item).evidence}`);
   }
 
   const record: StoredBrief = {

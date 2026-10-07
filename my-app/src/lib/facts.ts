@@ -1,3 +1,5 @@
+import { profile } from './profile';
+
 /**
  * Career facts every answer has to respect, shared by the chat agent and the
  * recruiter brief so the two can't drift apart. They come from the project
@@ -18,6 +20,7 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
 - Client and real-user work: V1 ProdBot is the one project built at an outside stakeholder's request. SelahNote has real users and paying subscribers. The Creator Dashboard is an internal tool for SelahNote's staff and creators. YarnScript, Sentio+, OnTract, SoundSnag and Country Viewer have no stated users.
 - Never classify an employer (big tech, FAANG, startup, enterprise) or answer yes or no to whether he has worked at one: list the employers his résumé names (Cognizant, The Difference) and let the visitor judge. Never state what he has not done unless a tool says so. Never speculate about weaknesses.
 - Also from his résumé: first place at the Headstarter Hackathon (MunchMap, February 2024, three-person team); top 5% of applicants in the Yarn challenge.
+- Work arrangement, in his own words (October 2026): he is willing to work in the office five days a week. He is based in Brooklyn, New York. Relocation, visa or sponsorship status, salary and start date are not stated.
 - His background notes are his own account. A claim found only there (for example that he has led small teams) is "he says", not a verified fact, and no project shows him leading a team.`;
 
 /**
@@ -36,3 +39,27 @@ export const WORK_EVIDENCE: { where: string; text: string; source: 'résumé' | 
   { where: 'Software Engineering Intern at The Difference (Jul to Sep 2023)', text: 'Built a web version of a fitness app from Figma designs using WordPress, HTML, and CSS.', source: 'résumé' },
   { where: 'MunchMap, 1st place at the Headstarter Hackathon (Feb 2024)', text: 'Built a role-based React food-donation workflow with a three-person team.', source: 'résumé' },
 ];
+
+/** His answer on office attendance, in his own words (October 2026). */
+export const IN_OFFICE = 'Willing to work in the office five days a week (his own words).';
+
+/**
+ * A posting's location or work-arrangement condition against what he has
+ * said: office work in New York is met; remote-only, another city,
+ * relocation, visas, sponsorship and travel are not stated, so ask him.
+ */
+export function workArrangement(condition: string): { met: boolean; evidence: string } {
+  const text = condition.toLowerCase();
+  const base = `Based in ${profile.location}.`;
+  if (/\b(visas?|sponsor\w*|authori[sz]\w*|relocat\w*|travel\w*|time ?zones?)\b/.test(text)) {
+    return { met: false, evidence: `${base} ${IN_OFFICE} Relocation, travel and work authorization are not stated: ask him.` };
+  }
+  const inOffice = /\b(office|on-?site|hybrid|in[- ]person)\b/.test(text);
+  if (inOffice && /\b(new york|nyc|brooklyn|manhattan)\b/.test(text)) {
+    return { met: true, evidence: `${base} ${IN_OFFICE}` };
+  }
+  if (/\b(remote|telecommute|distributed)\b/.test(text) && !inOffice) {
+    return { met: false, evidence: `${base} ${IN_OFFICE} Whether fully remote suits him is not stated: ask him.` };
+  }
+  return { met: false, evidence: `${base} ${IN_OFFICE} Working outside New York would mean relocating, which is not stated: ask him.` };
+}

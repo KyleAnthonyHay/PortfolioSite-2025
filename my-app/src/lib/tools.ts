@@ -7,7 +7,7 @@ import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
-import { CAREER_FACTS, WORK_EVIDENCE } from './facts';
+import { CAREER_FACTS, IN_OFFICE, WORK_EVIDENCE, workArrangement } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -694,6 +694,7 @@ export const getBackground = tool(
         const content = [
           `${profile.name} — ${profile.headline}, based in ${profile.location}.`,
           ...profile.availability,
+          IN_OFFICE,
           ...contactLinks.map((link) => `${link.label}: ${link.detail ?? link.href}`),
           'Not stated anywhere: willingness to relocate, visa or sponsorship status, salary expectations, start date. If asked, say it is not stated and suggest asking him directly.',
         ].join('\n');
@@ -807,12 +808,8 @@ function shortcut(requirement: string): Shortcut {
   }
 
   if (/\b(relocat\w*|on-?site|in[- ]office|hybrid|remote|based in|located in|work authori[sz]ation|authori[sz]ed to work|visas?|sponsorship|time ?zones?|travel\w*)\b/i.test(lower)) {
-    return {
-      requirement: text,
-      status: 'gap',
-      evidence: `Not stated in his portfolio: he is based in ${profile.location} and lists hybrid and on-site roles. Ask him.`,
-      projects: [],
-    };
+    const arrangement = workArrangement(text);
+    return { requirement: text, status: arrangement.met ? 'match' : 'gap', evidence: arrangement.evidence, projects: [] };
   }
 
   // Years of experience in general, in industry, or in a job function: tenure, not a technology.

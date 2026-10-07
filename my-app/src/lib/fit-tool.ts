@@ -3,6 +3,7 @@ import { z } from 'zod';
 import type { ConversationMessage, FitRequirement, VisitorContext } from './chat-events';
 import { projectById, toCard } from './project-catalog';
 import { MAX_REQUIREMENTS } from './tools';
+import { workArrangement } from './facts';
 import { describeCeiling, evaluateFit, STATUS_FOR, type FitEvaluation } from './recruiter-brief/generate';
 import { findPosting, looksLikePosting } from './recruiter-brief/tool';
 
@@ -82,12 +83,10 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
           evidence: match.evidence,
           projects: match.projectIds.map((id) => projectById(id)).filter((p) => p !== undefined && p !== null).map((p) => toCard(p!)),
         })),
-        ...evaluation.logistics.map((item) => ({
-          requirement: item,
-          status: 'gap' as const,
-          evidence: 'Not stated in his portfolio: he is based in Brooklyn, New York. Ask him.',
-          projects: [],
-        })),
+        ...evaluation.logistics.map((item) => {
+          const arrangement = workArrangement(item);
+          return { requirement: item, status: arrangement.met ? ('match' as const) : ('gap' as const), evidence: arrangement.evidence, projects: [] };
+        }),
       ];
       const summary = {
         match: rows.filter((r) => r.status === 'match').length,
@@ -103,7 +102,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
         posting.text && typed ? `The visitor called the role "${typed}", but the posting is for "${title}"; this report is judged against the posting. Say so in one short clause first.` : '',
         `Fit assessment${title ? ` for ${title}` : ''}: ${summary.match} match, ${summary.related} related, ${summary.gap} gap out of ${rows.length}.`,
         `Overall read: ${read}. Recommended next step: ${describeCeiling(evaluation)}. State this read and next step as written; never call it a stronger fit.`,
-        evaluation.logistics.length ? 'Location and work-arrangement rows are not stated in his portfolio; say they need asking, not that he fails them.' : '',
+        evaluation.logistics.some((item) => !workArrangement(item).met) ? 'Location and work-arrangement gaps are things he has not stated; say they need asking, not that he fails them.' : '',
         ...rows.map((r) => `- [${r.status.toUpperCase()}] ${r.requirement} — ${r.evidence}`),
         'Strengths first, then gaps, then the read. Do not call other tools in this turn.',
       ]
