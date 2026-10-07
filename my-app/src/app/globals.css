@@ -353,6 +353,20 @@ html.lenis, html.lenis body { height: auto; }
   .text-shimmer { color: #71717a; background: none; }
 }
 
+/* Brief nudge: the bottom edge fills over the card's lifetime, then it dismisses itself. */
+@keyframes nudge-fill {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+.nudge-fill {
+  animation: nudge-fill linear forwards;
+  transform: scaleX(0);
+}
+.nudge-fill[data-paused="true"] { animation-play-state: paused; }
+@media (prefers-reduced-motion: reduce) {
+  .nudge-fill { animation: none; display: none; }
+}
+
 /* Agent surfaces: one card recipe for every widget. */
 .agent-card {
   border-radius: 20px;

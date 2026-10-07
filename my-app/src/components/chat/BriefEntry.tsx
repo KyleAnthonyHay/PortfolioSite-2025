@@ -76,10 +76,15 @@ export function BriefButton({ ready, busy, briefId, onMake }: { ready: boolean; 
   );
 }
 
+/** How long the nudge stays up before it dismisses itself. */
+const NUDGE_MS = 8_000;
+
 /**
  * One offer per visit to take a brief along, when the cursor heads for the
  * tab bar or the chat goes quiet after a real conversation. Never blocks
- * leaving.
+ * leaving: a thin bar along the bottom edge fills over NUDGE_MS and the card
+ * dismisses itself when it completes. The timer pauses while the pointer is
+ * over the card or focus is inside it.
  */
 export function BriefNudge({
   engaged,
@@ -98,6 +103,8 @@ export function BriefNudge({
   onMake: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const remaining = useRef(NUDGE_MS);
   const eligible = engaged && !busy;
 
   useEffect(() => {
@@ -105,6 +112,8 @@ export function BriefNudge({
     const show = () => {
       if (readFlag(NUDGED_KEY)) return;
       setFlag(NUDGED_KEY);
+      remaining.current = NUDGE_MS;
+      setPaused(false);
       setOpen(true);
     };
     const onLeave = (event: MouseEvent) => {
@@ -118,42 +127,66 @@ export function BriefNudge({
     };
   }, [eligible, activity]);
 
+  // Self-dismiss clock. The bar's animationend dismisses the card the moment
+  // it reaches the edge; this timer is the fallback for reduced motion, where
+  // the bar is hidden. Runs only while open and not paused; each pause banks
+  // the time already spent so the two stay in step.
+  useEffect(() => {
+    if (!open || paused) return;
+    const startedAt = performance.now();
+    const timer = window.setTimeout(() => setOpen(false), remaining.current);
+    return () => {
+      window.clearTimeout(timer);
+      remaining.current = Math.max(0, remaining.current - (performance.now() - startedAt));
+    };
+  }, [open, paused]);
+
   const link = briefId && typeof window !== 'undefined' ? `${window.location.origin}/brief/${briefId}` : '';
   const mail = link
     ? `mailto:?subject=${encodeURIComponent('Kyle-Anthony Hay: recruiter brief')}&body=${encodeURIComponent(`Recruiter brief on Kyle-Anthony Hay:\n${link}\n\nPDF: ${link}/pdf`)}`
     : '';
+
+  const button = 'inline-flex h-9 w-full items-center justify-center rounded-xl px-3 text-[13px] font-medium transition-colors active:scale-[0.98]';
+  const primary = `${button} bg-olive text-white hover:brightness-95`;
+  const secondary = `${button} border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50`;
 
   return (
     <AnimatePresence>
       {open && (
         <motion.div
           role="dialog"
-          aria-label="Take a brief with you"
+          aria-label="Take the brief with you"
           initial={{ opacity: 0, y: 12, scale: 0.98 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, y: 8 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className="fixed bottom-28 right-4 z-50 w-[min(340px,calc(100vw-32px))] rounded-[20px] border border-zinc-200/80 bg-white p-4 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)]"
+          onPointerEnter={() => setPaused(true)}
+          onPointerLeave={() => setPaused(false)}
+          onFocusCapture={() => setPaused(true)}
+          onBlurCapture={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
+          }}
+          className="fixed bottom-28 right-4 z-50 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white p-4 pb-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)]"
         >
           <button type="button" onClick={() => setOpen(false)} aria-label="Dismiss" className="absolute right-3 top-3 rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900">
             <X className="h-3.5 w-3.5" />
           </button>
-          <p className="pr-6 text-sm font-semibold text-zinc-900">Take a brief with you?</p>
+          <p className="pr-6 text-sm font-semibold text-zinc-900">Take the brief with you?</p>
           <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">
             {briefId
-              ? 'Your brief is ready. Send yourself the link so it is there when you talk to the hiring manager.'
+              ? 'Your brief is ready. Save the PDF or send yourself the link for the hiring manager.'
               : ready
-                ? 'A short, shareable brief on Kyle-Anthony for your role: role match, relevant work and what to validate, as a PDF and a link.'
+                ? 'A one-page brief on Kyle-Anthony for your role: role match, relevant work and what to validate.'
                 : 'A short, shareable profile of Kyle-Anthony. Share a job link first for a role match.'}
           </p>
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className={`mt-3 grid gap-2 ${briefId ? 'grid-cols-2' : 'grid-cols-1'}`}>
             {briefId ? (
               <>
-                <a href={mail} onClick={() => setOpen(false)} className="inline-flex h-8 items-center rounded-xl bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800">
-                  Email me the link
-                </a>
-                <a href={`/brief/${briefId}/pdf`} download className="inline-flex h-8 items-center rounded-xl border border-zinc-200 px-3.5 text-[13px] font-medium text-zinc-700 transition-colors hover:bg-zinc-50">
+                <a href={`/brief/${briefId}/pdf`} download onClick={() => setOpen(false)} className={primary}>
                   Download PDF
+                </a>
+                <a href={mail} onClick={() => setOpen(false)} className={secondary}>
+                  Email the link
                 </a>
               </>
             ) : (
@@ -163,14 +196,19 @@ export function BriefNudge({
                   setOpen(false);
                   onMake();
                 }}
-                className="inline-flex h-8 items-center rounded-xl bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800"
+                className={primary}
               >
                 Make the brief
               </button>
             )}
-            <button type="button" onClick={() => setOpen(false)} className="inline-flex h-8 items-center rounded-xl px-3 text-[13px] font-medium text-zinc-500 transition-colors hover:text-zinc-900">
-              Not now
-            </button>
+          </div>
+          <div aria-hidden className="absolute inset-x-0 bottom-0 h-[3px] bg-zinc-100">
+            <div
+              className="nudge-fill h-full w-full origin-left bg-olive"
+              data-paused={paused ? 'true' : 'false'}
+              style={{ animationDuration: `${NUDGE_MS}ms` }}
+              onAnimationEnd={() => setOpen(false)}
+            />
           </div>
         </motion.div>
       )}
