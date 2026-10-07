@@ -13,6 +13,7 @@
   --color-ink: var(--ink);
   --color-clay: var(--clay);
   --color-olive: var(--olive);
+  --color-accent-blue: var(--accent-blue);
   --color-stage: var(--stage);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -90,6 +91,7 @@
   --ink: #18181b;
   --clay: #18181b;
   --olive: #10b981;
+  --accent-blue: #0a84ff;
   --stage: #09090b;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out-quint: cubic-bezier(0.83, 0, 0.17, 1);

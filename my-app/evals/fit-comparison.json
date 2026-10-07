@@ -1,0 +1,917 @@
+{
+  "date": "2026-10-07",
+  "pricingSource": "https://developers.openai.com/api/docs/pricing",
+  "rates": {
+    "gpt-4.1": {
+      "input": 2,
+      "cached": 0.5,
+      "output": 8
+    },
+    "gpt-5.6-luna": {
+      "input": 0.2,
+      "cached": 0.02,
+      "write": 0.25,
+      "output": 1.2
+    }
+  },
+  "gate": "All Luna expectations pass; no failed API/retrieval calls; accuracy >= baseline; lower measured token cost; mean end-to-end latency <= 1.25x baseline.",
+  "passed": true,
+  "retrievalRequests": 33,
+  "evidenceHash": "185e5e07d068864dbe3663e734c2298ab236a0ee7dbb8b0e03122b20d7533f82",
+  "totals": {
+    "gpt-4.1": {
+      "correct": 16,
+      "total": 16,
+      "meanMs": 6538.6,
+      "usd": 0.084632,
+      "tokens": {
+        "input": 62248,
+        "cached": 36992,
+        "output": 1953,
+        "reasoning": 0
+      }
+    },
+    "gpt-5.6-luna": {
+      "correct": 16,
+      "total": 16,
+      "meanMs": 6775.6,
+      "usd": 0.03769266,
+      "tokens": {
+        "input": 63183,
+        "cached": 36213,
+        "output": 2907,
+        "reasoning": 1657
+      }
+    }
+  },
+  "results": [
+    {
+      "id": "missing-specialist-experience",
+      "model": "gpt-4.1",
+      "ms": 6314,
+      "checks": [
+        {
+          "requirement": "5+ years of professional software engineering experience",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Operate Kubernetes clusters in production",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Production Swift iOS applications",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "5+ years of professional software engineering experience",
+          "assessment": "gap",
+          "evidence": "About one year of professional experience: AI Engineer at Cognizant since November 2025, plus a three-month internship in 2023. His other years are personal and training-program work.",
+          "required": true
+        },
+        {
+          "requirement": "Operate Kubernetes clusters in production",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Production Swift iOS applications",
+          "assessment": "strong",
+          "evidence": "He wrote SelahNote himself in Swift and SwiftUI; it is a production iOS app live on the App Store.",
+          "required": true
+        }
+      ],
+      "read": "weak fit for this role",
+      "ceiling": "decline",
+      "calls": [
+        {
+          "stage": "fit",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 3504,
+          "input": 8528,
+          "cached": 8320,
+          "cacheWrite": 0,
+          "output": 274,
+          "reasoning": 0,
+          "usd": 0.006768,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1660,
+          "input": 4589,
+          "cached": 2944,
+          "cacheWrite": 0,
+          "output": 66,
+          "reasoning": 0,
+          "usd": 0.00529,
+          "status": 200
+        }
+      ],
+      "usd": 0.012058
+    },
+    {
+      "id": "missing-specialist-experience",
+      "model": "gpt-5.6-luna",
+      "ms": 10705,
+      "checks": [
+        {
+          "requirement": "5+ years of professional software engineering experience",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Operate Kubernetes clusters in production",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Production Swift iOS applications",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "5+ years of professional software engineering experience",
+          "assessment": "gap",
+          "evidence": "About one year of professional experience: AI Engineer at Cognizant since November 2025, plus a three-month internship in 2023. His other years are personal and training-program work.",
+          "required": true
+        },
+        {
+          "requirement": "Operate Kubernetes clusters in production",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Production Swift iOS applications",
+          "assessment": "strong",
+          "evidence": "Built and shipped SelahNote, a native Swift/SwiftUI iOS app, solo; owns all engineering and App Store operations.",
+          "required": true
+        }
+      ],
+      "read": "weak fit for this role",
+      "ceiling": "decline",
+      "calls": [
+        {
+          "stage": "fit",
+          "model": "gpt-5.6-luna",
+          "returnedModel": "gpt-5.6-luna",
+          "ms": 9355,
+          "input": 8527,
+          "cached": 8524,
+          "cacheWrite": 0,
+          "output": 838,
+          "reasoning": 746,
+          "usd": 0.0011766799999999998,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1337,
+          "input": 4581,
+          "cached": 2944,
+          "cacheWrite": 0,
+          "output": 68,
+          "reasoning": 0,
+          "usd": 0.00529,
+          "status": 200
+        }
+      ],
+      "usd": 0.006466680000000001
+    },
+    {
+      "id": "adjacent-is-not-direct",
+      "model": "gpt-5.6-luna",
+      "ms": 5495,
+      "checks": [
+        {
+          "requirement": "Revenue forecasting as a finance analyst",
+          "allowed": [
+            "gap",
+            "relevant"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "On-call incident response for large-scale distributed infrastructure",
+          "allowed": [
+            "gap",
+            "relevant"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Fine-tuning DistilBERT for sentiment analysis",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Revenue forecasting as a finance analyst",
+          "assessment": "gap",
+          "evidence": "Not shown in the portfolio.",
+          "required": true
+        },
+        {
+          "requirement": "On-call incident response for large-scale distributed infrastructure",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Fine-tuning DistilBERT for sentiment analysis",
+          "assessment": "strong",
+          "evidence": "At Cognizant, fine-tuned DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points.",
+          "required": true
+        }
+      ],
+      "read": "weak fit for this role",
+      "ceiling": "decline",
+      "calls": [
+        {
+          "stage": "fit",
+          "model": "gpt-5.6-luna",
+          "returnedModel": "gpt-5.6-luna",
+          "ms": 3701,
+          "input": 8234,
+          "cached": 8231,
+          "cacheWrite": 0,
+          "output": 302,
+          "reasoning": 149,
+          "usd": 0.00052762,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1232,
+          "input": 4643,
+          "cached": 2944,
+          "cacheWrite": 0,
+          "output": 88,
+          "reasoning": 0,
+          "usd": 0.005574,
+          "status": 200
+        }
+      ],
+      "usd": 0.00610162
+    },
+    {
+      "id": "adjacent-is-not-direct",
+      "model": "gpt-4.1",
+      "ms": 7214,
+      "checks": [
+        {
+          "requirement": "Revenue forecasting as a finance analyst",
+          "allowed": [
+            "gap",
+            "relevant"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "On-call incident response for large-scale distributed infrastructure",
+          "allowed": [
+            "gap",
+            "relevant"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Fine-tuning DistilBERT for sentiment analysis",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Revenue forecasting as a finance analyst",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "On-call incident response for large-scale distributed infrastructure",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Fine-tuning DistilBERT for sentiment analysis",
+          "assessment": "strong",
+          "evidence": "Fine-tuned DistilBERT for sentiment analysis at Cognizant, increasing accuracy by 25 percentage points.",
+          "required": true
+        }
+      ],
+      "read": "weak fit for this role",
+      "ceiling": "decline",
+      "calls": [
+        {
+          "stage": "fit",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 6285,
+          "input": 8235,
+          "cached": 8064,
+          "cacheWrite": 0,
+          "output": 153,
+          "reasoning": 0,
+          "usd": 0.005598,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 917,
+          "input": 3225,
+          "cached": 3072,
+          "cacheWrite": 0,
+          "output": 65,
+          "reasoning": 0,
+          "usd": 0.002362,
+          "status": 200
+        }
+      ],
+      "usd": 0.00796
+    },
+    {
+      "id": "attribution-and-production",
+      "model": "gpt-4.1",
+      "ms": 6963,
+      "checks": [
+        {
+          "requirement": "Deploying the Sentio+ RoBERTa model to live production users",
+          "allowed": [
+            "gap",
+            "relevant"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Docker infrastructure implemented personally on the Sentio+ team project",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Hands-on Claude through AWS Bedrock",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Deploying the Sentio+ RoBERTa model to live production users",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Docker infrastructure implemented personally on the Sentio+ team project",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Hands-on Claude through AWS Bedrock",
+          "assessment": "strong",
+          "evidence": "He personally implemented a chat API route calling Claude 3 Sonnet through AWS Bedrock in Sentio+.",
+          "required": true
+        }
+      ],
+      "read": "weak fit for this role",
+      "ceiling": "decline",
+      "calls": [
+        {
+          "stage": "fit",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 5145,
+          "input": 9764,
+          "cached": 9600,
+          "cacheWrite": 0,
+          "output": 178,
+          "reasoning": 0,
+          "usd": 0.006552,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1306,
+          "input": 5003,
+          "cached": 0,
+          "cacheWrite": 0,
+          "output": 63,
+          "reasoning": 0,
+          "usd": 0.01051,
+          "status": 200
+        }
+      ],
+      "usd": 0.017062
+    },
+    {
+      "id": "attribution-and-production",
+      "model": "gpt-5.6-luna",
+      "ms": 4022,
+      "checks": [
+        {
+          "requirement": "Deploying the Sentio+ RoBERTa model to live production users",
+          "allowed": [
+            "gap",
+            "relevant"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Docker infrastructure implemented personally on the Sentio+ team project",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        },
+        {
+          "requirement": "Hands-on Claude through AWS Bedrock",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Deploying the Sentio+ RoBERTa model to live production users",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Docker infrastructure implemented personally on the Sentio+ team project",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": true
+        },
+        {
+          "requirement": "Hands-on Claude through AWS Bedrock",
+          "assessment": "strong",
+          "evidence": "He personally implemented a chat API route calling Claude 3 Sonnet through AWS Bedrock in Sentio+ (team version).",
+          "required": true
+        }
+      ],
+      "read": "weak fit for this role",
+      "ceiling": "decline",
+      "calls": [
+        {
+          "stage": "fit",
+          "model": "gpt-5.6-luna",
+          "returnedModel": "gpt-5.6-luna",
+          "ms": 2868,
+          "input": 9763,
+          "cached": 2369,
+          "cacheWrite": 0,
+          "output": 244,
+          "reasoning": 111,
+          "usd": 0.0018189800000000002,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1140,
+          "input": 5002,
+          "cached": 2944,
+          "cacheWrite": 0,
+          "output": 67,
+          "reasoning": 0,
+          "usd": 0.006124,
+          "status": 200
+        }
+      ],
+      "usd": 0.00794298
+    },
+    {
+      "id": "ambiguous-graduation",
+      "model": "gpt-5.6-luna",
+      "ms": 1314,
+      "checks": [
+        {
+          "requirement": "Bachelor's degree in Computer Science",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        },
+        {
+          "requirement": "Graduated within 24 months of October 7, 2026",
+          "allowed": [
+            "unknown"
+          ],
+          "actual": "unknown",
+          "pass": true
+        },
+        {
+          "requirement": "Master's degree required",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Bachelor's degree in Computer Science",
+          "assessment": "strong",
+          "evidence": "Earned a B.S. in Computer Science from CUNY Hunter College in 2024.",
+          "required": true
+        },
+        {
+          "requirement": "Graduated within 24 months of October 7, 2026",
+          "assessment": "unknown",
+          "evidence": "B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.",
+          "required": true
+        },
+        {
+          "requirement": "Master's degree required",
+          "assessment": "gap",
+          "evidence": "His highest degree is a B.S. in Computer Science (CUNY Hunter College, 2024).",
+          "required": true
+        }
+      ],
+      "read": "needs review: verification incomplete",
+      "ceiling": "conditional",
+      "calls": [
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1089,
+          "input": 3213,
+          "cached": 2944,
+          "cacheWrite": 0,
+          "output": 57,
+          "reasoning": 0,
+          "usd": 0.002466,
+          "status": 200
+        }
+      ],
+      "usd": 0.002466
+    },
+    {
+      "id": "ambiguous-graduation",
+      "model": "gpt-4.1",
+      "ms": 868,
+      "checks": [
+        {
+          "requirement": "Bachelor's degree in Computer Science",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        },
+        {
+          "requirement": "Graduated within 24 months of October 7, 2026",
+          "allowed": [
+            "unknown"
+          ],
+          "actual": "unknown",
+          "pass": true
+        },
+        {
+          "requirement": "Master's degree required",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Bachelor's degree in Computer Science",
+          "assessment": "strong",
+          "evidence": "Earned a B.S. in Computer Science from CUNY Hunter College in 2024.",
+          "required": true
+        },
+        {
+          "requirement": "Graduated within 24 months of October 7, 2026",
+          "assessment": "unknown",
+          "evidence": "B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.",
+          "required": true
+        },
+        {
+          "requirement": "Master's degree required",
+          "assessment": "gap",
+          "evidence": "His highest degree is a B.S. in Computer Science (CUNY Hunter College, 2024).",
+          "required": true
+        }
+      ],
+      "read": "needs review: verification incomplete",
+      "ceiling": "conditional",
+      "calls": [
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 865,
+          "input": 3213,
+          "cached": 3072,
+          "cacheWrite": 0,
+          "output": 57,
+          "reasoning": 0,
+          "usd": 0.002274,
+          "status": 200
+        }
+      ],
+      "usd": 0.002274
+    },
+    {
+      "id": "posting-extraction",
+      "model": "gpt-4.1",
+      "ms": 11334,
+      "checks": [
+        {
+          "requirement": "Swift",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        },
+        {
+          "requirement": "bachelor|degree",
+          "allowed": [
+            "strong",
+            "unknown"
+          ],
+          "actual": "strong",
+          "pass": true
+        },
+        {
+          "requirement": "graduat|24 months",
+          "allowed": [
+            "unknown"
+          ],
+          "actual": "unknown",
+          "pass": true
+        },
+        {
+          "requirement": "Kubernetes",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Experience as a junior iOS engineer",
+          "assessment": "strong",
+          "evidence": "Built and shipped solo iOS apps in Swift, owning all engineering and App Store operations for SelahNote.",
+          "required": true
+        },
+        {
+          "requirement": "Experience building production Swift iOS apps",
+          "assessment": "strong",
+          "evidence": "Built and shipped production Swift iOS apps, handling all engineering, release, and App Store operations.",
+          "required": true
+        },
+        {
+          "requirement": "Bachelor's degree in computer science",
+          "assessment": "strong",
+          "evidence": "B.S. in Computer Science, CUNY Hunter College, 2024.",
+          "required": true
+        },
+        {
+          "requirement": "Graduation within 24 months of October 7, 2026",
+          "assessment": "unknown",
+          "evidence": "B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.",
+          "required": true
+        },
+        {
+          "requirement": "Kubernetes experience",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": false
+        }
+      ],
+      "read": "needs review: verification incomplete",
+      "ceiling": "conditional",
+      "calls": [
+        {
+          "stage": "extraction",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1544,
+          "input": 538,
+          "cached": 0,
+          "cacheWrite": 0,
+          "output": 123,
+          "reasoning": 0,
+          "usd": 0.00206,
+          "status": 200
+        },
+        {
+          "stage": "fit",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 7592,
+          "input": 11493,
+          "cached": 1920,
+          "cacheWrite": 0,
+          "output": 805,
+          "reasoning": 0,
+          "usd": 0.026546,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 1671,
+          "input": 7660,
+          "cached": 0,
+          "cacheWrite": 0,
+          "output": 169,
+          "reasoning": 0,
+          "usd": 0.016672,
+          "status": 200
+        }
+      ],
+      "usd": 0.045278
+    },
+    {
+      "id": "posting-extraction",
+      "model": "gpt-5.6-luna",
+      "ms": 12342,
+      "checks": [
+        {
+          "requirement": "Swift",
+          "allowed": [
+            "strong"
+          ],
+          "actual": "strong",
+          "pass": true
+        },
+        {
+          "requirement": "bachelor|degree",
+          "allowed": [
+            "strong",
+            "unknown"
+          ],
+          "actual": "strong",
+          "pass": true
+        },
+        {
+          "requirement": "graduat|24 months",
+          "allowed": [
+            "unknown"
+          ],
+          "actual": "unknown",
+          "pass": true
+        },
+        {
+          "requirement": "Kubernetes",
+          "allowed": [
+            "gap"
+          ],
+          "actual": "gap",
+          "pass": true
+        }
+      ],
+      "rows": [
+        {
+          "requirement": "Experience as a junior iOS engineer",
+          "assessment": "strong",
+          "evidence": "Built and owns SelahNote (live iOS app, all Swift/SwiftUI code) and solo-built Country Viewer (UIKit, networking, iOS fundamentals).",
+          "required": true
+        },
+        {
+          "requirement": "Experience building production Swift iOS apps",
+          "assessment": "strong",
+          "evidence": "Built, released, and operates SelahNote as a production Swift iOS app on the App Store, handling all engineering and operations.",
+          "required": true
+        },
+        {
+          "requirement": "Bachelor's degree in computer science",
+          "assessment": "strong",
+          "evidence": "Holds a B.S. in Computer Science from CUNY Hunter College, awarded in 2024.",
+          "required": true
+        },
+        {
+          "requirement": "Graduation within 24 months of October 7, 2026",
+          "assessment": "unknown",
+          "evidence": "B.S. Computer Science, 2024. Exact graduation date and eligibility for this window need review; a degree alone does not establish eligibility.",
+          "required": true
+        },
+        {
+          "requirement": "Kubernetes experience",
+          "assessment": "gap",
+          "evidence": "Nothing in his projects or work history shows this.",
+          "required": false
+        }
+      ],
+      "read": "needs review: verification incomplete",
+      "ceiling": "conditional",
+      "calls": [
+        {
+          "stage": "extraction",
+          "model": "gpt-5.6-luna",
+          "returnedModel": "gpt-5.6-luna",
+          "ms": 1587,
+          "input": 537,
+          "cached": 0,
+          "cacheWrite": 0,
+          "output": 98,
+          "reasoning": 0,
+          "usd": 0.000225,
+          "status": 200
+        },
+        {
+          "stage": "fit",
+          "model": "gpt-5.6-luna",
+          "returnedModel": "gpt-5.6-luna",
+          "ms": 8647,
+          "input": 11492,
+          "cached": 2369,
+          "cacheWrite": 0,
+          "output": 957,
+          "reasoning": 651,
+          "usd": 0.00302038,
+          "status": 200
+        },
+        {
+          "stage": "verification",
+          "model": "gpt-4.1",
+          "returnedModel": "gpt-4.1-2025-04-14",
+          "ms": 2097,
+          "input": 7191,
+          "cached": 2944,
+          "cacheWrite": 0,
+          "output": 188,
+          "reasoning": 0,
+          "usd": 0.01147,
+          "status": 200
+        }
+      ],
+      "usd": 0.01471538
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowLeft, Briefcase, Check, Copy, CornerDownRight, Plus, RefreshCw, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, Briefcase, Check, Copy, RefreshCw, X } from 'lucide-react';
 import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
@@ -15,11 +15,15 @@ import Markdown from './Markdown';
 import SourcePills from './SourcePills';
 import WidgetRenderer from './widgets';
 import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
+import ChatSwitcher from './ChatSwitcher';
+import { chatTitle, loadArchive, MAX_CHATS, saveArchive, stampFor, type StoredChat } from './chat-history';
 
 interface UserMessage {
   id: string;
   role: 'user';
   content: string;
+  /** Client clock, for the time stamps between messages. */
+  at?: number;
 }
 
 interface AssistantMessage {
@@ -163,6 +167,12 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
   }
 }
 
+const STAMP_GAP_MS = 10 * 60_000;
+
+function messageTime(message: ChatMessage): number | undefined {
+  return message.role === 'user' ? message.at : message.startedAt;
+}
+
 function CopyButton({ text }: { text: string }) {
   const [copied, setCopied] = useState(false);
   return (
@@ -195,12 +205,16 @@ export default function ChatInterface() {
   // Null until the visitor answers or skips the opening question.
   const [visitor, setVisitor] = useState<VisitorContext | null>(null);
   const visitorRef = useRef<VisitorContext | null>(null);
+  // Chats parked by "New chat" or by switching away, newest first.
+  const [archive, setArchive] = useState<StoredChat<ChatMessage>[]>([]);
+  const archiveRef = useRef<StoredChat<ChatMessage>[]>([]);
   const conversationRef = useRef('');
   const messagesRef = useRef<ChatMessage[]>([]);
   const abortRef = useRef<AbortController | null>(null);
   const hasSentInitialRef = useRef(false);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
+  const [atBottom, setAtBottom] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   const isStreaming = messages.some((m) => m.role === 'assistant' && m.status === 'streaming');
@@ -216,8 +230,32 @@ export default function ChatInterface() {
     visitorRef.current = stored;
     setVisitor(stored);
     conversationRef.current = loadConversationId();
+    archiveRef.current = loadArchive<ChatMessage>();
+    setArchive(archiveRef.current);
     setIsHydrated(true);
   }, []);
+
+  const updateArchive = useCallback((next: StoredChat<ChatMessage>[]) => {
+    const trimmed = next.slice(0, MAX_CHATS);
+    archiveRef.current = trimmed;
+    setArchive(trimmed);
+    saveArchive(trimmed);
+  }, []);
+
+  /** Park the chat on screen so it can be reopened from the switcher. Empty chats are dropped. */
+  const stashCurrent = useCallback(() => {
+    const current = messagesRef.current;
+    if (!current.some((m) => m.role === 'user')) return;
+    const settled = current.map((m) => (m.role === 'assistant' && m.status === 'streaming' ? { ...m, status: 'done' as const } : m));
+    const times = settled.map(messageTime).filter((t): t is number => t !== undefined);
+    const parked: StoredChat<ChatMessage> = {
+      id: conversationRef.current,
+      messages: settled.slice(-MAX_STORED),
+      context: visitorRef.current,
+      updatedAt: times.length > 0 ? Math.max(...times) : Date.now(),
+    };
+    updateArchive([parked, ...archiveRef.current.filter((chat) => chat.id !== parked.id)]);
+  }, [updateArchive]);
 
   const updateVisitor = useCallback((next: VisitorContext | null) => {
     visitorRef.current = next;
@@ -275,16 +313,33 @@ export default function ChatInterface() {
     const el = scrollerRef.current;
     if (!el) return;
     const onScroll = () => {
-      stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+      const near = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
+      stickToBottomRef.current = near;
+      setAtBottom(near);
     };
+    onScroll();
     el.addEventListener('scroll', onScroll, { passive: true });
     return () => el.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Follow the answer as it streams in: new messages, prose, steps and
+  // cards. Follow-ups, sources and the done mark leave the scroll where it
+  // is, so the thread never snaps down once the reader has started reading.
+  const last = messages[messages.length - 1];
+  const followKey =
+    last?.role === 'assistant' ? `${messages.length}:${last.content.length}:${last.steps.length}:${last.widgets.length}` : `${messages.length}`;
   useEffect(() => {
     const el = scrollerRef.current;
     if (el && stickToBottomRef.current && messages.length > 0) el.scrollTop = el.scrollHeight;
-  }, [messages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [followKey]);
+
+  const scrollToBottom = () => {
+    const el = scrollerRef.current;
+    if (!el) return;
+    stickToBottomRef.current = true;
+    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+  };
 
   const send = useCallback(
     async (text: string, options?: { replaceFromIndex?: number }) => {
@@ -315,7 +370,7 @@ export default function ChatInterface() {
       const assistantId = newId();
       const next: ChatMessage[] = [
         ...base,
-        { id: newId(), role: 'user', content: trimmed },
+        { id: newId(), role: 'user', content: trimmed, at: Date.now() },
         { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now() },
       ];
       stickToBottomRef.current = true;
@@ -388,8 +443,9 @@ export default function ChatInterface() {
 
   const handleStop = () => abortRef.current?.abort();
 
-  const handleNewChat = () => {
+  const handleNewChat = (options?: { discard?: boolean }) => {
     abortRef.current?.abort();
+    if (!options?.discard) stashCurrent();
     setMessages([]);
     updateVisitor(null);
     try {
@@ -400,6 +456,31 @@ export default function ChatInterface() {
     conversationRef.current = loadConversationId();
     setInput('');
     inputRef.current?.focus();
+  };
+
+  /** Bring a parked chat back; the one on screen is parked in its place. */
+  const openChat = (id: string) => {
+    const chat = archiveRef.current.find((item) => item.id === id);
+    if (!chat || id === conversationRef.current) return;
+    abortRef.current?.abort();
+    stashCurrent();
+    updateArchive(archiveRef.current.filter((item) => item.id !== id));
+    conversationRef.current = chat.id;
+    try {
+      localStorage.setItem(CONVERSATION_KEY, chat.id);
+    } catch {
+      // Storage unavailable; the id still lives in the ref for this visit.
+    }
+    updateVisitor(chat.context);
+    stickToBottomRef.current = true;
+    setMessages(chat.messages);
+    setInput('');
+  };
+
+  /** Delete a chat for good: a parked one leaves the list; the current one is cleared without being parked. */
+  const removeChat = (id: string) => {
+    if (id === conversationRef.current) handleNewChat({ discard: true });
+    else updateArchive(archiveRef.current.filter((item) => item.id !== id));
   };
 
   const regenerate = (assistantIndex: number) => {
@@ -429,7 +510,7 @@ export default function ChatInterface() {
           <Link
             href="/"
             aria-label="Back to the portfolio"
-            className="group flex h-9 w-9 items-center justify-center rounded-full text-zinc-500 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+            className="group flex h-10 w-10 items-center justify-center rounded-full border border-zinc-200/60 bg-white text-zinc-600 shadow-[0_2px_10px_-2px_rgba(0,0,0,0.12)] transition-colors hover:text-zinc-900"
           >
             <ArrowLeft className="h-4 w-4 transition-transform duration-300 group-hover:-translate-x-0.5" />
           </Link>
@@ -443,15 +524,18 @@ export default function ChatInterface() {
 
           <div className="flex items-center gap-2">
             {isHydrated && <BriefButton ready={briefReady} busy={isStreaming} briefId={briefId} onMake={makeBrief} />}
-            {messages.length > 0 && (
-              <button
-                type="button"
-                onClick={handleNewChat}
-                aria-label="New chat"
-                className="inline-flex h-8 items-center gap-1.5 rounded-full border border-zinc-200 px-3 text-[12px] text-zinc-600 transition-all hover:border-zinc-400 hover:text-zinc-900 active:scale-[0.97]"
-              >
-                <Plus className="h-3.5 w-3.5" /> <span className="hidden sm:inline">New chat</span>
-              </button>
+            {isHydrated && (messages.length > 0 || archive.length > 0) && (
+              <ChatSwitcher
+                current={
+                  userMessages.length > 0
+                    ? { id: conversationRef.current, title: chatTitle(messages), updatedAt: Math.max(...messages.map(messageTime).filter((t): t is number => t !== undefined), 0) || Date.now() }
+                    : null
+                }
+                parked={archive.map((chat) => ({ id: chat.id, title: chatTitle(chat.messages), updatedAt: chat.updatedAt }))}
+                onNew={() => handleNewChat()}
+                onOpen={openChat}
+                onRemove={removeChat}
+              />
             )}
           </div>
         </div>
@@ -508,17 +592,22 @@ export default function ChatInterface() {
 
           <div className="space-y-8">
             <AnimatePresence initial={false}>
-              {messages.map((message, index) =>
-                message.role === 'user' ? (
+              {messages.map((message, index) => {
+                const time = messageTime(message);
+                const previous = index > 0 ? messageTime(messages[index - 1]) : undefined;
+                const stamp = time !== undefined && (previous === undefined || time - previous > STAMP_GAP_MS) ? stampFor(time) : null;
+                return message.role === 'user' ? (
                   <motion.div
                     key={message.id}
                     initial={{ opacity: 0, y: 10, filter: 'blur(4px)' }}
                     animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
                     transition={{ duration: 0.45, ease: [0.16, 1, 0.3, 1] }}
-                    className="flex justify-end"
                   >
-                    <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-zinc-200/70 px-4 py-2.5 text-[15px] leading-6 text-ink">
-                      {message.content}
+                    {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-accent-blue px-4 py-2.5 text-[16px] leading-[1.4] text-white">
+                        {message.content}
+                      </div>
                     </div>
                   </motion.div>
                 ) : (
@@ -537,7 +626,13 @@ export default function ChatInterface() {
                       endedAt={message.endedAt}
                     />
 
-                    {message.content && <Markdown content={message.content} streaming={message.status === 'streaming'} />}
+                    {message.content && (
+                      <div className="flex">
+                        <div className="max-w-[88%] rounded-[22px] rounded-bl-md bg-zinc-100 px-4 py-2.5">
+                          <Markdown content={message.content} streaming={message.status === 'streaming'} />
+                        </div>
+                      </div>
+                    )}
 
                     {message.status === 'done' && !message.content && message.widgets.length === 0 && (
                       <p className="text-sm text-zinc-400">Stopped.</p>
@@ -588,33 +683,47 @@ export default function ChatInterface() {
                     )}
 
                     {index === lastAssistantIndex && message.status === 'done' && message.suggestions.length > 0 && (
-                      <div className="mt-6">
-                        <p className="label mb-1.5">Follow-ups</p>
-                        <div className="border-t border-zinc-200/80">
-                          {message.suggestions.map((suggestion, i) => (
-                            <motion.button
-                              key={suggestion}
-                              type="button"
-                              initial={{ opacity: 0, x: -6 }}
-                              animate={{ opacity: 1, x: 0 }}
-                              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 + i * 0.06 }}
-                              onClick={() => send(suggestion)}
-                              className="group flex w-full items-center gap-2.5 border-b border-zinc-200/80 py-2.5 text-left text-[14px] text-zinc-600 transition-colors hover:text-ink"
-                            >
-                              <CornerDownRight className="h-3.5 w-3.5 shrink-0 text-zinc-300 transition-colors group-hover:text-clay" />
-                              <span className="transition-transform duration-300 group-hover:translate-x-0.5">{suggestion}</span>
-                            </motion.button>
-                          ))}
-                        </div>
+                      <div className="mt-4 flex max-w-[88%] flex-col gap-2">
+                        {message.suggestions.map((suggestion, i) => (
+                          <motion.button
+                            key={suggestion}
+                            type="button"
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1], delay: 0.1 + i * 0.06 }}
+                            onClick={() => send(suggestion)}
+                            className="w-full rounded-2xl border border-dashed border-zinc-300 px-4 py-2.5 text-left text-[14px] leading-snug text-zinc-800 transition-colors hover:border-zinc-400 hover:bg-zinc-50 active:scale-[0.99]"
+                          >
+                            {suggestion}
+                          </motion.button>
+                        ))}
                       </div>
                     )}
                   </motion.div>
-                )
-              )}
+                );
+              })}
             </AnimatePresence>
           </div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {!atBottom && messages.length > 0 && (
+          <motion.button
+            key="to-bottom"
+            type="button"
+            onClick={scrollToBottom}
+            aria-label="Scroll to the latest message"
+            initial={{ opacity: 0, y: 6, scale: 0.9 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 6, scale: 0.9 }}
+            transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
+            className="absolute bottom-[9.5rem] left-1/2 z-40 flex h-10 w-10 -translate-x-1/2 items-center justify-center rounded-full border border-zinc-200/60 bg-white text-zinc-700 shadow-[0_6px_20px_-6px_rgba(0,0,0,0.25)] active:scale-[0.95]"
+          >
+            <ArrowDown className="h-4 w-4" strokeWidth={2} />
+          </motion.button>
+        )}
+      </AnimatePresence>
 
       <Composer
         value={input}

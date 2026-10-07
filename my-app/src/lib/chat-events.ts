@@ -71,6 +71,7 @@ export interface EvidenceProject {
 export type FitStatus = 'match' | 'related' | 'gap';
 
 export interface FitRequirement {
+  verificationStatus?: 'unknown';
   requirement: string;
   status: FitStatus;
   /** Short justification shown under the requirement. */

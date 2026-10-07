@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "postings:forget": "node --env-file=.env.local scripts/forget-posting.mjs"
+    "postings:forget": "node --env-file=.env.local scripts/forget-posting.mjs",
+    "test:fit": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-fit.ts",
+    "eval:fit": "node --env-file-if-exists=.env.local --import ../backend/node_modules/tsx/dist/loader.mjs scripts/evaluate-fit.ts",
+    "preview:emails": "node --env-file-if-exists=.env.local scripts/run-email-preview.mjs"
   },
   "dependencies": {
     "@langchain/core": "^0.3.0",
@@ -18,6 +21,7 @@
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-tooltip": "^1.2.8",
     "@react-pdf/renderer": "^4.9.0",
+    "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "convex": "^1.46.0",
@@ -36,6 +40,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
+    "@types/canvas-confetti": "^1.9.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
