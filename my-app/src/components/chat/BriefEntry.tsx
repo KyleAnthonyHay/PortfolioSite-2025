@@ -166,7 +166,7 @@ export function BriefNudge({
           onBlurCapture={(event) => {
             if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setPaused(false);
           }}
-          className="fixed bottom-28 right-4 z-50 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white p-4 pb-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)]"
+          className="absolute bottom-28 right-4 z-50 w-[min(340px,calc(100vw-32px))] overflow-hidden rounded-[20px] border border-zinc-200/80 bg-white p-4 pb-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)]"
         >
           <button type="button" onClick={() => setOpen(false)} aria-label="Dismiss" className="absolute right-3 top-3 rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900">
             <X className="h-3.5 w-3.5" />

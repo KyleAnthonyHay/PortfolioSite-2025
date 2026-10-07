@@ -88,7 +88,7 @@ function CommandMenu({
           ))
         )}
       </div>
-      <p className="mt-1 border-t border-zinc-100 px-3 pb-0.5 pt-1.5 text-[11.5px] text-zinc-400">
+      <p className="mt-1 border-t border-zinc-100 px-3 pb-0.5 pt-1.5 text-[11.5px] text-zinc-400 max-sm:hidden">
         ↑↓ to move · Enter to choose · Esc to close
       </p>
     </div>
@@ -147,10 +147,20 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
     el.style.height = `${Math.min(el.scrollHeight, 168)}px`;
   }, [value, inputRef]);
 
+  // Phones get a placeholder that fits on one line.
+  const [narrow, setNarrow] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia('(max-width: 480px)');
+    const sync = () => setNarrow(query.matches);
+    sync();
+    query.addEventListener('change', sync);
+    return () => query.removeEventListener('change', sync);
+  }, []);
+
   const canSend = value.trim().length > 0 && !isStreaming;
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40">
+    <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40">
       <div className="h-12 bg-gradient-to-t from-paper to-transparent" />
       <div className="bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
         <form
@@ -191,10 +201,11 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
                   if (canSend) onSend();
                 }
               }}
-              placeholder="Ask about his work, or type / for commands"
+              placeholder={narrow ? 'Ask, or type / for commands' : 'Ask about his work, or type / for commands'}
               aria-label="Message"
               aria-autocomplete="list"
-              className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[15px] leading-[22px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
+              enterKeyHint="send"
+              className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] sm:text-[15px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
             />
             {isStreaming ? (
               <button
