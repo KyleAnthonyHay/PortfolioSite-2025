@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Check, ChevronDown, Plus, X } from 'lucide-react';
+import { Check, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { stampFor, type ChatSummary } from './chat-history';
 
 /**
@@ -111,9 +111,9 @@ export default function ChatSwitcher({
                     onRemove(row.id);
                   }}
                   aria-label={`Delete chat “${row.title}”`}
-                  className="absolute right-2 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center rounded-full text-zinc-400 opacity-0 transition-opacity hover:bg-zinc-200/70 hover:text-zinc-900 focus:opacity-100 group-hover/row:opacity-100 [@media(pointer:coarse)]:opacity-100"
+                  className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full text-red-500/80 transition-colors hover:bg-red-50 hover:text-red-600"
                 >
-                  <X className="h-3 w-3" />
+                  <Trash2 className="h-3.5 w-3.5" />
                 </button>
               </div>
             ))}
