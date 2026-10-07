@@ -28,6 +28,23 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
   const [progress, setProgress] = useState(0);
   const [scrubbing, setScrubbing] = useState(false);
   const barRef = useRef<HTMLDivElement>(null);
+  const scrubbingRef = useRef(false);
+
+  // The timeupdate event only fires a few times a second, which makes the
+  // bar hop. While the video plays, read its clock every frame instead.
+  useEffect(() => {
+    if (!playing) return;
+    let frame = 0;
+    const tick = () => {
+      const video = ref.current;
+      if (video && !scrubbingRef.current && Number.isFinite(video.duration) && video.duration > 0) {
+        setProgress(video.currentTime / video.duration);
+      }
+      frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [playing]);
 
   useEffect(() => {
     const video = ref.current;
@@ -71,6 +88,7 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
   const onBarPointerDown = (event: PointerEvent<HTMLDivElement>) => {
     event.preventDefault();
     event.currentTarget.setPointerCapture(event.pointerId);
+    scrubbingRef.current = true;
     setScrubbing(true);
     seekTo(event.clientX);
   };
@@ -81,6 +99,7 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
 
   const onBarPointerUp = (event: PointerEvent<HTMLDivElement>) => {
     if (!scrubbing) return;
+    scrubbingRef.current = false;
     setScrubbing(false);
     event.currentTarget.releasePointerCapture(event.pointerId);
   };
@@ -127,8 +146,9 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
         onPlay={() => setPlaying(true)}
         onPause={() => setPlaying(false)}
         onTimeUpdate={(event) => {
+          // Covers seeks while paused; the frame loop handles playback.
           const video = event.currentTarget;
-          if (!scrubbing && Number.isFinite(video.duration) && video.duration > 0) setProgress(video.currentTime / video.duration);
+          if (!scrubbing && video.paused && Number.isFinite(video.duration) && video.duration > 0) setProgress(video.currentTime / video.duration);
         }}
         className="absolute inset-0 h-full w-full cursor-pointer object-contain"
       />
