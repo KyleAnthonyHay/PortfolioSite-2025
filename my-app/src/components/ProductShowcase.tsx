@@ -5,6 +5,7 @@ import { ReactNode, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import PhoneFrame, { PhoneScreen, ScreenSource } from '@/components/PhoneFrame';
 import BrowserFrame from '@/components/BrowserFrame';
+import RecordingFrame from '@/components/RecordingFrame';
 
 /** Matches the easing already used by the site's CSS keyframes. */
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -20,7 +21,11 @@ export type ShowcaseMedia =
   /** A web screenshot, shown in browser chrome. */
   | { kind: 'browser'; src: string; alt: string; url?: string; ratio?: number }
   /** A screen recording, shown in browser chrome. Mirrors PhoneScreen's video handling. */
-  | { kind: 'browser-video'; src: string; webm?: string; poster?: string; url?: string; ratio?: number };
+  | { kind: 'browser-video'; src: string; webm?: string; poster?: string; url?: string; ratio?: number }
+  /** A screen recording that already includes its own window chrome, shown bare. */
+  | { kind: 'recording'; src: string; webm?: string; poster?: string; ratio?: number }
+  /** A narrated walkthrough with sound: native controls, nothing loads until play. */
+  | { kind: 'walkthrough'; src: string; poster: string };
 
 export interface ShowcaseItem {
   /** Pill label. Only rendered when a showcase has more than one item. */
@@ -41,6 +46,10 @@ interface ProductShowcaseProps {
    * unreadable.
    */
   orientation?: 'portrait' | 'landscape';
+  /** Small label above the heading. */
+  eyebrow?: string;
+  /** Smaller heading, for a showcase that sits under a walkthrough video. */
+  compact?: boolean;
 }
 
 /** Shared by the visible copy and the hidden sizers, so both measure alike. */
@@ -69,7 +78,19 @@ function Media({ media, priority }: { media: ShowcaseMedia; priority?: boolean }
       />
     );
   }
-  if (media.kind === 'browser-video') {
+  if (media.kind === 'walkthrough') {
+    return (
+      <video
+        className="w-full h-full object-contain bg-white"
+        src={media.src}
+        poster={media.poster}
+        controls
+        playsInline
+        preload="none"
+      />
+    );
+  }
+  if (media.kind === 'browser-video' || media.kind === 'recording') {
     return (
       <video
         className="w-full h-full object-cover object-top"
@@ -102,6 +123,8 @@ export default function ProductShowcase({
   heading,
   items,
   orientation = 'portrait',
+  eyebrow,
+  compact = false,
 }: ProductShowcaseProps) {
   const [active, setActive] = useState(0);
   const current = items[active];
@@ -193,15 +216,23 @@ export default function ProductShowcase({
 
   const panel = 'relative overflow-hidden rounded-[2rem] md:rounded-[2.5rem] bg-zinc-100/70 border border-slate-200/50';
   const headingEl = (
-    <h2 className="text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
-      {heading}
-    </h2>
+    <div>
+      {eyebrow && <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">{eyebrow}</p>}
+      <h2
+        className={`font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance ${
+          compact ? 'text-2xl md:text-3xl' : 'text-3xl md:text-[2.75rem]'
+        }`}
+      >
+        {heading}
+      </h2>
+    </div>
   );
 
   if (landscape) {
     const first = items[0].media;
     const framed = first.kind === 'browser' || first.kind === 'browser-video' ? first : undefined;
-    const ratio = framed?.ratio ?? 16 / 9;
+    const recording = first.kind === 'recording' ? first : undefined;
+    const ratio = (framed ?? recording)?.ratio ?? 16 / 9;
     const url = framed?.url;
 
     return (
@@ -213,9 +244,13 @@ export default function ProductShowcase({
           </div>
 
           <div className="mt-12">
-            <BrowserFrame url={url} ratio={ratio} priority>
-              {animatedMedia}
-            </BrowserFrame>
+            {recording ? (
+              <RecordingFrame ratio={ratio}>{animatedMedia}</RecordingFrame>
+            ) : (
+              <BrowserFrame url={url} ratio={ratio} priority>
+                {animatedMedia}
+              </BrowserFrame>
+            )}
           </div>
 
           <div className="max-w-[46rem]">{copy}</div>

@@ -63,12 +63,12 @@ function chunkBySection(text: string) {
 export async function loadPortfolioDocuments(
   descriptionsDir: string
 ): Promise<PortfolioDocument[]> {
-  const files = await fs.readdir(descriptionsDir);
+  const files = await fs.readdir(/* turbopackIgnore: true */ descriptionsDir);
   const txtFiles = files.filter((file) => file.endsWith(".txt")).sort();
 
   return Promise.all(
     txtFiles.map(async (filename) => {
-      const fullContent = await fs.readFile(
+      const fullContent = await fs.readFile(/* turbopackIgnore: true */
         `${descriptionsDir}/${filename}`,
         "utf-8"
       );

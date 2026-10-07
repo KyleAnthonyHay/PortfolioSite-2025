@@ -1,20 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'motion/react';
 import { IconSlider } from '@/components/IconSlider';
 import { IconSliderGroup } from '@/components/IconSliderGroup';
+import { useIntro } from '@/components/home/IntroContext';
 
 const spring = { type: "spring" as const, stiffness: 100, damping: 20 };
 
 const Hero = () => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  // Waits for the opening loader to hand over before anything rises in.
+  const { phase } = useIntro();
+  const mounted = phase !== 'intro';
+  const ease = [0.16, 1, 0.3, 1] as const;
 
 
   const techIcons = [
@@ -39,7 +38,7 @@ const Hero = () => {
               transition={{ ...spring, delay: 0 }}
               className="flex items-center gap-3 mb-8"
             >
-              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-zinc-200/60 ring-offset-2 ring-offset-[#f9fafb]">
+              <div className="relative w-12 h-12 rounded-full overflow-hidden ring-2 ring-zinc-200/60 ring-offset-2 ring-offset-paper">
                 <Image
                   src="/profile.jpg"
                   alt="Kyle-Anthony Hay"
@@ -54,16 +53,28 @@ const Hero = () => {
               </div>
             </motion.div>
 
-            <motion.h1
-              initial={{ opacity: 0, y: 30 }}
-              animate={mounted ? { opacity: 1, y: 0 } : {}}
-              transition={{ ...spring, delay: 0.1 }}
-              className="text-4xl md:text-6xl tracking-tighter leading-none text-zinc-900 mb-6"
-            >
-              Building intelligent
-              <br />
-              <span className="text-zinc-400">software that ships.</span>
-            </motion.h1>
+            <h1 className="text-4xl md:text-6xl tracking-tighter leading-none text-zinc-900 mb-6">
+              <span className="line-mask">
+                <motion.span
+                  className="block"
+                  initial={{ y: '105%' }}
+                  animate={mounted ? { y: '0%' } : {}}
+                  transition={{ duration: 0.9, ease, delay: 0.05 }}
+                >
+                  Building intelligent
+                </motion.span>
+              </span>
+              <span className="line-mask">
+                <motion.span
+                  className="block text-zinc-400"
+                  initial={{ y: '105%' }}
+                  animate={mounted ? { y: '0%' } : {}}
+                  transition={{ duration: 0.9, ease, delay: 0.13 }}
+                >
+                  software that ships.
+                </motion.span>
+              </span>
+            </h1>
 
             <motion.p
               initial={{ opacity: 0, y: 20 }}
@@ -119,20 +130,27 @@ const Hero = () => {
           </div>
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, x: 40 }}
-            animate={mounted ? { opacity: 1, scale: 1, x: 0 } : {}}
-            transition={{ ...spring, delay: 0.2 }}
+            initial={{ clipPath: 'inset(12% 8% 12% 8% round 2rem)', opacity: 0 }}
+            animate={mounted ? { clipPath: 'inset(0% 0% 0% 0% round 2rem)', opacity: 1 } : {}}
+            transition={{ duration: 1.1, ease, delay: 0.15 }}
             className="order-1 lg:order-2 hidden lg:block"
           >
-            <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[560px] rounded-[2rem] overflow-hidden shadow-[0_20px_40px_-15px_rgba(0,0,0,0.08)]">
-              <Image
-                src="/profile-3.jpg"
-                alt="Kyle-Anthony Hay"
-                fill
-                className="object-cover object-center"
-                priority
-                sizes="(max-width: 1024px) 100vw, 50vw"
-              />
+            <div className="relative w-full h-[400px] sm:h-[500px] lg:h-[560px] rounded-[2rem] overflow-hidden shadow-[0_24px_48px_-20px_rgba(0,0,0,0.25)]">
+              <motion.div
+                className="absolute inset-0"
+                initial={{ scale: 1.12 }}
+                animate={mounted ? { scale: 1.04 } : {}}
+                transition={{ duration: 1.6, ease, delay: 0.15 }}
+              >
+                <Image
+                  src="/profile-3.jpg"
+                  alt="Kyle-Anthony Hay"
+                  fill
+                  className="object-cover object-[42%_50%]"
+                  priority
+                  sizes="(max-width: 1024px) 100vw, 50vw"
+                />
+              </motion.div>
             </div>
           </motion.div>
         </div>

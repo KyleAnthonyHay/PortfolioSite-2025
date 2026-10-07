@@ -1,0 +1,5 @@
+[
+  { "type": "website", "title": "Sentio+ (live site)", "url": "https://sentio.kyleanthonyhay.com" },
+  { "type": "github", "title": "Sentio+ source code", "url": "https://github.com/KyleAnthonyHay/sentio" },
+  { "type": "docs", "title": "Google Play Store Reviews dataset (Kaggle)", "url": "https://www.kaggle.com/datasets/prakharrathi25/google-play-store-reviews/data" }
+]
