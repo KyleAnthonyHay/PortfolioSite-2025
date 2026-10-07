@@ -102,9 +102,16 @@ export function workArrangement(condition: string): { met: boolean; evidence: st
   const ask = (what: string) => ({ met: false, evidence: `${base} ${what} is not stated: ask him.` });
   if (/\btravel\w*/.test(text)) return TRAVEL ? { met: true, evidence: `${base} ${TRAVEL}` } : ask('Travel');
   if (/\btime ?zones?\b/.test(text)) return ask('Time-zone flexibility');
-  if (/\b(visas?|sponsor\w*|authori[sz]\w*|citizen\w*|green card)\b/.test(text)) {
-    const citizen = HIRING_DETAILS.find((t) => /citizen/i.test(t));
-    const said = [citizen ? `${citizen.replace(/\.$/, '')} (his own words).` : '', AUTHORIZED].filter(Boolean).join(' ');
+  const status = HIRING_DETAILS.find((t) => /citizen|permanent resident|green card/i.test(t));
+  const statusSaid = status ? `${status.replace(/\.$/, '')} (his own words).` : '';
+  // Citizenship or a security clearance: met only if he says he is a citizen.
+  if (/\b(citizen\w*|clearance)\b/.test(text)) {
+    if (!status) return ask('Citizenship');
+    const citizen = /citizen/i.test(status) && !/not a u\.?s\.? citizen/i.test(status);
+    return { met: citizen, evidence: `${base} ${statusSaid}${citizen ? '' : ' A role that requires citizenship or a clearance needs checking with him.'}` };
+  }
+  if (/\b(visas?|sponsor\w*|authori[sz]\w*|green card|permanent resident)\b/.test(text)) {
+    const said = [statusSaid, AUTHORIZED].filter(Boolean).join(' ');
     return said ? { met: true, evidence: `${base} ${said}` } : ask('Work authorization');
   }
   const inOffice = /\b(office|on-?site|hybrid|in[- ]person)\b/.test(text);

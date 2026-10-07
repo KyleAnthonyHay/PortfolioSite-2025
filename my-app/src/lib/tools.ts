@@ -815,7 +815,7 @@ function shortcut(requirement: string): Shortcut {
     return { requirement: text, status: 'match', evidence: 'B.S. Computer Science, CUNY Hunter College (2024).', projects: [] };
   }
 
-  if (/\b(relocat\w*|on-?site|in[- ]office|hybrid|remote|based in|located in|work authori[sz]ation|authori[sz]ed to work|visas?|sponsorship|time ?zones?|travel\w*)\b/i.test(lower)) {
+  if (/\b(relocat\w*|on-?site|in[- ]office|hybrid|remote|based in|located in|work authori[sz]ation|authori[sz]ed to work|visas?|sponsorship|citizen\w*|green card|permanent resident|security clearance|time ?zones?|travel\w*)\b/i.test(lower)) {
     const arrangement = workArrangement(text);
     return { requirement: text, status: arrangement.met ? 'match' : 'gap', evidence: arrangement.evidence, projects: [] };
   }

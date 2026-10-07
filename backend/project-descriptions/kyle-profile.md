@@ -25,7 +25,7 @@ The portfolio agent reads this file for facts Kyle has stated himself that are n
 - How soon he could relocate depends on where.
 
 ## Hiring details
-- U.S. citizen.
+- U.S. permanent resident (green card holder), not a U.S. citizen.
 - Can start immediately.
 - Open to full-time, contract and contract-to-hire roles.
 - Open on salary.
