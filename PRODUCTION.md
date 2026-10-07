@@ -21,6 +21,9 @@ through `misc` → `dev` → `main`.
   its saved share link, and the chat transcript. A PDF-rendering failure still
   sends the saved brief link with an explicit attachment-failure note.
   Fit notifications use the website's badge, card, and project-link styling.
+  Both PDFs share a branded photo header, rounded sections, status pills, and
+  the website's colors. The recruiter PDF uses the same renderer for email and
+  website downloads; fit PDFs preserve every requirement across page breaks.
   They attach the full assessed report as a PDF and the chat as
   Markdown. If PDF rendering fails, the email still includes the complete report
   and explicitly notes that the PDF could not be generated.
