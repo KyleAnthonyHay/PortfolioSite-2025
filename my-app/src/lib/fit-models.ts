@@ -23,7 +23,7 @@ export function fitFallbackModel(): string {
   return process.env.OPENAI_FIT_FALLBACK_MODEL ?? '';
 }
 
-export function createStageModel(name: string, temperature = 0, options: { streaming?: boolean; maxTokens?: number } = {}): ChatOpenAI {
+export function createStageModel(name: string, temperature = 0, options: { streaming?: boolean; maxTokens?: number; reasoningEffort?: 'none' | 'low' } = {}): ChatOpenAI {
   const luna = name === 'gpt-5.6-luna';
   return new ChatOpenAI({
     model: name,
@@ -35,7 +35,7 @@ export function createStageModel(name: string, temperature = 0, options: { strea
     configuration: { fetch: (input, init) => globalThis.fetch(input, init) },
     // This installed LangChain version adds temperature even when omitted.
     // Override it at serialization for Luna; seed is for the GPT-4.1 stages only.
-    modelKwargs: luna ? { temperature: undefined, reasoning_effort: 'low', max_tokens: undefined, max_completion_tokens: options.maxTokens } : { seed: 7 },
+    modelKwargs: luna ? { temperature: undefined, reasoning_effort: options.reasoningEffort ?? 'low', max_tokens: undefined, max_completion_tokens: options.maxTokens } : { seed: 7 },
   });
 }
 
