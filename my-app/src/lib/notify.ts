@@ -1,5 +1,7 @@
-import { describeVisitor, emailKyle, escapeHtml, isEmailConfigured, simpleEmailHtml, transcriptMarkdown } from './email';
+import { describeVisitor, emailKyle, isEmailConfigured, transcriptMarkdown } from './email';
 import type { ConversationMessage, VisitorContext, Widget } from './chat-events';
+import { fitReportEmailHtml, recruiterBriefEmailHtml } from './report-email';
+import { briefTitle, SITE_URL, type BriefView } from './recruiter-brief/view';
 
 type FitReport = Extract<Widget, { kind: 'fit_report' }>;
 
@@ -28,13 +30,6 @@ export async function notifyFitCheck(input: {
 
   const { match, related, gap } = report.summary;
   const tally = `${match} match · ${related} related · ${gap} gap`;
-  const list = report.requirements
-    .map(
-      (r) =>
-        `<li style="margin-bottom:6px"><strong>${statusLabel[r.status]}</strong> · ${escapeHtml(r.requirement)}<br><span style="color:#71717a">${escapeHtml(r.evidence)}</span></li>`
-    )
-    .join('');
-
   // Render the existing assessment directly: the attachment must agree with the
   // email and card, rather than generating a second assessment or a shorter brief.
   const pdf = await import('./fit-report-pdf')
@@ -60,16 +55,7 @@ export async function notifyFitCheck(input: {
       '',
       `${attachmentNote} The visitor left no contact details unless they also send you a note.`,
     ].join('\n'),
-    html: simpleEmailHtml(
-      'Someone just ran a fit check',
-      [
-        ['Role', role],
-        ['Visitor', describeVisitor(context)],
-        ['Result', tally],
-      ],
-      `<ul style="padding-left:18px;margin:0 0 14px">${list}</ul>
-<p style="color:#71717a;font-size:12px">${attachmentNote} Visitors stay anonymous unless they also leave you a note.</p>`
-    ),
+    html: fitReportEmailHtml(report, context, attachmentNote),
     attachments: [
       ...(pdf ? [{ filename, content: pdf, contentType: 'application/pdf' }] : []),
       { filename: 'chat-transcript.md', content: transcriptMarkdown(transcript, context), contentType: 'text/markdown' },
@@ -77,4 +63,59 @@ export async function notifyFitCheck(input: {
   });
   if (!result.ok) announced.delete(key);
   return result.ok ? 'sent' : 'failed';
+}
+
+/** One notification for each generated, saved brief, separate from its fit check. */
+const announcedBriefs = new Set<string>();
+
+export async function notifyRecruiterBrief(input: {
+  view: BriefView;
+  context?: VisitorContext;
+  transcript: ConversationMessage[];
+}): Promise<'sent' | 'skipped' | 'failed'> {
+  const { view, context, transcript } = input;
+  if (!isEmailConfigured() || announcedBriefs.has(view.publicId)) return 'skipped';
+  announcedBriefs.add(view.publicId);
+  if (announcedBriefs.size > 500) announcedBriefs.delete(announcedBriefs.values().next().value!);
+
+  try {
+    const attachment = await import('./recruiter-brief/pdf')
+      .then(async ({ renderBriefPdf, briefPdfFilename }) => ({
+        filename: briefPdfFilename(view),
+        content: await renderBriefPdf(view),
+        contentType: 'application/pdf',
+      }))
+      .catch((error) => {
+        console.error('Recruiter brief PDF could not be generated', error);
+        return undefined;
+      });
+    const url = `${SITE_URL}/brief/${encodeURIComponent(view.publicId)}`;
+    const note = attachment
+      ? 'The recruiter brief PDF and the chat so far are attached. Open the brief above to view or share it.'
+      : 'The PDF could not be attached. Open the saved brief above to view or download it. The chat so far is attached.';
+    const result = await emailKyle({
+      subject: `Recruiter brief: ${briefTitle(view)}`,
+      text: [
+        'A visitor created a recruiter brief on your portfolio.',
+        `Brief: ${briefTitle(view)}`,
+        `Visitor: ${describeVisitor(context)}`,
+        `Recommendation: ${view.brief.recommendation.nextStep}. ${view.brief.recommendation.rationale}`,
+        `View or download: ${url}`,
+        '',
+        note,
+        'Visitors stay anonymous unless they also leave you a note.',
+      ].join('\n'),
+      html: recruiterBriefEmailHtml(view, context, note),
+      attachments: [
+        ...(attachment ? [attachment] : []),
+        { filename: 'chat-transcript.md', content: transcriptMarkdown(transcript, context), contentType: 'text/markdown' },
+      ],
+    });
+    if (!result.ok) announcedBriefs.delete(view.publicId);
+    return result.ok ? 'sent' : 'failed';
+  } catch (error) {
+    announcedBriefs.delete(view.publicId);
+    console.error('Recruiter brief notification failed', error);
+    return 'failed';
+  }
 }
