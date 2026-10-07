@@ -7,7 +7,7 @@ import path from 'path';
 import { getPersonalInfoDocument } from './content-store';
 import { projects as projectCards } from './projects';
 import { isEmailConfigured } from './email';
-import { CAREER_FACTS, IN_OFFICE, WORK_EVIDENCE, workArrangement } from './facts';
+import { CAREER_FACTS, WORK_ARRANGEMENT, WORK_EVIDENCE, workArrangement } from './facts';
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import {
   catalog,
@@ -695,9 +695,9 @@ export const getBackground = tool(
         const content = [
           `${profile.name} — ${profile.headline}, based in ${profile.location}.`,
           ...profile.availability,
-          IN_OFFICE,
+          ...WORK_ARRANGEMENT.map((text) => `${text} (his own words)`),
           ...contactLinks.map((link) => `${link.label}: ${link.detail ?? link.href}`),
-          'In his own words: does not need visa sponsorship and is willing to relocate for the right role. Not stated anywhere: salary expectations, start date. If asked about those, say they are not stated and suggest asking him directly.',
+          'Anything about where or how he works that is not listed above (salary expectations, start date, travel) is not stated: say so and suggest asking him directly.',
         ].join('\n');
         return pack({
           content,
