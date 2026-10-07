@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 import { motion } from 'motion/react';
 import { IconSlider } from '@/components/IconSlider';
 import { IconSliderGroup } from '@/components/IconSliderGroup';
@@ -111,6 +112,7 @@ const Hero = () => {
                 <span className="inline-flex items-center gap-2 border border-zinc-200 hover:border-zinc-300 hover:bg-white rounded-xl h-12 px-7 text-sm font-medium text-zinc-600 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200">
                   <Image src="/agent.png" alt="" width={24} height={24} className="h-6 w-6 shrink-0 object-contain" />
                   Talk to my AI Agent
+                  <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0" />
                 </span>
               </Link>
             </motion.div>
