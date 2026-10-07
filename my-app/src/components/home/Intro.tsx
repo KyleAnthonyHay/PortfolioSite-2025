@@ -151,7 +151,7 @@ export default function Intro() {
             ref={(el) => {
               charRefs.current[i] = el;
             }}
-            className="inline-block overflow-hidden align-top"
+            className="inline-block overflow-x-clip align-top"
           >
             {ch === ' ' ? ' ' : ch}
           </span>
