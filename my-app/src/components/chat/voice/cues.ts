@@ -1,15 +1,15 @@
 'use client';
 
 /**
- * The call's three sound cues, synthesized with the Web Audio API so nothing
- * is downloaded: mute (two soft notes stepping down), unmute (the same two
- * stepping up) and hang-up (a lower, slower pair, like a line going quiet).
- * They play only from the visitor's own taps on the card, never on their own.
+ * The call's sound cues, synthesized locally with the Web Audio API.
+ * Connected is a warm two-note pulse; mute/unmute step down/up, and hang-up
+ * is a lower, slower pair. The call button primes playback before connecting.
  */
 
-export type Cue = 'mute' | 'unmute' | 'hangup';
+export type Cue = 'connected' | 'mute' | 'unmute' | 'hangup';
 
 const SHAPES: Record<Cue, { notes: [number, number]; length: number; gap: number; gain: number }> = {
+  connected: { notes: [220, 330], length: 0.18, gap: 0.22, gain: 0.12 },
   mute: { notes: [622, 440], length: 0.08, gap: 0.095, gain: 0.07 },
   unmute: { notes: [440, 622], length: 0.08, gap: 0.095, gain: 0.07 },
   hangup: { notes: [392, 262], length: 0.15, gap: 0.18, gain: 0.09 },

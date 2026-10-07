@@ -1,5 +1,6 @@
 'use node';
 import WebSocket from 'ws';
+import { deliverEvents } from '../src/lib/voice/sideband';
 import { v } from 'convex/values';
 import { internalAction } from './_generated/server';
 import { internal } from './_generated/api';
@@ -18,42 +19,9 @@ const apiKey = () => process.env.VOICE_OPENAI_API_KEY ?? process.env.OPENAI_API_
 /** Attach, send the events, wait for the provider to acknowledge (or close), detach. */
 async function sideband(providerSessionId: string, events: Record<string, unknown>[], timeoutMs = 6_000): Promise<void> {
   const key = apiKey();
-  if (!key) {
-    console.warn('voice worker: no OpenAI key in the Convex environment');
-    return;
-  }
-  await new Promise<void>((resolve) => {
-    const socket = new WebSocket(attachUrl(providerSessionId), { headers: { Authorization: `Bearer ${key}` } });
-    const pending = new Set(events.map((event) => String(event.event_id)));
-    const done = () => {
-      clearTimeout(timer);
-      try {
-        socket.close();
-      } catch {
-        // Already closed.
-      }
-      resolve();
-    };
-    const timer = setTimeout(done, timeoutMs);
-    socket.on('open', () => events.forEach((event) => socket.send(JSON.stringify(event))));
-    socket.on('message', (raw) => {
-      try {
-        const event = JSON.parse(raw.toString()) as { type?: string; client_event_id?: string };
-        if (event.type === 'session.closed') return done();
-        if (event.client_event_id) pending.delete(event.client_event_id);
-        if (pending.size === 0) done();
-      } catch {
-        // Audio and other frames we don't read.
-      }
-    });
-    socket.on('unexpected-response', (_request, response) => {
-      // 404/410: the session is already gone, which is the outcome we want anyway.
-      if (response.statusCode !== 404 && response.statusCode !== 410) console.warn('voice worker: attach refused', response.statusCode);
-      done();
-    });
-    socket.on('error', done);
-    socket.on('close', done);
-  });
+  if (!key) throw new Error('No OpenAI key in the voice worker');
+  const socket = new WebSocket(attachUrl(providerSessionId), { headers: { Authorization: `Bearer ${key}` } });
+  await deliverEvents(socket, events, timeoutMs);
 }
 
 const NOTICES = {

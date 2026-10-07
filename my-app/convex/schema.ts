@@ -7,6 +7,32 @@ import { v } from 'convex/values';
  * app owns the shape of what is stored (src/lib/recruiter-brief/).
  */
 export default defineSchema({
+  /** Task coordination records; conversation text still belongs to the existing chat. */
+  taskConversations: defineTable({
+    owner: v.string(), conversationId: v.string(), version: v.number(),
+    deliveryToken: v.optional(v.string()), deliveryUntil: v.optional(v.number()),
+  }).index('by_owner_conversation', ['owner', 'conversationId']),
+  taskTurns: defineTable({
+    owner: v.string(), conversationId: v.string(), requestId: v.string(),
+    sequence: v.number(), input: v.string(), planned: v.boolean(),
+    planToken: v.optional(v.string()), planUntil: v.optional(v.number()),
+  }).index('by_owner_conversation_request', ['owner', 'conversationId', 'requestId'])
+    .index('by_owner_conversation_planned', ['owner', 'conversationId', 'planned']),
+  agentTasks: defineTable({
+    owner: v.string(), conversationId: v.string(), revision: v.number(),
+    instruction: v.string(), input: v.string(),
+    status: v.union(v.literal('queued'), v.literal('running'), v.literal('waiting'), v.literal('completed'), v.literal('canceled'), v.literal('failed')),
+    events: v.string(), answer: v.string(), updatedAt: v.number(),
+    lease: v.optional(v.string()),
+    delivery: v.union(v.literal('pending'), v.literal('submitted'), v.literal('interrupted'), v.literal('quiet')),
+    deliveryToken: v.optional(v.string()),
+    previousResult: v.optional(v.string()),
+  }).index('by_owner_conversation', ['owner', 'conversationId'])
+    .index('by_owner_conversation_status', ['owner', 'conversationId', 'status']),
+  agentTaskRevisions: defineTable({
+    taskId: v.id('agentTasks'), revision: v.number(), instruction: v.string(), input: v.string(),
+    status: v.string(), events: v.string(), answer: v.string(),
+  }).index('by_task_revision', ['taskId', 'revision']),
   recruiterBriefs: defineTable({
     publicId: v.string(),
     createdAt: v.number(),
@@ -50,6 +76,8 @@ export default defineSchema({
     day: v.string(),
     status: v.union(v.literal('reserved'), v.literal('live'), v.literal('closed')),
     providerSessionId: v.optional(v.string()),
+    /** Legacy arrival counter retained for stored calls. Current task revisions live in agentTasks. */
+    taskRevision: v.optional(v.number()),
     createdAt: v.number(),
     /** Connected time counts from here: when the provider accepted the call. */
     startedAt: v.optional(v.number()),

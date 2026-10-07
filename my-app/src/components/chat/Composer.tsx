@@ -127,7 +127,7 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
   }, [value]);
 
   const pick = (command: SlashCommand) => {
-    if (command.action === 'send' && onCommand && !isStreaming) {
+    if (command.action === 'send' && onCommand) {
       onChange('');
       onCommand(command.text);
       return;
@@ -154,7 +154,7 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
   // Phones get a placeholder that fits on one line.
   const narrow = useMediaQuery('(max-width: 640px)');
 
-  const canSend = value.trim().length > 0 && !isStreaming;
+  const canSend = value.trim().length > 0;
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40">
@@ -215,11 +215,11 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
                 <span className="max-sm:hidden">Talk</span>
               </button>
             )}
-            {isStreaming ? (
+            {isStreaming && (
               <button
                 type="button"
                 onClick={onStop}
-                aria-label="Stop generating"
+                aria-label="Stop active tasks"
                 className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-zinc-900 text-white transition-all active:scale-[0.95]"
               >
                 <svg viewBox="0 0 36 36" className="absolute inset-0 h-9 w-9" aria-hidden>
@@ -227,7 +227,8 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
                 </svg>
                 <Square className="h-2.5 w-2.5 fill-current" />
               </button>
-            ) : (
+            )}
+            {(canSend || !isStreaming) && (
               <button
                 type="submit"
                 disabled={!canSend}

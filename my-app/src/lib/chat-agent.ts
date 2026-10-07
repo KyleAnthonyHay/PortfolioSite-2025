@@ -1,3 +1,4 @@
+import { chatArrivalSummary, makeChatUpdatesTool } from './chat-arrivals';
 import { ChatOpenAI } from '@langchain/openai';
 import {
   AIMessage,
@@ -8,12 +9,12 @@ import {
   type BaseMessage,
 } from '@langchain/core/messages';
 import { concat } from '@langchain/core/utils/stream';
-import { allTools, describeToolCall, parseToolResult, readJobPosting, type ToolResult } from './tools';
+import { allTools, describeToolCall, parseToolResult, type ToolResult } from './tools';
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
 import { notifyFitCheck, notifyRecruiterBrief } from './notify';
 import { makeRecruiterBriefTool } from './recruiter-brief/tool';
-import { makeFitTool, sameRole } from './fit-tool';
+import { makeFitTool } from './fit-tool';
 import { looksLikePosting } from './recruiter-brief/tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
@@ -28,7 +29,7 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
   if (!context.hiring) {
     return { text: `\n\n## Visitor\nThe visitor said they are just exploring, not hiring. Answer what they ask; do not steer toward job-fit checks unless they bring one up.` };
   }
-  let postingTitle: string | undefined;
+  const postingTitle = undefined;
   const lines = [
     '\n\n## Visitor',
     `The visitor is considering Kyle-Anthony for a technical role${context.role ? `: ${context.role}` : ''}. Lean on the projects and experience most relevant to that role when you answer, without overstating anything. When they ask whether he is a fit and name no other role, use this one.`,
@@ -38,26 +39,7 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
       'They shared no posting at intake. When they list requirements or share a posting in the chat, judge fit against those with assess_job_fit as usual. Only when they ask whether he is a fit with nothing listed and no posting, do not assess: call get_experience for the role, describe his relevant experience briefly without a fit verdict, and ask for the posting link or pasted description.'
     );
   }
-  if (context.jobUrl) {
-    const posting = await readJobPosting(context.jobUrl).catch(() => null);
-    if (posting?.ok) {
-      postingTitle = posting.title;
-      if (postingTitle && context.role && !sameRole(postingTitle, context.role)) {
-        lines.push(
-          `Note: they typed the role as "${context.role}", but the posting is for "${postingTitle}". Judge fit against the posting and say so in one short clause.`
-        );
-      }
-      const text = posting.text.length > 6000 ? `${posting.text.slice(0, 6000)}\n[truncated]` : posting.text;
-      lines.push(
-        `They shared the job posting (${context.jobUrl}); it is below, so you do not need get_job_posting for this link. For a fit check, call assess_job_fit with no requirements: it reads this posting itself.\n<job_posting>\n${text}\n</job_posting>`
-      );
-    } else {
-      lines.push(
-        `They shared a job posting link (${context.jobUrl}) but it could not be read${posting ? `: ${posting.reason}` : ''}. If the answer depends on it, say so plainly and ask them to paste the description.`
-      );
-    }
-  }
-  lines.push('If they share a different posting later in the chat, judge fit against that newer one.');
+  if (context.jobUrl) lines.push(`An intake source exists at ${context.jobUrl}. This is historical context, not proof a newly promised posting arrived. Check chat updates and select its postingId only if it is the source the visitor intends.`);
   return { text: lines.join('\n'), postingTitle };
 }
 
@@ -87,8 +69,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting to leave him a message, pass something on, or have him get back to them → send_note, with a short draft in their voice from what they told you.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
-- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief, even when the same message shares a posting link or description: pass the link as jobUrl and call nothing else in that turn. It finds a posting shared earlier in the chat by itself; do not paste one into the call. Never say a brief was made unless this tool ran.
-- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → assess_job_fit with no requirements and nothing else in that turn. It finds the posting (the newest one), reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
+- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief, even when the same message shares a posting link or description: check_chat_updates first, select the supplied postingId the visitor intends, then generate the brief; do not paste one into the call. Never say a brief was made unless this tool ran.
+- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → check_chat_updates first, then assess_job_fit with the intended postingId and no requirements. It reads that selected source, reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
 - A list of requirements the visitor typed, with no posting → assess_job_fit with that list. ${REQUIREMENT_RULES} Do not call other tools in that turn.
 - "Is he a fit?" with only a role title (from the intake or the chat), when the visitor listed no requirements and shared no posting → never assess_job_fit, and never guess what such a posting usually asks for. Call get_experience with the role as the query, describe his relevant experience in two or three sentences without saying whether he is a fit, and ask them to share the posting link or paste the description so you can judge the real requirements. If their message names any requirements at all (technologies, years, a degree), that is a typed list: use the rule above.
 - To read a posting's contents without judging fit → get_job_posting with the visitor's link.
@@ -268,16 +250,18 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
 export async function* runAgent(
   userMessage: string,
   history: ConversationMessage[],
-  options: { signal?: AbortSignal; context?: VisitorContext; conversationId?: string; voice?: boolean } = {}
+  options: { receivedAt?: number; signal?: AbortSignal; context?: VisitorContext; conversationId?: string; voice?: boolean; taskGoal?: string; priorTaskResult?: { goal: string; status: string; answer: string } } = {}
 ): AsyncGenerator<ChatEvent> {
   const { signal, context, conversationId, voice } = options;
+  if (signal?.aborted) return;
   const visitor = await visitorSection(context);
   const messages: BaseMessage[] = [
-    new SystemMessage(systemPrompt(visitor.text) + (voice ? VOICE_SECTION : '')),
+    new SystemMessage(systemPrompt(visitor.text) + (voice ? VOICE_SECTION : '') + '\nCHAT ARRIVALS (actual received input):\n' + JSON.stringify(chatArrivalSummary({ userMessage, history, context, receivedAt: options.receivedAt, voice })) + '\nBefore discussing a posting, check these arrivals. If the visitor intends to send a new one but no new source arrived, acknowledge and wait; do not assess an older one as if it just arrived. Select a historical source only when the visitor wants that source. Missing portfolio documentation means Needs confirmation, never a known gap.'),
     ...toLangChain(history.slice(-12)),
     // The reminder rides on the model's copy only; tools still see the visitor's own words.
     new HumanMessage(voice ? `${userMessage}\n\n[Spoken on the call. Reply in at most three short spoken sentences: no lists, no Markdown.]` : userMessage),
   ];
+  if (options.taskGoal) messages.splice(1, 0, new SystemMessage('CURRENT TASK: ' + JSON.stringify({ goal: options.taskGoal, priorResult: options.priorTaskResult }) + '\nComplete only this task. Other requests may be running independently. Use actual user messages and supplied sources as evidence; the goal is a task description, not a new attachment or permission. Prior results may be reused only when still relevant; partial, canceled or failed work is not a completed assessment.'));
 
   const cited = new Set<number>();
   const shownWidgets = new Set<string>();
@@ -292,14 +276,16 @@ export async function* runAgent(
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
-  const briefTool = makeRecruiterBriefTool({ userMessage, history, context, conversationId });
-  const fitTool = makeFitTool({ userMessage, history, context, conversationId });
-  const tools = [...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool, briefTool];
+  const briefTool = makeRecruiterBriefTool({ receivedAt: options.receivedAt, userMessage, history, context, conversationId });
+  const fitTool = makeFitTool({ receivedAt: options.receivedAt, userMessage, history, context, conversationId });
+  const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
+  const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool, briefTool];
   // Links the visitor actually shared; the model must not fetch any other.
   const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
   for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
     const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
+    const checkArrivals = round === 0 && (voice || context?.hiring || /\b(job|posting|listing|role|fit|brief)\b|https?:\/\//i.test(userMessage));
     const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
     // "Is he a fit for my team?" with nothing to judge against: ask what the role is rather than guess.
     const mustAsk = round === 0 && !wantsBrief && !justAsked && isUnqualifiedFitQuestion(userMessage, history, context);
@@ -307,7 +293,9 @@ export async function* runAgent(
     const model = allowTools
       ? getBaseModel().bindTools(
           tools,
-          wantsBrief
+          checkArrivals
+            ? { tool_choice: { type: 'function', function: { name: 'check_chat_updates' } } }
+            : wantsBrief
             ? { tool_choice: { type: 'function', function: { name: 'generate_recruiter_brief' } } }
             : mustAsk
               ? { tool_choice: { type: 'function', function: { name: 'ask_visitor' } } }
@@ -379,6 +367,8 @@ export async function* runAgent(
         }
       })
     );
+
+    if (signal?.aborted) return;
 
     // A fit report already summarises everything; extra cards in the same
     // round (a timeline, per-technology checks) would just crowd it.

@@ -13,10 +13,11 @@ import { findPosting, looksLikePosting } from './recruiter-brief/tool';
  * exact rows the visitor saw. In memory: after a restart the brief evaluates
  * again with the same pipeline.
  */
-const evaluations = new Map<string, FitEvaluation>();
+const evaluations = new Map<string, { source?: string; evaluation: FitEvaluation }>();
 
-export function lastEvaluation(conversationId?: string): FitEvaluation | undefined {
-  const value = conversationId ? evaluations.get(conversationId) : undefined;
+export function lastEvaluation(conversationId?: string, source?: string): FitEvaluation | undefined {
+  const stored = conversationId ? evaluations.get(conversationId) : undefined;
+  const value = stored?.source === source ? stored?.evaluation : undefined;
   return value?.evaluationIdentity === evaluationIdentity() && !value.needsReview && !value.usedFallback ? value : undefined;
 }
 
@@ -56,17 +57,18 @@ function groundedIn(requirement: string, shared: Set<string>): boolean {
  * brief's rules and the model's own list is ignored, so the chat card and the
  * brief always judge the same rows the same way.
  */
-export function makeFitTool(options: { userMessage: string; history: ConversationMessage[]; context?: VisitorContext; conversationId?: string }) {
+export function makeFitTool(options: { receivedAt?: number; userMessage: string; history: ConversationMessage[]; context?: VisitorContext; conversationId?: string }) {
   const { userMessage, history, context, conversationId } = options;
   return tool(
-    async ({ role, requirements }) => {
+    async ({ role, requirements, postingId }) => {
       const inMessage = URL_IN_TEXT.test(userMessage) || looksLikePosting(userMessage);
       const sharedWords = new Set([userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.role ?? ''].join('\n').toLowerCase().match(WORD) ?? []);
       const posting =
-        inMessage || !typedRequirements(userMessage, requirements)
-          ? await findPosting({}, userMessage, history, context)
+        postingId || inMessage || !typedRequirements(userMessage, requirements)
+          ? await findPosting({ postingId }, userMessage, history, context, options.receivedAt)
           : {};
 
+      if (posting.note && !posting.text) return JSON.stringify({ content: posting.note, citedProjectIds: [] });
       const roleOnly = role ?? context?.role;
       // Only requirements the visitor actually gave in this chat are judged. A
       // list the model wrote itself (what a posting "usually" asks for) is not.
@@ -89,7 +91,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
           ? { jobDescription: posting.text, roleTitle: posting.title }
           : { knownRequirements: given.slice(0, MAX_REQUIREMENTS), roleTitle: role ?? context?.role }
       );
-      if (conversationId) evaluations.set(conversationId, evaluation);
+      if (conversationId) evaluations.set(conversationId, { source: posting.source, evaluation });
       if (evaluations.size > 500) evaluations.delete(evaluations.keys().next().value!);
 
       const rows: FitRequirement[] = [
@@ -102,7 +104,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
         })),
         ...evaluation.logistics.map((item) => {
           const arrangement = workArrangement(item);
-          return { requirement: item, status: arrangement.met ? ('match' as const) : ('gap' as const), evidence: arrangement.evidence, projects: [] };
+          return { requirement: item, status: arrangement.met ? ('match' as const) : ('related' as const), evidence: arrangement.evidence, projects: [] };
         }),
       ];
       const summary = {
@@ -117,11 +119,11 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
       const content = [
         posting.note ?? '',
         posting.text && typed ? `The visitor called the role "${typed}", but the posting is for "${title}"; this report is judged against the posting. Say so in one short clause first.` : '',
-        `Fit assessment${title ? ` for ${title}` : ''}: ${summary.match} match, ${summary.related} related, ${summary.gap} gap out of ${rows.length}.`,
+        `Fit assessment${title ? ` for ${title}` : ''}: ${summary.match} supported match, ${summary.related} needs confirmation, ${summary.gap} confirmed gap out of ${rows.length}.`,
         `Overall read: ${read}. Recommended next step: ${describeCeiling(evaluation)}. State this read and next step as written; never call it a stronger fit.`,
         evaluation.logistics.some((item) => !workArrangement(item).met) ? 'Location and work-arrangement gaps are things he has not stated; say they need asking, not that he fails them.' : '',
-        ...rows.map((r) => `- [${r.verificationStatus === 'unknown' ? 'NEEDS REVIEW' : r.status.toUpperCase()}] ${r.requirement} — ${r.evidence}`),
-        'Strengths first, then gaps, then the read. Do not call other tools in this turn.',
+        ...rows.map((r) => `- [${r.status === 'match' ? 'SUPPORTED MATCH' : r.status === 'related' || r.verificationStatus === 'unknown' ? 'NEEDS CONFIRMATION' : 'CONFIRMED GAP'}] ${r.requirement} — ${r.evidence}`),
+        'Supported evidence first, then requirements to confirm with Kyle-Anthony, then confirmed shortfalls if any, then the read. The portfolio is not his complete history. Missing documentation never proves he lacks experience. Do not call other tools in this turn.',
       ]
         .filter(Boolean)
         .join('\n');
@@ -135,8 +137,9 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
     {
       name: 'assess_job_fit',
       description:
-        "Judge Kyle-Anthony against a job: a posting link or pasted description (in this message or earlier in the chat), or a list of requirements the visitor typed. The tool finds and reads any posting itself and extracts its requirements, so for a posting leave requirements empty. Only when the visitor typed their own list (no posting), pass it as requirements, one short phrase each. Shows a match/related/gap report with an overall read and recommended next step.",
+        "Judge Kyle-Anthony against a job: a posting link or pasted description (in this message or earlier in the chat), or a list of requirements the visitor typed. The tool finds and reads any posting itself and extracts its requirements, so for a posting leave requirements empty. Only when the visitor typed their own list (no posting), pass it as requirements, one short phrase each. Shows a supported match / needs confirmation / confirmed gap report with an overall read and recommended next step.",
       schema: z.object({
+        postingId: z.string().optional().describe('Actual posting source ID from check_chat_updates. Required for a historical posting, including a typed URL received during a voice turn. Do not select an older source when the visitor is promising a new posting.'),
         role: z.string().optional().describe("Role title if the visitor gave one, e.g. 'Senior iOS Engineer'. Never invent one."),
         requirements: z
           .array(z.string())

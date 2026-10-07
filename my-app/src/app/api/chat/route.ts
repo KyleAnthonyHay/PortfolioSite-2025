@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { agentStream } from '@/lib/chat-stream';
-import { MAX_MESSAGE_LENGTH, sanitizeContext, sanitizeConversationId, sanitizeHistory } from '@/lib/chat-request';
+import { MAX_MESSAGE_LENGTH, sanitizeContext, sanitizeConversationId, sanitizeHistory, sanitizeReceivedAt } from '@/lib/chat-request';
 
 export const runtime = 'nodejs';
 export const maxDuration = 60;
@@ -10,7 +10,7 @@ export const maxDuration = 60;
  * tool activity and text as they happen instead of waiting for the whole turn.
  */
 export async function POST(request: NextRequest) {
-  let body: { message?: unknown; history?: unknown; context?: unknown; conversationId?: unknown };
+  let body: { message?: unknown; history?: unknown; context?: unknown; conversationId?: unknown; receivedAt?: unknown };
   try {
     body = await request.json();
   } catch {
@@ -28,6 +28,7 @@ export async function POST(request: NextRequest) {
   return agentStream(request.signal, {
     message,
     history: sanitizeHistory(body.history),
+    receivedAt: sanitizeReceivedAt(body.receivedAt),
     context: sanitizeContext(body.context),
     conversationId: sanitizeConversationId(body.conversationId),
   });

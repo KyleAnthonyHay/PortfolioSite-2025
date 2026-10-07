@@ -7,9 +7,9 @@ import { CircleCheck, CircleDot, CircleMinus, FileText } from 'lucide-react';
 import type { FitStatus, Widget } from '@/lib/chat-events';
 
 const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; chip: string }> = {
-  match: { label: 'Match', icon: CircleCheck, color: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700' },
-  related: { label: 'Related', icon: CircleDot, color: 'text-amber-500', chip: 'bg-amber-50 text-amber-700' },
-  gap: { label: 'Gap', icon: CircleMinus, color: 'text-zinc-400', chip: 'bg-zinc-100 text-zinc-500' },
+  match: { label: 'Supported match', icon: CircleCheck, color: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700' },
+  related: { label: 'Needs confirmation', icon: CircleDot, color: 'text-amber-500', chip: 'bg-amber-50 text-amber-700' },
+  gap: { label: 'Confirmed gap', icon: CircleMinus, color: 'text-zinc-400', chip: 'bg-zinc-100 text-zinc-500' },
 };
 
 /** Rows shown before the list scrolls inside the card. */
@@ -49,7 +49,7 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">Fit report</p>
           {role && <p className="text-sm font-semibold text-zinc-900">{role}</p>}
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center gap-1.5">
           {(['match', 'related', 'gap'] as FitStatus[]).map((status) => (
             <span key={status} className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${statusMeta[status].chip}`}>
               {summary[status]} {statusMeta[status].label.toLowerCase()}
@@ -57,6 +57,7 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           ))}
         </div>
       </div>
+      <p className="px-4 py-2 text-xs text-zinc-500">Based on documented evidence. Confirm unrecorded experience with Kyle-Anthony.</p>
       <div className="relative">
         <ul
           ref={listRef}

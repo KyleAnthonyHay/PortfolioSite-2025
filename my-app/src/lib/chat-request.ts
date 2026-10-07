@@ -6,7 +6,7 @@ export const MAX_MESSAGE_LENGTH = 8000;
 
 export function sanitizeHistory(value: unknown, limit = 20): ConversationMessage[] {
   if (!Array.isArray(value)) return [];
-  return value
+  const cleaned = value
     .filter(
       (item): item is ConversationMessage =>
         typeof item === 'object' &&
@@ -16,9 +16,10 @@ export function sanitizeHistory(value: unknown, limit = 20): ConversationMessage
     )
     .map((item) => {
       const cards = Array.isArray(item.projectCards) ? item.projectCards.filter((id) => Number.isInteger(id)).slice(0, 20) : [];
-      return { role: item.role, content: item.content.slice(0, MAX_MESSAGE_LENGTH), ...(cards.length > 0 ? { projectCards: cards } : {}) };
-    })
-    .slice(-limit);
+      return { role: item.role, id: typeof item.id === 'string' ? item.id.slice(0, 100) : undefined, receivedAt: sanitizeReceivedAt(item.receivedAt), channel: item.channel === 'voice' ? 'voice' as const : 'typed' as const, content: item.content.slice(0, MAX_MESSAGE_LENGTH), ...(cards.length > 0 ? { projectCards: cards } : {}) };
+    });
+  const recent = cleaned.slice(-limit);
+  return recent;
 }
 
 export function sanitizeContext(value: unknown): VisitorContext | undefined {
@@ -33,4 +34,8 @@ export function sanitizeContext(value: unknown): VisitorContext | undefined {
 /** The client's id for one chat, so a fit check is announced once per chat. */
 export function sanitizeConversationId(value: unknown): string | undefined {
   return typeof value === 'string' && /^[a-z0-9-]{6,64}$/i.test(value) ? value : undefined;
+}
+
+export function sanitizeReceivedAt(value: unknown): number | undefined {
+  return typeof value === 'number' && Number.isSafeInteger(value) && value > 0 ? value : undefined;
 }

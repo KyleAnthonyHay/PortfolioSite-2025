@@ -14,7 +14,9 @@
     "test:voice": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-voice.ts",
     "smoke:chat": "node --env-file-if-exists=.env.local --import ../backend/node_modules/tsx/dist/loader.mjs scripts/smoke-chat.ts",
     "eval:fit": "node --env-file-if-exists=.env.local --import ../backend/node_modules/tsx/dist/loader.mjs scripts/evaluate-fit.ts",
-    "preview:emails": "node --env-file-if-exists=.env.local scripts/run-email-preview.mjs"
+    "preview:emails": "node --env-file-if-exists=.env.local scripts/run-email-preview.mjs",
+    "test:tasks": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-tasks.ts",
+    "smoke:tasks": "node --env-file-if-exists=.env.local --import ../backend/node_modules/tsx/dist/loader.mjs scripts/smoke-tasks.ts"
   },
   "dependencies": {
     "@langchain/core": "^0.3.0",
