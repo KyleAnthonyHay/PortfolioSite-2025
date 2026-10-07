@@ -118,7 +118,9 @@ Only discuss Kyle-Anthony, his work, skills, and background. For anything else, 
 let baseModel: ChatOpenAI | null = null;
 function getBaseModel(): ChatOpenAI {
   if (!baseModel) {
-    baseModel = createStageModel(MODEL_NAME, 0.4, { streaming: true });
+    // Luna requires reasoning=none when Chat Completions carries function tools.
+    // Analysis stages without tools keep low reasoning in the shared factory.
+    baseModel = createStageModel(MODEL_NAME, 0.4, { streaming: true, reasoningEffort: 'none' });
   }
   return baseModel;
 }
