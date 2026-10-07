@@ -2,28 +2,28 @@ import { Document, Link, Page, StyleSheet, Text, View, renderToBuffer } from '@r
 import type { VisitorContext, Widget } from './chat-events';
 import { describeVisitor } from './email';
 import { profile } from './profile';
+import { PdfBrandHeader, pdfPalette, pdfTheme } from '@/components/brief/PdfTheme';
 
 type FitReport = Extract<Widget, { kind: 'fit_report' }>;
 
 const labels = { match: 'Match', related: 'Related', gap: 'Gap' } as const;
-const colors = { match: '#047857', related: '#92400e', gap: '#b91c1c' } as const;
 const site = 'https://kyleanthonyhay.com';
 const s = StyleSheet.create({
-  page: { padding: 42, paddingBottom: 54, fontFamily: 'Helvetica', fontSize: 10, lineHeight: 1.45, color: '#18181b' },
-  header: { paddingBottom: 14, marginBottom: 18, borderBottomWidth: 1, borderBottomColor: '#e4e4e7' },
-  eyebrow: { fontSize: 8, color: '#71717a', letterSpacing: 1.2, marginBottom: 6 },
+  page: pdfTheme.page,
+  header: { ...pdfTheme.card, marginBottom: 12, padding: 16 },
+  eyebrow: { ...pdfTheme.eyebrow, marginBottom: 6 },
   title: { fontSize: 20, fontFamily: 'Helvetica-Bold', lineHeight: 1.2, marginBottom: 7 },
   meta: { fontSize: 9, color: '#52525b', marginTop: 3 },
-  tally: { marginTop: 10, fontSize: 11, fontFamily: 'Helvetica-Bold' },
-  row: { paddingBottom: 11, marginBottom: 11, borderBottomWidth: 0.5, borderBottomColor: '#e4e4e7' },
+  tally: { marginTop: 12, flexDirection: 'row', gap: 6 },
+  row: { ...pdfTheme.card, marginBottom: 8 },
   rowTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 5 },
   requirement: { flex: 1, fontFamily: 'Helvetica-Bold', paddingRight: 16 },
-  status: { width: 48, fontSize: 9, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
-  evidence: { color: '#3f3f46' },
-  projects: { marginTop: 5, fontSize: 8.5, color: '#71717a' },
-  link: { color: '#047857', textDecoration: 'none' },
+  status: pdfTheme.badge,
+  evidence: { color: '#71717a', fontSize: 9.5, lineHeight: 1.5 },
+  projects: { marginTop: 7, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
+  link: { color: '#52525b', textDecoration: 'none', fontSize: 8, borderWidth: 0.6, borderColor: '#e4e4e7', borderRadius: 12, paddingHorizontal: 7, paddingVertical: 3 },
   note: { fontSize: 8.5, color: '#71717a', marginTop: 3 },
-  footer: { position: 'absolute', bottom: 24, left: 42, right: 42, fontSize: 8, color: '#71717a' },
+  footer: pdfTheme.footer,
 });
 
 /** A faithful export of the assessed report, without another model call or omitted rows. */
@@ -34,23 +34,26 @@ export function FitReportPdf({ report, context, createdAt }: { report: FitReport
     <Document title={`Fit check - ${role}`} author={profile.name} subject="Portfolio fit assessment">
       <Page size="LETTER" style={s.page}>
         <Text style={s.footer} fixed>kyleanthonyhay.com | Fit check for {role}</Text>
-        <View style={s.header}>
-          <Text style={s.eyebrow}>KYLE-ANTHONY HAY / FIT CHECK</Text>
+        <PdfBrandHeader kind="FIT CHECK" />
+        <View style={s.header} wrap={false}>
+          <Text style={s.eyebrow}>FIT REPORT</Text>
           <Text style={s.title}>{role}</Text>
           <Text style={s.meta}>Visitor: {describeVisitor(context)}</Text>
           <Text style={s.meta}>Generated {date} ET</Text>
-          <Text style={s.tally}>{report.summary.match} match / {report.summary.related} related / {report.summary.gap} gap</Text>
+          <View style={s.tally}>{(['match', 'related', 'gap'] as const).map((status) => (
+            <Text key={status} style={[pdfTheme.badge, { color: pdfPalette[status].color, backgroundColor: pdfPalette[status].background }]}>{report.summary[status]} {status}</Text>
+          ))}</View>
         </View>
         {report.requirements.map((row, index) => (
           <View key={index} style={s.row} wrap={false}>
             <View style={s.rowTop}>
               <Text style={s.requirement}>{index + 1}. {row.requirement}</Text>
-              <Text style={[s.status, { color: colors[row.status] }]}>{labels[row.status]}</Text>
+              <Text style={[s.status, { color: pdfPalette[row.status].color, backgroundColor: pdfPalette[row.status].background }]}>{labels[row.status]}</Text>
             </View>
             <Text style={s.evidence}>{row.evidence}</Text>
-            {row.projects.length > 0 && <Text style={s.projects}>Evidence projects: {row.projects.map((project, projectIndex) => (
-              <Link key={project.id} style={s.link} src={`${site}${project.href}`}>{projectIndex > 0 ? ', ' : ''}{project.title}</Link>
-            ))}</Text>}
+            {row.projects.length > 0 && <View style={s.projects}>{row.projects.map((project) => (
+              <Link key={project.id} style={s.link} src={`${site}${project.href}`}>{project.title}</Link>
+            ))}</View>}
           </View>
         ))}
         <Text style={s.note}>The same results shown in the portfolio fit check. Generated from portfolio evidence; it can still make mistakes. Visitors remain anonymous unless they leave contact details.</Text>
