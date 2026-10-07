@@ -11,7 +11,6 @@ import { chunkBySection, PERSONAL_INFO_PROJECT_NAME } from "./project-content.js
 /** Catalog ids from my-app/src/lib/projects.ts, keyed by knowledge file slug. */
 export const PROJECT_IDS: Record<string, number> = {
   selahnote: 1,
-  "country-viewer": 4,
   ontract: 5,
   "sentio-plus": 6,
   yarnscript: 8,
