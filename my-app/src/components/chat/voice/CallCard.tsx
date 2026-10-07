@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { AnimatePresence, motion } from 'motion/react';
 import { Clock, Mic, MicOff, PhoneOff, X } from 'lucide-react';
+import CopyLogButton from './CopyLogButton';
 import type { CallPhase, CallWarning } from './types';
 
 /** "9:41", or "0:07" in the last minute. */
@@ -31,13 +32,15 @@ interface CallCardProps {
   onDismissWarning: () => void;
   onMute: () => void;
   onHangUp: () => void;
+  /** Present while call logging is on: copies the running log as text. */
+  onCopyLog?: () => Promise<boolean>;
 }
 
 /**
  * The floating call card: compact and dark so it reads as a live call above
  * the white chat, which stays scrollable and usable underneath it.
  */
-export default function CallCard({ phase, muted, remainingMs, level, warning, onDismissWarning, onMute, onHangUp }: CallCardProps) {
+export default function CallCard({ phase, muted, remainingMs, level, warning, onDismissWarning, onMute, onHangUp, onCopyLog }: CallCardProps) {
   const lastMinute = remainingMs !== null && remainingMs <= 60_000;
   const status = muted && (phase === 'listening' || phase === 'speaking') ? 'Muted' : STATUS[phase];
   const live = phase === 'listening' || phase === 'speaking' || phase === 'working';
@@ -108,6 +111,8 @@ export default function CallCard({ phase, muted, remainingMs, level, warning, on
           <PhoneOff className="h-[18px] w-[18px]" />
         </button>
       </motion.div>
+
+      {onCopyLog && <CopyLogButton onCopy={onCopyLog} dark />}
 
       <AnimatePresence>
         {warning && (

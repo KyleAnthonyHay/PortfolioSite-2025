@@ -547,6 +547,8 @@ export default function ChatInterface() {
     onNotice: setNotice,
   });
   callSessionRef.current = call.sessionId;
+  // Only the most recent call's log is kept, so only its row offers to copy it.
+  const lastCallId = messages.reduce<string | null>((id, m) => (m.role === 'call' ? m.id : id), null);
 
   useEffect(() => {
     if (!notice) return;
@@ -738,7 +740,7 @@ export default function ChatInterface() {
                   return (
                     <motion.div key={message.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
                       {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
-                      <CallEndedEntry durationMs={message.durationMs} reason={message.reason} />
+                      <CallEndedEntry durationMs={message.durationMs} reason={message.reason} onCopyLog={call.logging && message.id === lastCallId ? call.copyLog : undefined} />
                     </motion.div>
                   );
                 }
@@ -895,6 +897,7 @@ export default function ChatInterface() {
             onDismissWarning={call.dismissWarning}
             onMute={call.toggleMute}
             onHangUp={call.hangUp}
+            onCopyLog={call.logging ? call.copyLog : undefined}
           />
         )}
       </AnimatePresence>

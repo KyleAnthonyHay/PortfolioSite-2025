@@ -1,5 +1,6 @@
 import { PhoneOff } from 'lucide-react';
 import { formatClock } from './CallCard';
+import CopyLogButton from './CopyLogButton';
 import type { CallEndReason } from './types';
 
 const NOTES: Partial<Record<CallEndReason, string>> = {
@@ -9,7 +10,7 @@ const NOTES: Partial<Record<CallEndReason, string>> = {
 };
 
 /** The line a call leaves in the chat, like a missed-call row in Messages. */
-export default function CallEndedEntry({ durationMs, reason }: { durationMs: number; reason: CallEndReason }) {
+export default function CallEndedEntry({ durationMs, reason, onCopyLog }: { durationMs: number; reason: CallEndReason; onCopyLog?: () => Promise<boolean> }) {
   const note = NOTES[reason];
   return (
     <div className="flex flex-col items-center gap-1.5 text-center">
@@ -18,6 +19,7 @@ export default function CallEndedEntry({ durationMs, reason }: { durationMs: num
         Call ended · <span className="tabular-nums">{formatClock(durationMs)}</span>
       </span>
       {note && <p className="max-w-[300px] text-[12px] leading-snug text-zinc-400">{note}</p>}
+      {onCopyLog && <CopyLogButton onCopy={onCopyLog} />}
     </div>
   );
 }
