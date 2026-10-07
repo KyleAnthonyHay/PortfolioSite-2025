@@ -1,4 +1,5 @@
 import WebSocket from 'ws';
+import { deliverEvents } from './sideband';
 import type { ConversationMessage } from '../chat-events';
 
 /**
@@ -25,7 +26,9 @@ export function liveInstructions(): string {
   return `You are Kyle's Agent, the voice of the AI agent on Kyle-Anthony Hay's portfolio site, on a call with a visitor, usually a recruiter, hiring manager or engineer. Speak warmly and briefly, one or two sentences at a time, and pause for them.
 Delegate to the backend for anything about Kyle-Anthony: his projects, experience, skills, background, résumé, whether he fits a role, demos, links, booking time with him, or leaving him a message. Never answer those from memory and never guess; wait for the backend result and say only what it returns. While waiting, say in a few words that you are checking.
 The backend also puts cards in the chat on screen: project cards, a fit report, a booking card, a note draft and so on. When a result mentions a card, point the visitor to it in a few words rather than reading it out. You cannot book meetings, send messages or open links yourself; the visitor confirms those on the cards.
-Answer greetings, small talk and questions about how this call works yourself. When the visitor interrupts with a new or changed request, stop talking and delegate the new request straight away; never go back to reading out an earlier result they have moved on from. If they ask you to stop, stop and wait.
+When a visitor says they will send another job, acknowledge and wait for an actual new link or description. An old posting in context is not the promised new posting. If no new listing arrived, say so; never reassess the old listing as the new one. Typed input arrives separately from the backend result: receiving a message does not mean its assessment is complete. The backend already coordinates typed requests; do not delegate them again merely because they arrived.
+Fit reports use Supported match for documented evidence, Needs confirmation for incomplete or unrecorded experience, and Confirmed gap only for an established shortfall. The portfolio may not contain all of Kyle-Anthony's experience. OR lists such as React, Angular, or Vue are alternatives.
+Answer greetings, small talk and questions about how this call works yourself. When the visitor interrupts, stop talking to listen. Backend tasks can keep running while you listen. Delegate new requests, additions, corrections, cancellations, and answers to backend clarification questions so the backend can coordinate them. A new turn does not cancel earlier tasks. Never claim a task was canceled until the backend confirms it. When an existing task result arrives, use its task description and the latest conversation to decide how to present it; do not treat it as the answer to a different question. If they ask you to stop, stop and wait.
 Timing and remaining-minute notices are handled for you; only mention time when instructed. Never end the call yourself; the visitor hangs up with the red button.`;
 }
 
@@ -75,42 +78,12 @@ export async function createLiveSession(sdp: string, history: ConversationMessag
  * send, wait for the provider's acknowledgements, detach. Several of these
  * can be attached at once.
  */
-export async function sendToSession(providerSessionId: string, events: Record<string, unknown>[], timeoutMs = 6_000): Promise<void> {
+export async function sendToSession(providerSessionId: string, events: Record<string, unknown>[], timeoutMs = 6_000, beforeSend?: () => Promise<boolean>): Promise<void> {
   const key = apiKey();
-  if (!key || events.length === 0) return;
-  let counter = 0;
-  const stamped = events.map((event) => ({ event_id: `srv-${Date.now().toString(36)}-${counter++}`, ...event }));
-  await new Promise<void>((resolve) => {
-    const socket = new WebSocket(attachUrl(providerSessionId), { headers: { Authorization: `Bearer ${key}` } });
-    const pending = new Set(stamped.map((event) => String(event.event_id)));
-    const done = () => {
-      clearTimeout(timer);
-      try {
-        socket.close();
-      } catch {
-        // Already closed.
-      }
-      resolve();
-    };
-    const timer = setTimeout(done, timeoutMs);
-    socket.on('open', () => stamped.forEach((event) => socket.send(JSON.stringify(event))));
-    socket.on('message', (raw) => {
-      try {
-        const event = JSON.parse(raw.toString()) as { type?: string; client_event_id?: string };
-        if (event.type === 'session.closed') return done();
-        if (event.client_event_id) pending.delete(event.client_event_id);
-        if (pending.size === 0) done();
-      } catch {
-        // Audio frames and the like.
-      }
-    });
-    socket.on('unexpected-response', (_request, response) => {
-      console.warn('voice: sideband attach refused', response.statusCode);
-      done();
-    });
-    socket.on('error', done);
-    socket.on('close', done);
-  });
+  if (events.length === 0) return;
+  if (!key) throw new LiveUnavailable('No OpenAI key');
+  const socket = new WebSocket(attachUrl(providerSessionId), { headers: { Authorization: `Bearer ${key}` } });
+  await deliverEvents(socket, events, timeoutMs, beforeSend);
 }
 
 /** The agent's answer as speech: no Markdown, no links, short enough for one append (500 tokens). */
@@ -125,4 +98,15 @@ export function spokenText(answer: string): string {
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 1400);
+}
+
+/** A conservative byte bound also bounds token count across languages (500-token append limit). */
+export function limitedLiveText(content: string): string {
+  if (Buffer.byteLength(content, 'utf8') <= 480) return content;
+  let result = '';
+  for (const character of content) {
+    if (Buffer.byteLength(result + character, 'utf8') > 450) break;
+    result += character;
+  }
+  return result.trimEnd() + '… More is in the chat.';
 }

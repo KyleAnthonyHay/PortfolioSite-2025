@@ -39,7 +39,7 @@ export interface BriefView {
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://kyleanthonyhay.com').replace(/\/$/, '');
 
-export const MATCH_LABEL: Record<MatchLevel, string> = { strong: 'Strong match', relevant: 'Relevant', gap: 'Gap' };
+export const MATCH_LABEL: Record<MatchLevel, string> = { strong: 'Supported match', relevant: 'Needs confirmation', gap: 'Confirmed gap' };
 
 export const RECOMMENDATION_LABEL: Record<RecommendationLevel, string> = {
   advance: 'Recommended',
@@ -49,7 +49,16 @@ export const RECOMMENDATION_LABEL: Record<RecommendationLevel, string> = {
 };
 
 export function toBriefView(record: StoredBrief): BriefView {
-  const { brief } = { brief: record.generatedBrief };
+  // Older records used gap to mean absent evidence; never label those confirmed.
+  const legacy = record.version < 2;
+  const roleMatches = record.generatedBrief.roleMatches.map((row) => legacy && row.assessment === 'gap'
+    ? { ...row, assessment: 'relevant' as const, verificationStatus: 'unknown' as const, evidence: `${row.evidence} This earlier assessment requires confirmation; the portfolio may be incomplete.` }
+    : row);
+  const brief = { ...record.generatedBrief, roleMatches };
+  if (legacy && roleMatches.some((row) => row.verificationStatus === 'unknown')) {
+    brief.overallRead = 'potential fit: pending confirmation';
+    brief.recommendation = { level: 'conditional', nextStep: 'Phone screen only if the open requirements can be confirmed', rationale: 'This brief was generated under an earlier evidence policy. Confirm unrecorded experience directly with Kyle-Anthony before deciding fit.' };
+  }
   const ids = new Set<number>([...brief.projects.map((p) => p.projectId), ...brief.roleMatches.flatMap((m) => m.projectIds)]);
   const projectNames: BriefView['projectNames'] = {};
   for (const id of ids) {

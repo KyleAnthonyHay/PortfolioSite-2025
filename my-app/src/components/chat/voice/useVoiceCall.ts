@@ -1,4 +1,5 @@
 'use client';
+import { TranscriptTimeline } from '@/lib/voice/transcripts';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from 'react';
 import type { ConversationMessage } from '@/lib/chat-events';
@@ -21,7 +22,7 @@ import type { CallEndReason, CallPhase, CallWarning } from './types';
 const HEARTBEAT_MS = 10_000;
 const MAX_RECONNECTS = 2;
 /** Give a brief network blip this long to recover by itself before reconnecting. */
-const DISCONNECT_GRACE_MS = 4_000;
+const DISCONNECT_GRACE_MS = 10_000;
 const WARNING_SHOW_MS = 9_000;
 /** delegation.created can land a beat before the last words of the question are transcribed. */
 const TRANSCRIPT_SETTLE_MS = 450;
@@ -48,7 +49,7 @@ interface Handlers {
   /** The voice's own words (small talk, or reading an answer). */
   onAssistantSpeech: (delta: string) => void;
   /** The voice is handing the visitor's request to the agent; its question follows in onDelegation. */
-  onHandOff: () => void;
+  onHandOff: (delegationId: string) => void;
   /** The voice handed a request to the agent. */
   onDelegation: (delegation: Delegation) => void;
   onEnded: (summary: { durationMs: number; reason: CallEndReason }) => void;
@@ -92,13 +93,17 @@ export function useVoiceCall(handlers: Handlers) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const deadlineRef = useRef<number | null>(null);
   const connectedAtRef = useRef<number | null>(null);
+  const readyCuePlayedRef = useRef(false);
   /** The time this tab had when the call first connected; a call can't run longer. */
   const allowanceAtStartRef = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const rafRef = useRef<number | null>(null);
   const reconnectsRef = useRef(0);
+  const reconnectingRef = useRef(false);
   const endingRef = useRef(false);
-  const userBufferRef = useRef('');
+  const transcriptRef = useRef(new TranscriptTimeline());
+  const delegationTimersRef = useRef(new Map<string, number>());
+  const handledDelegationsRef = useRef(new Set<string>());
   const speakingTimerRef = useRef<number | null>(null);
   const disconnectTimerRef = useRef<number | null>(null);
   const warnedRef = useRef<{ five: boolean; one: boolean }>({ five: false, one: false });
@@ -136,6 +141,9 @@ export function useVoiceCall(handlers: Handlers) {
   };
 
   const closePeer = () => {
+    for (const timer of delegationTimersRef.current.values()) window.clearTimeout(timer);
+    delegationTimersRef.current.clear();
+    handledDelegationsRef.current.clear();
     try {
       dcRef.current?.close();
     } catch {
@@ -253,7 +261,7 @@ export function useVoiceCall(handlers: Handlers) {
   };
 
   const onEvent = (raw: string) => {
-    let event: { type?: string; delta?: string; delegation?: { id?: string; target?: string }; error?: unknown; reason?: unknown };
+    let event: { type?: string; delta?: string; start_ms?: number; end_ms?: number; offset_ms?: number; delegation?: { id?: string; target?: string }; error?: unknown; reason?: unknown };
     try {
       event = JSON.parse(raw);
     } catch {
@@ -264,12 +272,18 @@ export function useVoiceCall(handlers: Handlers) {
       case 'session.started':
         callLog.add('dc.event', 'session.started');
         setPhase('listening');
+        // Receiving the provider's ready event proves the call can listen.
+        // Repeated events and reconnects should not announce a new call.
+        if (!readyCuePlayedRef.current) {
+          readyCuePlayedRef.current = true;
+          playCue('connected');
+          callLog.add('call.ready', 'connected cue');
+        }
         break;
       case 'session.input_transcript.delta': {
         const delta = String(event.delta ?? '');
         callLog.add('dc.user', JSON.stringify(delta));
-        userBufferRef.current += delta;
-        handlersRef.current.onUserSpeech(delta);
+        if (transcriptRef.current.append(delta, event.start_ms, event.end_ms)) handlersRef.current.onUserSpeech(delta);
         break;
       }
       case 'session.output_transcript.delta':
@@ -284,13 +298,17 @@ export function useVoiceCall(handlers: Handlers) {
         callLog.add('dc.event', `session.delegation.created id=${delegationId ?? '?'} target=${event.delegation?.target ?? '?'}`);
         if (!delegationId || !sessionId || (event.delegation?.target && event.delegation.target !== 'client')) break;
         setPhase('working');
-        handlersRef.current.onHandOff();
-        window.setTimeout(() => {
-          const text = userBufferRef.current.trim();
-          userBufferRef.current = '';
+        if (handledDelegationsRef.current.has(delegationId)) break;
+        handledDelegationsRef.current.add(delegationId);
+        handlersRef.current.onHandOff(delegationId);
+        const timer = window.setTimeout(() => {
+          delegationTimersRef.current.delete(delegationId);
+          if (endingRef.current || sessionRef.current !== sessionId) return;
+          const text = transcriptRef.current.take(event.offset_ms);
           callLog.add('delegation.sent', JSON.stringify(text));
           handlersRef.current.onDelegation({ sessionId, delegationId, text });
         }, TRANSCRIPT_SETTLE_MS);
+        delegationTimersRef.current.set(delegationId, timer);
         break;
       }
       case 'session.closed':
@@ -365,7 +383,7 @@ export function useVoiceCall(handlers: Handlers) {
         } else if (r.type === 'outbound-rtp' && r.kind === 'audio') {
           now.sent = Number(r.packetsSent ?? 0);
         } else if (r.type === 'remote-outbound-rtp' && r.kind === 'audio') {
-          // What the provider says it sent (from its RTCP reports): short of 250 per 5 s means it paused, not the network.
+          // Remote RTCP reports update independently of this timer; packet deltas alone cannot identify a provider pause.
           now.senderSent = Number(r.packetsSent ?? 0);
         } else if (r.type === 'candidate-pair' && (r.selected === true || r.nominated === true) && r.state === 'succeeded') {
           rtt = Number(r.currentRoundTripTime ?? -1);
@@ -393,6 +411,7 @@ export function useVoiceCall(handlers: Handlers) {
     callLog.add('pc.created', replace ? `reconnect, replacing ${replace}` : 'first connection');
     mic.getAudioTracks().forEach((track) => pc.addTrack(track, mic));
     pc.ontrack = (event) => {
+      if (pcRef.current !== pc || endingRef.current) return;
       // A track can arrive without a stream; play it on its own in that case.
       const stream = event.streams[0] ?? new MediaStream([event.track]);
       callLog.add('remote.track', `kind=${event.track.kind} id=${event.track.id} streams=${event.streams.length} muted=${event.track.muted} state=${event.track.readyState}`);
@@ -401,7 +420,8 @@ export function useVoiceCall(handlers: Handlers) {
       event.track.onunmute = () => callLog.add('remote.track', 'unmuted (packets arriving)');
       event.track.onended = () => callLog.add('remote.track', 'ended');
       const audio = audioRef.current ?? new Audio();
-      if (!audioRef.current) {
+      if (!audio.dataset.voiceEvents) {
+        audio.dataset.voiceEvents = '1';
         for (const name of ['playing', 'pause', 'stalled', 'waiting', 'suspend', 'ended', 'error', 'emptied'] as const) {
           audio.addEventListener(name, () => callLog.add('audio.element', `${name} paused=${audio.paused} readyState=${audio.readyState}`));
         }
@@ -420,7 +440,7 @@ export function useVoiceCall(handlers: Handlers) {
     dc.onopen = () => callLog.add('dc.open');
     dc.onclose = () => callLog.add('dc.close');
     dc.onerror = (event) => callLog.add('dc.error', (event as RTCErrorEvent).error?.message ?? 'error');
-    dc.onmessage = (event) => onEvent(String(event.data));
+    dc.onmessage = (event) => { if (pcRef.current === pc && !endingRef.current) onEvent(String(event.data)); };
     pc.onsignalingstatechange = () => callLog.add('pc.signaling', pc.signalingState);
     pc.onicegatheringstatechange = () => callLog.add('pc.ice-gathering', pc.iceGatheringState);
     pc.oniceconnectionstatechange = () => callLog.add('pc.ice-connection', pc.iceConnectionState);
@@ -450,18 +470,19 @@ export function useVoiceCall(handlers: Handlers) {
     };
 
     await pc.setLocalDescription(await pc.createOffer());
-    await new Promise<void>((resolve) => {
+    await new Promise<void>((resolve, reject) => {
       if (pc.iceGatheringState === 'complete') return resolve();
-      const timer = window.setTimeout(() => {
-        callLog.add('pc.ice-gathering', 'still gathering after 2000ms; sending the offer as it stands');
+      const onGathered = () => {
+        if (pc.iceGatheringState !== 'complete') return;
+        window.clearTimeout(timer);
+        pc.removeEventListener('icegatheringstatechange', onGathered);
         resolve();
-      }, 2000);
-      pc.addEventListener('icegatheringstatechange', () => {
-        if (pc.iceGatheringState === 'complete') {
-          window.clearTimeout(timer);
-          resolve();
-        }
-      });
+      };
+      const timer = window.setTimeout(() => {
+        pc.removeEventListener('icegatheringstatechange', onGathered);
+        reject(new Error('Network setup timed out before ICE candidates were ready'));
+      }, 10_000);
+      pc.addEventListener('icegatheringstatechange', onGathered);
     });
 
     const requestedAt = clock();
@@ -490,11 +511,12 @@ export function useVoiceCall(handlers: Handlers) {
   };
 
   const reconnect = async () => {
-    if (endingRef.current) return;
+    if (endingRef.current || reconnectingRef.current) return;
     if (reconnectsRef.current >= MAX_RECONNECTS) {
       callLog.add('reconnect.gave-up', `after ${reconnectsRef.current}`);
       return finish('dropped');
     }
+    reconnectingRef.current = true;
     reconnectsRef.current += 1;
     callLog.add('reconnect', `#${reconnectsRef.current}`);
     setPhase('reconnecting');
@@ -507,6 +529,8 @@ export function useVoiceCall(handlers: Handlers) {
     } catch (error) {
       callLog.add('reconnect.failed', error);
       finish('dropped');
+    } finally {
+      reconnectingRef.current = false;
     }
   };
 
@@ -560,9 +584,10 @@ export function useVoiceCall(handlers: Handlers) {
   const start = useCallback(async () => {
     if (active) return;
     endingRef.current = false;
+    readyCuePlayedRef.current = false;
     reconnectsRef.current = 0;
     warnedRef.current = { five: false, one: false };
-    userBufferRef.current = '';
+    transcriptRef.current = new TranscriptTimeline();
     statsRef.current = null;
     lastLoudAtRef.current = 0;
     setMuted(false);

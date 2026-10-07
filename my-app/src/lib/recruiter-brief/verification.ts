@@ -14,8 +14,8 @@ export function claimVerdict(items: VerdictRow[] | undefined, index: number): { 
 }
 
 export function markNeedsReview(match: RoleMatch): void {
-  match.assessment = 'gap';
+  match.assessment = 'relevant';
   match.verificationStatus = 'unknown';
-  match.evidence = 'Unknown — needs review: a complete verification verdict is unavailable.';
+  match.evidence = 'Needs confirmation: a complete verification verdict is unavailable.';
   match.projectIds = [];
 }

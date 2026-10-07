@@ -205,6 +205,9 @@ export type ChatEvent =
   | { type: 'done' };
 
 export interface ConversationMessage {
+  id?: string;
+  receivedAt?: number;
+  channel?: 'typed' | 'voice';
   role: 'user' | 'assistant';
   content: string;
   /** Ids of the project cards this reply put on screen, so a follow-up doesn't send them again. */

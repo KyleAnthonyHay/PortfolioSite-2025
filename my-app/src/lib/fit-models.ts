@@ -3,7 +3,7 @@ import { ChatOpenAI } from '@langchain/openai';
 export const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
 export type ModelStage = 'fit' | 'extraction' | 'brief' | 'verification' | 'chat' | 'evidence' | 'technology';
 // Bump the relevant version whenever that stage's prompt or interpretation changes.
-export const PROMPT_VERSIONS = { fit: 4, extraction: 2, brief: 1, verification: 2 } as const;
+export const PROMPT_VERSIONS = { fit: 5, extraction: 3, brief: 2, verification: 3 } as const;
 
 export function stageModel(stage: ModelStage): string {
   const fit = process.env.OPENAI_FIT_MODEL ?? process.env.OPENAI_FIT_JUDGE_MODEL ?? DEFAULT_AI_MODEL;

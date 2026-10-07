@@ -6,6 +6,10 @@ import { clientIp, visitorKey } from '../src/lib/voice/visitor';
 import { spokenText } from '../src/lib/voice/live';
 import { correctProjectNames } from '../src/lib/voice/names';
 import { devUnlimited } from '../src/lib/voice/ledger';
+import WebSocket, { WebSocketServer } from 'ws';
+import { once } from 'node:events';
+import { deliverEvents } from '../src/lib/voice/sideband';
+import { TranscriptTimeline } from '../src/lib/voice/transcripts';
 
 test('the allowance day is New York’s and resets at its midnight, across DST', () => {
   const cases: [string, string, string][] = [
@@ -77,4 +81,46 @@ test('the development bypass is off in production whatever the env says', () => 
 
 test('answers are spoken without Markdown or links', () => {
   assert.equal(spokenText('**SelahNote** is [live](https://apps.apple.com/x).\n- One\n- Two'), 'SelahNote is live. One Two');
+});
+
+test('a delegation consumes only transcript fragments at its timeline offset', () => {
+  const timeline = new TranscriptTimeline();
+  timeline.append('Check the first job.', 100, 500);
+  timeline.append(' I will send another.', 1100, 1500);
+  assert.equal(timeline.take(600), 'Check the first job.');
+  timeline.append('Late old text', 100, 300);
+  assert.equal(timeline.take(1600), 'I will send another.');
+  assert.equal(timeline.take(1700), '');
+});
+
+test('sideband requires the matching append acknowledgment and rejects failures', async (t) => {
+  const cases = ['ack', 'error', 'close', 'timeout', 'wrong-ack', 'session-close', 'superseded'] as const;
+  for (const mode of cases) {
+    await t.test(mode, async () => {
+      const server = new WebSocketServer({ port: 0 });
+      await once(server, 'listening');
+      const address = server.address();
+      assert.ok(address && typeof address !== 'string');
+      let commands = 0;
+      server.on('connection', (socket) => socket.on('message', (raw) => {
+        commands++;
+        const command = JSON.parse(raw.toString());
+        if (mode === 'ack') socket.send(JSON.stringify({ type: 'session.commentary.appended', client_event_id: command.event_id }));
+        if (mode === 'error') socket.send(JSON.stringify({ type: 'error', client_event_id: command.event_id, error: { message: 'Rejected command' } }));
+        if (mode === 'wrong-ack') socket.send(JSON.stringify({ type: 'session.thinking.appended', client_event_id: command.event_id }));
+        if (mode === 'session-close') socket.send(JSON.stringify({ type: 'session.closed' }));
+        if (mode === 'close') socket.close();
+      }));
+      try {
+        const socket = new WebSocket(`ws://127.0.0.1:${address.port}`);
+        const result = deliverEvents(socket, [{ type: mode === 'session-close' ? 'session.close' : 'session.commentary.append', content: 'Test', delegation_id: null }], 150, mode === 'superseded' ? async () => false : undefined);
+        if (mode === 'ack' || mode === 'session-close' || mode === 'superseded') await result;
+        else await assert.rejects(result, mode === 'error' ? /Rejected command/ : mode === 'close' ? /closed before/ : /timed out/);
+        if (mode === 'superseded') assert.equal(commands, 0);
+      } finally {
+        for (const socket of server.clients) socket.terminate();
+        await new Promise<void>((resolve) => server.close(() => resolve()));
+      }
+    });
+  }
 });

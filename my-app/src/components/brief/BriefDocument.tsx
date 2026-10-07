@@ -77,7 +77,7 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
         <section className="mt-10">
           <div className="flex items-center justify-between">
             <p className={eyebrow}>Role match</p>
-            <p className="flex items-center gap-4 text-xs text-zinc-400">
+            <p className="flex flex-wrap items-center gap-4 text-xs text-zinc-400">
               {(['strong', 'relevant', 'gap'] as MatchLevel[]).map((level) => (
                 <span key={level} className="inline-flex items-center gap-1.5">
                   <Dot level={level} />
@@ -88,7 +88,7 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
           </div>
           <ul className="mt-3 divide-y divide-zinc-100 border-y border-zinc-100">
             {page.rows.map((row) => (
-              <li key={row.requirement} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 py-3 sm:grid-cols-[minmax(0,1.3fr)_96px_minmax(0,1fr)] sm:items-center sm:gap-x-6">
+              <li key={row.requirement} className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-4 py-3 sm:grid-cols-[minmax(0,1.3fr)_140px_minmax(0,1fr)] sm:items-center sm:gap-x-6">
                 <p className="text-[15px] leading-snug text-zinc-900">{row.requirement}</p>
                 <p className="flex items-center gap-2 text-sm text-zinc-700">
                   <Dot level={row.level} />

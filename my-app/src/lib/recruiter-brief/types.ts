@@ -58,4 +58,4 @@ export interface StoredBrief {
   version: number;
 }
 
-export const BRIEF_VERSION = 1;
+export const BRIEF_VERSION = 2;

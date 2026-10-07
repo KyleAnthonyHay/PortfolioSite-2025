@@ -2,6 +2,9 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { NextRequest } from 'next/server';
 import type { ChatEvent } from '../src/lib/chat-events';
+import { postingSources } from '../src/lib/posting-state';
+import { chatArrivalSnapshot } from '../src/lib/chat-arrivals';
+import { sanitizeHistory } from '../src/lib/chat-request';
 
 process.env.OPENAI_API_KEY = 'test-only';
 process.env.OPENAI_CHAT_MODEL = 'gpt-5.6-luna';
@@ -52,4 +55,25 @@ test('chat route streams a Luna tool call, tool result, answer, and follow-ups u
   assert.ok(events.some((event) => event.type === 'suggestions' && event.items.length > 0));
   assert.equal(events.at(-1)?.type, 'done');
   assert.equal(calls, 3);
+});
+
+test('chat arrivals expose actual new input and historical sources without decoding intent', async () => {
+  const old = { role: 'user' as const, content: 'https://example.com/old-job', receivedAt: 100, channel: 'typed' as const };
+  const previous = { role: 'assistant' as const, content: 'The old report is ready', receivedAt: 150, channel: 'voice' as const };
+  const promise = "Okay, I’m going to give you another job and you tell me if he would be a good fit for this";
+  const snapshot = chatArrivalSnapshot({ userMessage: promise, history: [old, previous], receivedAt: 200, voice: true });
+  assert.equal(snapshot.newMessagesSincePreviousAnswer.length, 0);
+  assert.equal(snapshot.postingSources.length, 1);
+  assert.equal(snapshot.postingSources[0].receivedAt, 100);
+  const fresh = { role: 'user' as const, content: 'https://example.com/new-job', receivedAt: 300, channel: 'typed' as const };
+  const interleaved = chatArrivalSnapshot({ userMessage: promise, history: [old, previous, fresh], receivedAt: 200, voice: true });
+  assert.equal(interleaved.newMessagesSincePreviousVoiceAnswer[0].content, fresh.content);
+  assert.equal(interleaved.postingSources.at(-1)?.url, fresh.content);
+  assert.equal(sanitizeHistory([fresh])[0].receivedAt, 300);
+  globalThis.fetch = async () => { throw new Error('A historical source must be explicitly selected before fetching'); };
+  const { findPosting } = await import('../src/lib/recruiter-brief/tool');
+  const unresolved = await findPosting({}, promise, [old, previous]);
+  assert.equal(unresolved.text, undefined);
+  assert.match(unresolved.note!, /Historical postings exist/);
+  assert.equal(postingSources(promise, [old, previous]).length, 1);
 });
