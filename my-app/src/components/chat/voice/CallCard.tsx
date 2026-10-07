@@ -66,7 +66,7 @@ export default function CallCard({ phase, muted, remainingMs, level, warning, on
           <span
             aria-hidden
             className={`absolute bottom-0 right-0 h-3 w-3 rounded-full ring-2 ring-zinc-950 ${
-              phase === 'reconnecting' || phase === 'connecting' ? 'bg-amber-400' : muted ? 'bg-zinc-500' : 'bg-emerald-400'
+              phase === 'reconnecting' || phase === 'connecting' ? 'bg-zinc-400' : muted ? 'bg-zinc-500' : 'bg-emerald-400'
             }`}
           />
         </span>
@@ -81,7 +81,7 @@ export default function CallCard({ phase, muted, remainingMs, level, warning, on
 
         {remainingMs !== null && (
           <span
-            className={`shrink-0 rounded-full px-2 py-1 font-mono text-[12px] tabular-nums ${lastMinute ? 'bg-orange-500/15 text-orange-300' : 'bg-white/[0.07] text-zinc-300'}`}
+            className={`shrink-0 rounded-full px-2 py-1 font-mono text-[12px] tabular-nums ${lastMinute ? 'bg-white font-semibold text-zinc-950' : 'bg-white/[0.07] text-zinc-300'}`}
             aria-label={`${formatClock(remainingMs)} of voice time left`}
           >
             {formatClock(remainingMs)}
@@ -118,14 +118,14 @@ export default function CallCard({ phase, muted, remainingMs, level, warning, on
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className="pointer-events-auto flex w-full max-w-[400px] items-start gap-2.5 rounded-2xl border border-orange-200 bg-orange-50 px-3.5 py-2.5 text-[13.5px] leading-snug text-orange-950 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.3)]"
+            className="pointer-events-auto flex w-full max-w-[400px] items-start gap-2.5 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-[13.5px] leading-snug text-zinc-900 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.3)]"
           >
-            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-orange-500" />
+            <Clock className="mt-0.5 h-4 w-4 shrink-0 text-accent-blue" />
             <p className="flex-1">
               {warning === 'five' ? 'Five minutes of voice time left today.' : 'One minute of voice time left today.'}{' '}
-              <span className="text-orange-900/70">After that, the chat keeps going in text.</span>
+              <span className="text-zinc-500">After that, the chat keeps going in text.</span>
             </p>
-            <button type="button" onClick={onDismissWarning} aria-label="Dismiss" className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-orange-900/50 hover:bg-orange-100 hover:text-orange-950">
+            <button type="button" onClick={onDismissWarning} aria-label="Dismiss" className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900">
               <X className="h-3.5 w-3.5" />
             </button>
           </motion.div>
