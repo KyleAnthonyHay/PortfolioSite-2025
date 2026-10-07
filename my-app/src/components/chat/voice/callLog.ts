@@ -9,7 +9,7 @@
  * It is on outside production builds. On a production build it turns on when
  * localStorage.voiceLog is "1". The last call's log is kept in sessionStorage
  * so it survives a reload; "Copy call log" on the card or on the "Call ended"
- * row copies it as plain text.
+ * row copies it as plain text. On a phone, open the chat with ?voicelog=1.
  */
 
 const STORAGE_KEY = 'voice:last-call-log';
@@ -20,6 +20,10 @@ export function callLogEnabled(): boolean {
   if (typeof window === 'undefined') return false;
   if (process.env.NODE_ENV !== 'production') return true;
   try {
+    // ?voicelog=1 in the address bar turns it on for this browser (handy on a phone); ?voicelog=0 turns it off.
+    const flag = new URLSearchParams(window.location.search).get('voicelog');
+    if (flag === '1') window.localStorage.setItem('voiceLog', '1');
+    else if (flag === '0') window.localStorage.removeItem('voiceLog');
     return window.localStorage.getItem('voiceLog') === '1';
   } catch {
     return false;

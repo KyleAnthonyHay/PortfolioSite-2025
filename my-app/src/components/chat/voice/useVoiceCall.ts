@@ -67,7 +67,7 @@ function untilReset(resetAt?: number): string {
 }
 
 /** Inbound and outbound audio counters, so each stats line can show what changed since the last one. */
-type StatsSample = { received: number; lost: number; concealed: number; concealmentEvents: number; sent: number; samples: number };
+type StatsSample = { received: number; lost: number; discarded: number; concealed: number; silent: number; concealmentEvents: number; sent: number; senderSent: number; samples: number };
 
 export function useVoiceCall(handlers: Handlers) {
   const handlersRef = useRef(handlers);
@@ -345,7 +345,7 @@ export function useVoiceCall(handlers: Handlers) {
     if (!pc || endingRef.current) return;
     try {
       const stats = await pc.getStats();
-      const now: StatsSample = { received: 0, lost: 0, concealed: 0, concealmentEvents: 0, sent: 0, samples: 0 };
+      const now: StatsSample = { received: 0, lost: 0, discarded: 0, concealed: 0, silent: 0, concealmentEvents: 0, sent: 0, senderSent: 0, samples: 0 };
       let jitter = 0;
       let rtt = -1;
       let bufferMs = -1;
@@ -354,7 +354,9 @@ export function useVoiceCall(handlers: Handlers) {
         if (r.type === 'inbound-rtp' && r.kind === 'audio') {
           now.received = Number(r.packetsReceived ?? 0);
           now.lost = Number(r.packetsLost ?? 0);
+          now.discarded = Number(r.packetsDiscarded ?? 0);
           now.concealed = Number(r.concealedSamples ?? 0);
+          now.silent = Number(r.silentConcealedSamples ?? 0);
           now.concealmentEvents = Number(r.concealmentEvents ?? 0);
           now.samples = Number(r.totalSamplesReceived ?? 0);
           jitter = Number(r.jitter ?? 0);
@@ -362,6 +364,9 @@ export function useVoiceCall(handlers: Handlers) {
           if (emitted > 0) bufferMs = (Number(r.jitterBufferDelay ?? 0) / emitted) * 1000;
         } else if (r.type === 'outbound-rtp' && r.kind === 'audio') {
           now.sent = Number(r.packetsSent ?? 0);
+        } else if (r.type === 'remote-outbound-rtp' && r.kind === 'audio') {
+          // What the provider says it sent (from its RTCP reports): short of 250 per 5 s means it paused, not the network.
+          now.senderSent = Number(r.packetsSent ?? 0);
         } else if (r.type === 'candidate-pair' && (r.selected === true || r.nominated === true) && r.state === 'succeeded') {
           rtt = Number(r.currentRoundTripTime ?? -1);
         }
@@ -372,7 +377,7 @@ export function useVoiceCall(handlers: Handlers) {
       const d = (key: keyof StatsSample) => now[key] - prev[key];
       callLog.add(
         'stats',
-        `in: packets=+${d('received')} lost=+${d('lost')} concealed=+${d('concealed')} events=+${d('concealmentEvents')} samples=+${d('samples')} jitter=${Math.round(jitter * 1000)}ms buffer=${bufferMs < 0 ? '?' : Math.round(bufferMs)}ms | out: packets=+${d('sent')} | rtt=${rtt < 0 ? '?' : Math.round(rtt * 1000)}ms | pc=${pc.connectionState}/${pc.iceConnectionState}`
+        `in: packets=+${d('received')} senderSays=+${d('senderSent')} lost=+${d('lost')} discarded=+${d('discarded')} concealed=+${d('concealed')} (silent=+${d('silent')}) events=+${d('concealmentEvents')} samples=+${d('samples')} jitter=${Math.round(jitter * 1000)}ms buffer=${bufferMs < 0 ? '?' : Math.round(bufferMs)}ms | out: packets=+${d('sent')} | rtt=${rtt < 0 ? '?' : Math.round(rtt * 1000)}ms | pc=${pc.connectionState}/${pc.iceConnectionState}`
       );
     } catch (error) {
       callLog.add('stats.failed', error);
