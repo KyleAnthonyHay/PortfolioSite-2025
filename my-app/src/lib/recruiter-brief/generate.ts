@@ -1,4 +1,5 @@
 import { CAREER_FACTS, WORK_EVIDENCE } from '../facts';
+import { createHash } from 'crypto';
 import fs from 'fs/promises';
 import path from 'path';
 import { ChatOpenAI } from '@langchain/openai';
@@ -79,10 +80,37 @@ interface ExtractedPosting {
 /** One extraction per posting text, so the chat card and a later brief (and a rerun) read the same rows. */
 const extractions = new Map<string, Promise<ExtractedPosting>>();
 
+/**
+ * Extractions are also saved to disk, one file per posting, so a server
+ * restart doesn't re-split the same posting into different rows. Delete a
+ * file (or run `npm run postings:forget`) to extract that posting again.
+ * Where the disk is read-only (Vercel), this quietly falls back to memory.
+ */
+const postingsDir = process.env.PORTFOLIO_POSTINGS_DIR || path.resolve(process.cwd(), '.cache/postings');
+
+function postingFile(text: string): string {
+  const hash = createHash('sha256').update(text.replace(/\s+/g, ' ').trim()).digest('hex').slice(0, 16);
+  return path.join(postingsDir, `${hash}.json`);
+}
+
+async function savedExtraction(text: string): Promise<ExtractedPosting> {
+  const file = postingFile(text);
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf-8')).extracted as ExtractedPosting;
+  } catch {
+    const extracted = await extractRequirementsOnce(text);
+    await fs
+      .mkdir(postingsDir, { recursive: true })
+      .then(() => fs.writeFile(file, JSON.stringify({ savedAt: new Date().toISOString(), extracted }, null, 2)))
+      .catch(() => undefined);
+    return extracted;
+  }
+}
+
 function extractRequirements(jobDescription: string): Promise<ExtractedPosting> {
   const key = jobDescription.trim();
   if (!extractions.has(key)) {
-    const run = extractRequirementsOnce(key);
+    const run = savedExtraction(key);
     extractions.set(key, run);
     run.catch(() => extractions.delete(key));
     if (extractions.size > 200) extractions.delete(extractions.keys().next().value!);
