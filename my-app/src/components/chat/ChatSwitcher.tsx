@@ -54,7 +54,7 @@ export default function ChatSwitcher({
             onNew();
           }}
           aria-label="New chat"
-          className="inline-flex items-center justify-center pl-3 pr-2.5 transition-colors hover:text-zinc-900 active:scale-[0.97] sm:gap-1.5 sm:pl-3.5 sm:pr-3 sm:text-[12px]"
+          className="inline-flex items-center justify-center px-2 transition-colors hover:text-zinc-900 active:scale-[0.97] sm:gap-1.5 sm:pl-3.5 sm:pr-3 sm:text-[12px]"
         >
           <Plus className="h-4 w-4 sm:h-3.5 sm:w-3.5" /> <span className="hidden sm:inline">New chat</span>
         </button>
@@ -65,7 +65,7 @@ export default function ChatSwitcher({
           aria-label="Switch chat"
           aria-haspopup="menu"
           aria-expanded={open}
-          className={`inline-flex w-8 items-center justify-center transition-colors hover:text-zinc-900 ${open ? 'bg-zinc-100 text-zinc-900' : ''}`}
+          className={`inline-flex w-6 items-center justify-center transition-colors hover:text-zinc-900 sm:w-8 ${open ? 'bg-zinc-100 text-zinc-900' : ''}`}
         >
           <ChevronDown className={`h-3.5 w-3.5 transition-transform duration-200 ${open ? 'rotate-180' : ''}`} />
         </button>
