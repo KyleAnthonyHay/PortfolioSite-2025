@@ -3,6 +3,7 @@ import { agentStream } from '@/lib/chat-stream';
 import { MAX_MESSAGE_LENGTH, sanitizeContext, sanitizeConversationId, sanitizeHistory } from '@/lib/chat-request';
 import type { ChatEvent } from '@/lib/chat-events';
 import { sendToSession, spokenText } from '@/lib/voice/live';
+import { correctProjectNames } from '@/lib/voice/names';
 import { ledger, sessionIdFrom } from '@/lib/voice/ledger';
 import { visitorKey } from '@/lib/voice/visitor';
 
@@ -71,7 +72,7 @@ export async function POST(request: NextRequest) {
   return agentStream(
     request.signal,
     {
-      message,
+      message: correctProjectNames(message),
       history: sanitizeHistory(body.history),
       context: sanitizeContext(body.context),
       conversationId: sanitizeConversationId(body.conversationId),

@@ -74,6 +74,8 @@ export function useVoiceCall(handlers: Handlers) {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const deadlineRef = useRef<number | null>(null);
   const connectedAtRef = useRef<number | null>(null);
+  /** The time this tab had when the call first connected; a call can't run longer. */
+  const allowanceAtStartRef = useRef<number | null>(null);
   const timersRef = useRef<number[]>([]);
   const rafRef = useRef<number | null>(null);
   const reconnectsRef = useRef(0);
@@ -137,7 +139,9 @@ export function useVoiceCall(handlers: Handlers) {
     setWarning(null);
     setLevel(0);
     setRemainingMs(null);
-    if (notify && connectedAt) handlersRef.current.onEnded({ durationMs: Date.now() - connectedAt, reason });
+    const allowed = allowanceAtStartRef.current ?? Infinity;
+    allowanceAtStartRef.current = null;
+    if (notify && connectedAt) handlersRef.current.onEnded({ durationMs: Math.min(Date.now() - connectedAt, allowed), reason });
   }, []);
 
   const meterRemoteAudio = (stream: MediaStream) => {
@@ -282,7 +286,10 @@ export function useVoiceCall(handlers: Handlers) {
     // The server's deadline in this tab's clock.
     const now = clock();
     deadlineRef.current = data.deadline - ((data.serverNow ?? now) - now);
-    connectedAtRef.current ??= Date.now();
+    if (connectedAtRef.current === null) {
+      connectedAtRef.current = now;
+      allowanceAtStartRef.current = deadlineRef.current - now;
+    }
     await pc.setRemoteDescription({ type: 'answer', sdp: data.sdp });
     return true;
   };

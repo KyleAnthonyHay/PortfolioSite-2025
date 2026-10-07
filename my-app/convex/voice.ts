@@ -2,6 +2,7 @@ import { v } from 'convex/values';
 import { internalMutation, internalQuery, mutation, query, type MutationCtx, type QueryCtx } from './_generated/server';
 import { internal } from './_generated/api';
 import type { Doc, Id } from './_generated/dataModel';
+import { nextReset, nyDay } from './voiceDay';
 
 /**
  * The voice allowance ledger. Each public IP (as an HMAC the site's server
@@ -33,23 +34,6 @@ function authorized(serverKey: string): boolean {
 function allowanceMs(): number {
   const seconds = Number(process.env.VOICE_DAILY_SECONDS);
   return (Number.isFinite(seconds) && seconds > 0 ? seconds : DEFAULT_DAILY_SECONDS) * 1000;
-}
-
-const dayFormat = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' });
-
-/** The New York calendar day, YYYY-MM-DD. */
-export function nyDay(ms: number): string {
-  return dayFormat.format(ms);
-}
-
-/** The next New York midnight after `ms`, DST included. */
-export function nextReset(ms: number): number {
-  const today = nyDay(ms);
-  // Walk forward in hours to the first hour of the next day, then back to its first minute.
-  let t = ms - (ms % 60_000);
-  while (nyDay(t) === today) t += 3_600_000;
-  while (nyDay(t - 60_000) !== today) t -= 60_000;
-  return t;
 }
 
 async function dayRow(ctx: MutationCtx, key: string, day: string): Promise<Doc<'voiceDays'>> {
@@ -134,7 +118,8 @@ export const attach = mutation({
     await ctx.db.patch(sessionId, { status: 'live', providerSessionId, startedAt: now, deadline, lastHeartbeat: now });
     if (session.reservedMs > 5 * 60_000 + 10_000) await ctx.scheduler.runAt(deadline - 5 * 60_000, internal.voiceWorker.notice, { sessionId, kind: 'five' });
     if (session.reservedMs > 60_000 + 10_000) await ctx.scheduler.runAt(deadline - 60_000, internal.voiceWorker.notice, { sessionId, kind: 'one' });
-    await ctx.scheduler.runAt(Math.max(now, deadline - 4_000), internal.voiceWorker.notice, { sessionId, kind: 'goodbye' });
+    // Early enough for one short sentence to finish before the line goes dead.
+    await ctx.scheduler.runAt(Math.max(now, deadline - 9_000), internal.voiceWorker.notice, { sessionId, kind: 'goodbye' });
     await ctx.scheduler.runAt(deadline, internal.voiceWorker.cutoff, { sessionId });
     return { deadline, serverNow: now };
   },

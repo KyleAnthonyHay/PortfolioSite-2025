@@ -11,6 +11,7 @@
     "postings:forget": "node --env-file=.env.local scripts/forget-posting.mjs",
     "test:fit": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-fit.ts",
     "test:chat": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-chat.ts",
+    "test:voice": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-voice.ts",
     "smoke:chat": "node --env-file-if-exists=.env.local --import ../backend/node_modules/tsx/dist/loader.mjs scripts/smoke-chat.ts",
     "eval:fit": "node --env-file-if-exists=.env.local --import ../backend/node_modules/tsx/dist/loader.mjs scripts/evaluate-fit.ts",
     "preview:emails": "node --env-file-if-exists=.env.local scripts/run-email-preview.mjs"

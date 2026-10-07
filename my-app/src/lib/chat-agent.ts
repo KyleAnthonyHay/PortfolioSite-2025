@@ -65,7 +65,7 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
 const VOICE_SECTION = `
 
 ## Voice call
-This question was spoken on a voice call. Your answer is read aloud by a voice model while any cards appear in the chat on screen. Answer in one to three short spoken sentences: no Markdown, lists, headings, links or URLs, and no project page paths. When a card is shown, name it in a few words ("the fit report is on screen") and let it carry the detail. For booking time or leaving a note, say the card is ready for them to check and confirm; never say a meeting was booked or a note was sent.`;
+This question was spoken on a voice call. Your answer is read aloud by a voice model while any cards appear in the chat on screen. Answer in one to three short spoken sentences: no Markdown, lists, headings, links or URLs, and no project page paths. When a card is shown, name it in a few words ("the fit report is on screen") and let it carry the detail. For booking time or leaving a note, say the card is ready for them to check and confirm; never say a meeting was booked or a note was sent. The question was transcribed from speech, so a project name may be misheard ("Ceyl Note" for SelahNote, "Yarn script" for YarnScript); read it as the closest project name rather than saying no such project exists.`;
 
 function systemPrompt(visitor = ''): string {
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });

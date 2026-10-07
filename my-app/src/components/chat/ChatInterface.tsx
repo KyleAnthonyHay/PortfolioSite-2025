@@ -473,48 +473,58 @@ export default function ChatInterface() {
 
   // Spoken turns. The visitor's speech becomes a voice bubble as it is
   // transcribed; a hand-off sends it to the agent like a typed message; the
-  // voice's own small talk becomes a reply bubble. While the voice reads an
+  // voice's own small talk becomes a reply bubble. Bubbles group by pauses,
+  // since the two sides can talk over each other. While the voice reads an
   // agent answer aloud, that answer is already on screen, so its words are
-  // not added again.
-  const voiceUserRef = useRef<string | null>(null);
+  // left out until the voice has gone quiet after the answer.
+  const voiceUserRef = useRef<{ id: string; at: number } | null>(null);
+  const voiceReplyRef = useRef<{ id: string; at: number } | null>(null);
   const handedOffUserRef = useRef<string | null>(null);
-  const voiceReplyRef = useRef<string | null>(null);
-  const handedOffRef = useRef(false);
+  const readingRef = useRef<{ done: boolean; at: number } | null>(null);
   const call = useVoiceCall({
     history: () => toHistory(messagesRef.current),
     onUserSpeech: (delta) => {
-      voiceReplyRef.current = null;
-      const id = voiceUserRef.current;
-      if (id) {
-        setMessages((prev) => prev.map((m) => (m.id === id && m.role === 'user' ? { ...m, content: m.content + delta } : m)));
+      const now = Date.now();
+      const open = voiceUserRef.current;
+      if (open && now - open.at < 1800) {
+        voiceUserRef.current = { id: open.id, at: now };
+        setMessages((prev) => prev.map((m) => (m.id === open.id && m.role === 'user' ? { ...m, content: m.content + delta } : m)));
         return;
       }
-      if (!delta.trim()) return;
-      handedOffRef.current = false;
+      // Recognition noise on its own (a lone symbol or comma) doesn't start a bubble.
+      if (!/[\p{L}\p{N}]/u.test(delta)) return;
       const fresh = newId();
-      voiceUserRef.current = fresh;
+      voiceUserRef.current = { id: fresh, at: now };
       stickToBottomRef.current = true;
-      setMessages((prev) => [...prev, { id: fresh, role: 'user', voice: true, content: delta.trimStart(), at: Date.now() }]);
+      setMessages((prev) => [...prev, { id: fresh, role: 'user', voice: true, content: delta.trimStart(), at: now }]);
     },
     onAssistantSpeech: (delta) => {
-      voiceUserRef.current = null;
-      if (handedOffRef.current) return;
-      const id = voiceReplyRef.current;
-      if (id) {
-        setMessages((prev) => prev.map((m) => (m.id === id && m.role === 'assistant' ? { ...m, content: m.content + delta } : m)));
+      const now = Date.now();
+      const reading = readingRef.current;
+      if (reading) {
+        if (!reading.done || now - reading.at < 3000) {
+          readingRef.current = { done: reading.done, at: now };
+          return;
+        }
+        readingRef.current = null;
+      }
+      const open = voiceReplyRef.current;
+      if (open && now - open.at < 2500) {
+        voiceReplyRef.current = { id: open.id, at: now };
+        setMessages((prev) => prev.map((m) => (m.id === open.id && m.role === 'assistant' ? { ...m, content: m.content + delta } : m)));
         return;
       }
-      if (!delta.trim()) return;
+      if (!/[\p{L}\p{N}]/u.test(delta)) return;
       const fresh = newId();
-      voiceReplyRef.current = fresh;
+      voiceReplyRef.current = { id: fresh, at: now };
       setMessages((prev) => [
         ...prev,
-        { id: fresh, role: 'assistant', voice: true, content: delta.trimStart(), steps: [], widgets: [], sources: [], suggestions: [], status: 'done', startedAt: Date.now(), endedAt: Date.now() },
+        { id: fresh, role: 'assistant', voice: true, content: delta.trimStart(), steps: [], widgets: [], sources: [], suggestions: [], status: 'done', startedAt: now, endedAt: now },
       ]);
     },
     onHandOff: () => {
-      handedOffRef.current = true;
-      handedOffUserRef.current = voiceUserRef.current;
+      readingRef.current = { done: false, at: Date.now() };
+      handedOffUserRef.current = voiceUserRef.current?.id ?? null;
       voiceUserRef.current = null;
       voiceReplyRef.current = null;
     },
@@ -523,11 +533,14 @@ export default function ChatInterface() {
       handedOffUserRef.current = null;
       const bubble = userId ? messagesRef.current.find((m) => m.id === userId) : undefined;
       const question = delegation.text || (bubble?.role === 'user' ? bubble.content : '');
-      void send(question.trim() || '(The visitor spoke, but the words were not transcribed.)', { voice: { ...delegation, userId } });
+      void send(question.trim() || '(The visitor spoke, but the words were not transcribed.)', { voice: { ...delegation, userId } }).finally(() => {
+        if (readingRef.current) readingRef.current = { done: true, at: Date.now() };
+      });
     },
     onEnded: ({ durationMs, reason }) => {
       voiceUserRef.current = null;
       voiceReplyRef.current = null;
+      readingRef.current = null;
       stickToBottomRef.current = true;
       setMessages((prev) => [...prev, { id: newId(), role: 'call', at: Date.now(), durationMs, reason }]);
     },

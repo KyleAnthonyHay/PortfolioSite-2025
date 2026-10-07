@@ -59,7 +59,7 @@ async function sideband(providerSessionId: string, events: Record<string, unknow
 const NOTICES = {
   five: 'About five minutes of voice time are left today. At the next natural pause, mention it in one short sentence, then carry on.',
   one: 'About one minute of voice time is left today. At the next natural pause, mention it in one short sentence, and say the chat keeps going in text afterwards.',
-  goodbye: "The voice time for today has run out. Say one short goodbye sentence saying the conversation can continue by typing in the chat, then stop speaking.",
+  goodbye: "The voice time for today has run out. In one short sentence of no more than twelve words, say goodbye and that they can keep typing in the chat. Then stop speaking.",
 } as const;
 
 export const notice = internalAction({
