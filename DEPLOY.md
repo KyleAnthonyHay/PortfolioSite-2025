@@ -123,3 +123,31 @@ The site reads namespace `knowledge` from the same index locally and in prod, an
 ## October 7 Luna release
 
 All portfolio AI operations now default to `gpt-5.6-luna`: chat/tool selection, follow-up suggestions, evidence searches, fit judging, posting extraction, brief writing, and role/claim verification. Production must leave the stage model overrides unset or set them to Luna. The fit fallback is disabled unless explicitly configured. See `my-app/TESTING.md` for the complete setting list. Earlier current-state notes above describe the original setup and may be stale.
+
+## October 7 voice calls ("Talk to my AI")
+
+Voice runs on GPT-Live (`gpt-live-1`) through the server: `/api/voice` creates each call with the server's OpenAI key and returns the WebRTC answer, `/api/voice/delegate` answers spoken questions with the same agent as typed chat and sends the spoken reply into the call over a sideband connection. Usage is ten minutes per public IP per New York day, kept in Convex (`voiceDays`, `voiceSessions`; `convex/voice.ts`), and a scheduled Convex action (`convex/voiceWorker.ts`) warns at five and one minute and closes the call at the deadline. The stored visitor id is an HMAC of the IP, never the IP.
+
+Convex (prod), after `npx convex deploy`:
+1. `npx convex env set VOICE_OPENAI_API_KEY "<OpenAI key with GPT-Live access>" --prod` (the cutoff worker needs it to close calls; it falls back to `OPENAI_API_KEY` if that is set there instead).
+2. Optional: `VOICE_DAILY_SECONDS` (default `600`).
+3. `BRIEF_WRITE_KEY` must already be set (step 1); the voice functions use the same key.
+Check: `npx convex env list --prod | cut -d= -f1` shows `VOICE_OPENAI_API_KEY`; dashboard → Production → Functions lists `voice:*` and `voiceWorker:*`.
+
+Vercel (Production):
+1. `VOICE_IP_SECRET` = a new random value (`openssl rand -hex 32`). Required: without it `/api/voice` returns 503 and the Talk button shows "Voice isn't available". Never reuse the local value; changing it later resets everyone's day.
+2. Optional: `VOICE_LIVE_MODEL` (default `gpt-live-1`), `VOICE_LIVE_VOICE` (default `marin`), `VOICE_OPENAI_API_KEY` (default `OPENAI_API_KEY`). The chat agent keeps `OPENAI_CHAT_MODEL`; the two are independent.
+3. `NEXT_PUBLIC_CONVEX_URL` and `BRIEF_WRITE_KEY` as in step 3.
+
+Smoke test (production, on a phone and a laptop):
+1. `curl -s https://<site>/api/voice` → `{"remainingMs":600000,...}` (or less if you have called today).
+2. `/chat` → Talk → allow the microphone → the dark call card shows "Listening" and a countdown. Ask "What has Kyle-Anthony built with AI?" → a voice bubble, then the agent's answer with cards, spoken in a sentence or two.
+3. Open `/chat` in a second tab and press Talk → "A call is already running in another tab or window."
+4. Hang up → "Call ended · m:ss" and typing still works. `curl` step 1 again → remaining went down by about the call's length.
+5. IP header check (could not be tested locally): from two different networks (Wi-Fi and phone data), `/api/voice` must report separate allowances; sending a fake `X-Forwarded-For` header from curl must not change the allowance you get.
+
+Local testing without the limit: `VOICE_DEV_UNLIMITED=1` in `my-app/.env.local` plus `VOICE_ALLOW_UNLIMITED=1` in the Convex dev env gives every local call a full, uncounted ten minutes. Never set `VOICE_ALLOW_UNLIMITED` on prod; the site also ignores the flag in a production build. To reset a key instead: `npx convex run voice:adjustUsage '{"key":"<key>","usedMs":0}'`.
+
+Kyle decides:
+1. Cost: GPT-Live bills connected time (SelahNote's reports used about 5¢ a minute) plus 15 seconds at every call setup, so one visitor's full day is roughly 50¢ plus the agent's own tokens. A busy day of many visitors multiplies that; `VOICE_DAILY_SECONDS` lowers it without a deploy.
+2. Visitors behind one office or campus network share one IP, so they share the ten minutes and only one of them can be on a call at a time.

@@ -74,14 +74,6 @@ export const journey: JourneyNode[] = [
     title: 'Software Engineering Intern, The Difference',
   },
   {
-    id: 'ios',
-    kind: 'project',
-    period: '2023',
-    title: 'First native iOS app',
-    caption: 'UIKit fundamentals, networking, and Swift Concurrency.',
-    projects: [{ id: 4, title: 'Country Viewer', href: '/projects/4' }],
-  },
-  {
     id: 'munchmap',
     kind: 'project',
     period: 'Feb 2024',

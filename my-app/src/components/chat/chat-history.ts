@@ -43,8 +43,8 @@ export function saveArchive<M>(chats: StoredChat<M>[]) {
 }
 
 /** The first thing the visitor asked, as the chat's name. */
-export function chatTitle(messages: { role: string; content: string }[]): string {
-  const first = messages.find((m) => m.role === 'user')?.content.replace(/\s+/g, ' ').trim();
+export function chatTitle(messages: { role: string; content?: string }[]): string {
+  const first = messages.find((m) => m.role === 'user')?.content?.replace(/\s+/g, ' ').trim();
   if (!first) return 'New chat';
   return first.length > TITLE_LENGTH ? `${first.slice(0, TITLE_LENGTH - 1).trimEnd()}…` : first;
 }

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const Header = () => {
   const [isVisible, setIsVisible] = useState(false);
@@ -29,17 +30,20 @@ const Header = () => {
       }`}
     >
       <form onSubmit={handleSubmit} className="relative flex items-center">
+        <Image src="/agent.png" alt="" width={24} height={24} className="pointer-events-none absolute left-3.5 h-6 w-6 object-contain" />
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Ask about Kyle-Anthony.."
-          className="w-[calc(100vw-2rem)] sm:w-96 px-5 py-3.5 pr-12 bg-white/90 backdrop-blur-xl text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] text-base sm:text-sm"
+          placeholder="Ask my agent about Kyle-Anthony…"
+          aria-label="Ask my agent"
+          className="w-[calc(100vw-2rem)] sm:w-96 pl-12 py-3.5 pr-12 bg-white/90 backdrop-blur-xl text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] text-base sm:text-sm"
         />
         <button
           type="submit"
           disabled={!input.trim()}
-          className="absolute right-2 w-9 h-9 flex items-center justify-center bg-zinc-900 hover:bg-zinc-800 disabled:bg-zinc-300 disabled:opacity-50 rounded-xl active:scale-[0.95] transition-all duration-200"
+          aria-label="Send"
+          className="absolute right-2 w-9 h-9 flex items-center justify-center bg-accent-blue hover:bg-[#0077e6] disabled:bg-zinc-300 disabled:opacity-50 rounded-xl active:scale-[0.95] transition-all duration-200"
         >
           <ArrowIcon />
         </button>

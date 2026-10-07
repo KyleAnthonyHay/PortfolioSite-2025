@@ -16,6 +16,30 @@ export interface CatalogProject extends ProjectCardData {
   corpusNames: string[];
   overview: string;
   techStack: TechStack;
+  evidence: EvidenceTier;
+}
+
+/**
+ * How much a project proves on its own, from CAREER_FACTS: shipped to real
+ * users, built for a real stakeholder, deployed with no stated users, or never
+ * distributed. When several projects support the same claim, the stronger
+ * tier is shown first, so a learning project never fronts a production one.
+ */
+export type EvidenceTier = 'production' | 'stakeholder' | 'deployed' | 'personal';
+
+export const EVIDENCE_LABEL: Record<EvidenceTier, string> = {
+  production: 'shipped to real users',
+  stakeholder: 'built for a real stakeholder or team',
+  deployed: 'deployed, no stated users',
+  personal: 'personal project, not distributed',
+};
+
+const TIER_ORDER: EvidenceTier[] = ['production', 'stakeholder', 'deployed', 'personal'];
+
+/** Stable sort: stronger evidence first, otherwise the order given. */
+export function byEvidence<T>(items: T[], idOf: (item: T) => number): T[] {
+  const tier = (item: T) => TIER_ORDER.indexOf(projectById(idOf(item))?.evidence ?? 'personal');
+  return items.map((item, i) => ({ item, i })).sort((a, b) => tier(a.item) - tier(b.item) || a.i - b.i).map(({ item }) => item);
 }
 
 interface CatalogDetails {
@@ -31,10 +55,12 @@ interface CatalogDetails {
   highlights: string[];
   overview: string;
   techStack: TechStack;
+  evidence: EvidenceTier;
 }
 
 const details: Record<number, CatalogDetails> = {
   1: {
+    evidence: 'production',
     aliases: ['SelahNote', 'Selahnote', 'Selah Note', 'Lectra'],
     corpusNames: ['Selahnote'],
     image: '/products/selahnote/landing.jpg',
@@ -50,20 +76,8 @@ const details: Record<number, CatalogDetails> = {
       infrastructure: ['Local-first SwiftData storage', 'Convex cloud sync', 'Google Cloud', 'Firebase token validation', 'StoreKit / RevenueCat'],
     },
   },
-  4: {
-    aliases: ['Country Viewer', 'Country App', 'CountryApp', 'Countries App'],
-    corpusNames: ['Country App'],
-    image: '/demos/country-viewer/device.png',
-    highlights: ['UIKit', 'Swift', 'async/await'],
-    overview:
-      'Native UIKit reference app that pulls every country from the REST Countries API and presents flags, capitals, population, currencies, and languages in a tab-based interface with search and detail views. Uses Swift Concurrency for networking and Auto Layout for dynamic cells.',
-    techStack: {
-      frontend: ['UIKit', 'Swift', 'MVC architecture', 'Swift Concurrency (async/await)', 'UITableView', 'UIImageView', 'UILabel'],
-      backend: ['REST Countries API v3.1', 'URLSession'],
-      infrastructure: ['Custom UIImageView extension', 'Auto Layout constraints', 'Dynamic table view cell sizing'],
-    },
-  },
   5: {
+    evidence: 'deployed',
     aliases: ['OnTract', 'Ontract'],
     corpusNames: ['Ontract'],
     image: '/products/ontract/landing.jpg',
@@ -78,6 +92,7 @@ const details: Record<number, CatalogDetails> = {
     },
   },
   6: {
+    evidence: 'deployed',
     aliases: ['Sentio+', 'Sentio Plus', 'Sentio', 'SentioPlus'],
     corpusNames: ['Sentio Plus', 'Finetuned Sentiment Analysis'],
     image: '/products/sentio/landing.jpg',
@@ -92,6 +107,7 @@ const details: Record<number, CatalogDetails> = {
     },
   },
   7: {
+    evidence: 'personal',
     aliases: ['ChatGPT Clone', 'Chatgpt Clone', 'GPT Clone'],
     corpusNames: ['Chatgpt Clone'],
     image: '/demos/chatgpt-clone/chat.jpg',
@@ -105,6 +121,7 @@ const details: Record<number, CatalogDetails> = {
     },
   },
   8: {
+    evidence: 'deployed',
     aliases: ['YarnScript', 'Yarnscript', 'Yarn Script'],
     corpusNames: ['Yarnscript'],
     image: '/products/yarnscript/landing.jpg',
@@ -118,6 +135,7 @@ const details: Record<number, CatalogDetails> = {
     },
   },
   9: {
+    evidence: 'personal',
     aliases: ['SoundSnag', 'Sound Snag', 'Soundsnag'],
     corpusNames: ['Soundsnag'],
     image: '/demos/soundsnag/demo-poster.jpg',
@@ -132,6 +150,7 @@ const details: Record<number, CatalogDetails> = {
     },
   },
   10: {
+    evidence: 'stakeholder',
     aliases: ['SelahNote Creator Dashboard', 'Creator Dashboard', 'SelahNote UGC Dashboard', 'UGC Dashboard'],
     corpusNames: ['Selahnote Creator Dashboard'],
     image: '/demos/selahnote-ugc/demo-poster.jpg',
@@ -146,6 +165,7 @@ const details: Record<number, CatalogDetails> = {
     },
   },
   11: {
+    evidence: 'stakeholder',
     aliases: ['V1 ProdBot', 'ProdBot', 'Prod Bot', 'V1Church ProdBot', 'V1 Church ProdBot'],
     corpusNames: ['V1 Prodbot'],
     image: '/products/prodbot/landing.jpg',
@@ -186,6 +206,7 @@ export const catalog: CatalogProject[] = projectCards
       corpusNames: extra.corpusNames,
       overview: extra.overview,
       techStack: extra.techStack,
+      evidence: extra.evidence,
     };
   });
 

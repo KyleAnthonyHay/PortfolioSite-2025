@@ -12,7 +12,9 @@ import { CAREER_FACTS, GPA, HIRING_DETAILS, WORK_ARRANGEMENT, WORK_EVIDENCE, wor
 import { getKnowledgeSections, getProjectResources, getProjectSections, searchKnowledge, type KnowledgeHit } from './knowledge';
 import { isGitHubRepoUrl, isPublicRepo } from './github';
 import {
+  byEvidence,
   catalog,
+  EVIDENCE_LABEL,
   findProjectByName,
   projectById,
   projectStackText,
@@ -451,7 +453,10 @@ Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"ve
       });
       // In a fit check, "direct" needs at least one project or job doing it in the setting the requirement means.
       const direct = verdict === 'direct' && (projects.some((p) => p.context) || workRefs.some((w) => w.context));
-      const ordered = [...projects.filter((p) => p.context), ...projects.filter((p) => !p.context)].map(({ id, why, section }) => ({ id, why, section }));
+      // The judge orders by how closely an excerpt matches, so a toy app that
+      // says "iOS" in every line outranked a shipped one. Among projects that
+      // pass, shipped work leads; the judge's order breaks ties.
+      const ordered = [...byEvidence(projects.filter((p) => p.context), (p) => p.id), ...byEvidence(projects.filter((p) => !p.context), (p) => p.id)].map(({ id, why, section }) => ({ id, why, section }));
       const cited = projects.length + workRefs.length;
       return {
         verdict: cited === 0 ? 'none' : direct ? 'direct' : verdict === 'none' ? 'none' : 'related',
@@ -491,7 +496,7 @@ export const checkExperience = tool(
     } else if (hasExperience) {
       content = [
         `Kyle-Anthony has used ${name}${evidence.since ? ` (listed since ${evidence.since}, about ${evidence.years} year${evidence.years === 1 ? '' : 's'}, mostly on personal and training projects)` : ''}:`,
-        ...projects.map((p) => `- ${p.project.title}: ${p.usage}`),
+        ...projects.map((p) => `- ${p.project.title} (${EVIDENCE_LABEL[projectById(p.project.id)!.evidence]}): ${p.usage}`),
         ...resume.map((item) => `- ${item.where} (${sourceLabel(item.source)}): ${item.text}`),
       ].join('\n');
     } else if (verdict === 'related') {
@@ -559,8 +564,8 @@ export const getExperience = tool(
       .join('\n\n');
 
     const content = [
-      `Evidence for "${query}" (${judged.verdict === 'direct' ? 'direct experience' : 'related work only'}):`,
-      ...recommendations.map((r) => `- ${r.project.title}: ${r.why}`),
+      `Evidence for "${query}" (${judged.verdict === 'direct' ? 'direct experience' : 'related work only'}), strongest first; the first project is the card on screen, so lead with it:`,
+      ...recommendations.map((r) => `- ${r.project.title} (${EVIDENCE_LABEL[projectById(r.project.id)!.evidence]}): ${r.why}`),
       detail ? `\nSupporting excerpts:\n${detail}` : '',
     ].join('\n');
 
