@@ -35,6 +35,19 @@ export async function notifyFitCheck(input: {
     )
     .join('');
 
+  // Render the existing assessment directly: the attachment must agree with the
+  // email and card, rather than generating a second assessment or a shorter brief.
+  const pdf = await import('./fit-report-pdf')
+    .then(({ renderFitReportPdf }) => renderFitReportPdf(report, context))
+    .catch((error) => {
+      console.error('Fit report PDF could not be generated', error);
+      return undefined;
+    });
+  const attachmentNote = pdf
+    ? 'The full fit-check PDF and the chat so far are attached.'
+    : 'The chat so far is attached. The PDF could not be generated; the full fit report is included in this email.';
+  const filename = `fit-check-${role.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 70) || 'report'}.pdf`;
+
   const result = await emailKyle({
     subject: `Fit check: ${role} (${tally})`,
     text: [
@@ -45,7 +58,7 @@ export async function notifyFitCheck(input: {
       '',
       ...report.requirements.map((r) => `- [${statusLabel[r.status]}] ${r.requirement}: ${r.evidence}`),
       '',
-      'The chat so far is attached. The visitor left no contact details unless they also send you a note.',
+      `${attachmentNote} The visitor left no contact details unless they also send you a note.`,
     ].join('\n'),
     html: simpleEmailHtml(
       'Someone just ran a fit check',
@@ -55,9 +68,12 @@ export async function notifyFitCheck(input: {
         ['Result', tally],
       ],
       `<ul style="padding-left:18px;margin:0 0 14px">${list}</ul>
-<p style="color:#71717a;font-size:12px">The chat so far is attached. Visitors stay anonymous unless they also leave you a note.</p>`
+<p style="color:#71717a;font-size:12px">${attachmentNote} Visitors stay anonymous unless they also leave you a note.</p>`
     ),
-    attachments: [{ filename: 'chat-transcript.md', content: transcriptMarkdown(transcript, context) }],
+    attachments: [
+      ...(pdf ? [{ filename, content: pdf, contentType: 'application/pdf' }] : []),
+      { filename: 'chat-transcript.md', content: transcriptMarkdown(transcript, context), contentType: 'text/markdown' },
+    ],
   });
   if (!result.ok) announced.delete(key);
   return result.ok ? 'sent' : 'failed';
