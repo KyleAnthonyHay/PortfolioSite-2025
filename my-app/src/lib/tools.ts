@@ -828,6 +828,13 @@ export interface FitAssessment {
 export const MAX_REQUIREMENTS = 20;
 
 /**
+ * Listed skills that name a kind of work rather than a tool. "QA test cases
+ * for software or AI agents" must not need a sentence containing "AI agents",
+ * and "prompt engineering" is shown by prompt design without that phrase.
+ */
+const KINDS_OF_WORK = new Set(['AI agents', 'Prompt engineering']);
+
+/**
  * The fit check itself, shared by assess_job_fit and the recruiter brief.
  * A row is a match only when a write-up shows him doing it: keyword hits and
  * skill aliases ("apis", "real-time", "next") no longer count on their own,
@@ -848,7 +855,7 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
     // When a row names technologies, the quoted sentence has to name one of them.
     // Only when the row names the technology itself; "API design" or "agentic workflows" are kinds of work, not a tool to quote.
     const named = toJudge.map(({ requirement }) => {
-      const skills = findSkillsInText(requirement).filter((match) => termPattern(match.skill.name).test(requirement));
+      const skills = findSkillsInText(requirement).filter((match) => termPattern(match.skill.name).test(requirement) && !KINDS_OF_WORK.has(match.skill.name));
       return skills.length > 0 ? skills.flatMap(safeVariants).map(termPattern) : null;
     });
     const judged = await judgeEvidence(toJudge.map((row) => row.requirement), 5, 'fit', named);
