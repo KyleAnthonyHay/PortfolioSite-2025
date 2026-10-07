@@ -33,9 +33,9 @@ export default async function BriefPage({ params }: { params: Promise<{ publicId
   return (
     <>
       <TopHeader />
-      <main className="pt-16 pb-24 md:pt-24">
+      <main className="pt-6 pb-24 sm:pt-16 md:pt-24">
         <div className="max-w-[920px] mx-auto px-4 sm:px-6 md:px-10">
-          <div className="mb-10 flex justify-end">
+          <div className="mb-6 flex justify-end md:mb-10">
             <BriefActions publicId={view.publicId} />
           </div>
           <BriefDocument view={view} />

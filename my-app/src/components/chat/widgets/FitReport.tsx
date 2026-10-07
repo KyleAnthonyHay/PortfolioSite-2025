@@ -102,12 +102,12 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
         )}
       </div>
       {onBrief && (
-        <div className="flex items-center justify-between gap-3 border-t border-zinc-100 px-4 py-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-zinc-100 px-4 py-2.5">
           <p className="text-[12px] text-zinc-400">Need something to send the hiring manager?</p>
           <button
             type="button"
             onClick={onBrief}
-            className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98]"
+            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98]"
           >
             <FileText className="h-3.5 w-3.5" /> Turn this into a brief
           </button>
