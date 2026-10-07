@@ -69,3 +69,23 @@ export async function savePosting(posting: { hash: string; roleTitle?: string; c
     .mutation(api.postings.save, { key, ...posting })
     .catch((error) => console.error('postings: could not save', posting.hash, error));
 }
+
+/** A saved fit evaluation (JSON text), so a posting gets the same verdict until the facts or write-ups change. */
+export async function getSavedEvaluation(evaluationKey: string): Promise<string | null> {
+  const key = process.env.BRIEF_WRITE_KEY;
+  if (!key || !process.env.NEXT_PUBLIC_CONVEX_URL) return null;
+  try {
+    return ((await convex().query(api.postings.getEvaluation, { key, evaluationKey })) as string | null) ?? null;
+  } catch (error) {
+    console.error('postings: could not load evaluation', error);
+    return null;
+  }
+}
+
+export async function saveEvaluation(saved: { evaluationKey: string; roleTitle?: string; companyName?: string; evaluation: string }): Promise<void> {
+  const key = process.env.BRIEF_WRITE_KEY;
+  if (!key || !process.env.NEXT_PUBLIC_CONVEX_URL) return;
+  await convex()
+    .mutation(api.postings.saveEvaluation, { key, ...saved })
+    .catch((error) => console.error('postings: could not save evaluation', error));
+}

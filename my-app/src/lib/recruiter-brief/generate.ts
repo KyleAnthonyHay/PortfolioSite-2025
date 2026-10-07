@@ -4,7 +4,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage } from '@langchain/core/messages';
-import { assessRequirements, type FitAssessment } from '../tools';
+import { assessRequirements, judgeFailures, type FitAssessment } from '../tools';
 import { getKnowledgeSections, searchKnowledge, type KnowledgeHit } from '../knowledge';
 import { catalog, findProjectByName, projectById } from '../project-catalog';
 import { profile, skillGroups } from '../profile';
@@ -18,7 +18,7 @@ import {
   type RoleMatch,
   type StoredBrief,
 } from './types';
-import { getSavedPosting, newPublicId, saveBrief, savePosting } from './store';
+import { getSavedEvaluation, getSavedPosting, newPublicId, saveBrief, saveEvaluation, savePosting } from './store';
 
 /**
  * Recruiter brief pipeline:
@@ -105,6 +105,8 @@ function extractRequirements(jobDescription: string): Promise<ExtractedPosting> 
   return extractions.get(key)!;
 }
 
+const OPTIONAL_WORDING = /\b(preferred|bonus|nice[- ]to[- ]haves?|(is|are|as) a plus|pluses|desirable|optional)\b/i;
+
 async function extractRequirementsOnce(jobDescription: string): Promise<ExtractedPosting> {
   const parsed = await askJson<{
     roleTitle?: string | null;
@@ -114,7 +116,7 @@ async function extractRequirementsOnce(jobDescription: string): Promise<Extracte
     logistics?: string[];
   }>(
     `You read a job posting for a recruiter. ${REQUIREMENT_RULES}
-Mark each one required or nice-to-have, as the posting does (preferred, bonus, plus = nice-to-have). Return at most 11, required ones first; when the posting lists more, merge closely related ones into one row rather than dropping any. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
+Traits and ways of working the posting asks for (analytical thinking, time management, ownership, adaptability, curiosity) are requirements too: keep each one. Mark each one required unless the posting itself labels it optional with words like preferred, bonus, a plus, nice to have; a requirement is never nice-to-have because it is soft, a trait or listed last. Return at most 11, required ones first; when the posting lists more, merge closely related ones into one row rather than dropping any. If the posting lists more, merge only near-duplicates; never drop a hard requirement such as years of experience, a degree, a domain or the job function itself. Leave location, office attendance, travel, work authorization and compensation out of requirements. List in "logistics" only conditions a candidate must meet about where or how they work (e.g. "Hybrid in San Francisco, 25% in office", "On-site in New York"); not employment type, pay or benefits.
 "coreFunction" is the job itself as one experience requirement: the kind of engineer or specialist and the seniority the posting implies (e.g. "Senior-level experience as a site reliability engineer", "Experience as a data scientist in finance", "Experience as a full-stack engineer building AI products"). Name a domain only when the job is a specialist in it (a finance data scientist); the company's product area (fintech, health, education) is not part of the job itself. It is always required.
 Return the role title and the hiring company exactly as the posting states them, or null.
 JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": string, "requirements": [{"text": string, "required": boolean}], "logistics": [string]}`,
@@ -123,7 +125,8 @@ JSON: {"roleTitle": string|null, "companyName": string|null, "coreFunction": str
   );
   const requirements = (parsed.requirements ?? [])
     .filter((r): r is { text: string; required?: boolean } => typeof r.text === 'string' && r.text.trim().length > 1)
-    .map((r) => ({ text: r.text.trim().slice(0, 160), required: r.required !== false }));
+    // Softening a row the posting states plainly would flatter him, so with no optional wording anywhere every row is required.
+    .map((r) => ({ text: r.text.trim().slice(0, 160), required: r.required !== false || !OPTIONAL_WORDING.test(jobDescription) }));
   // The job itself goes first, so the fit check judges "has he done this job" before any single skill.
   const core = parsed.coreFunction?.trim();
   if (core) requirements.unshift({ text: core.slice(0, 160), required: true });
@@ -547,11 +550,56 @@ export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
   const key = JSON.stringify([input.jobDescription?.trim() ?? '', input.knownRequirements ?? [], input.recruiterContext ?? '']);
   const hit = evaluationCache.get(key);
   if (hit && Date.now() - hit.at < EVALUATION_TTL) return hit.result;
-  const result = evaluateFitOnce(input);
+  const result = savedEvaluation(key, input);
   evaluationCache.set(key, { at: Date.now(), result });
   result.catch(() => evaluationCache.delete(key));
   if (evaluationCache.size > 200) evaluationCache.delete(evaluationCache.keys().next().value!);
   return result;
+}
+
+/**
+ * Bump when the matching rules change in a way that should re-judge saved
+ * postings; changes to the facts, skills or write-ups re-judge on their own.
+ */
+const FIT_RULES_VERSION = 2;
+
+let knowledgeHash: Promise<string> | null = null;
+
+/** A hash of everything a verdict is judged against, so a saved verdict lapses when any of it changes. */
+function judgedAgainst(): Promise<string> {
+  knowledgeHash ??= getKnowledgeSections()
+    .catch(() => [])
+    .then((sections) =>
+      createHash('sha256')
+        .update(JSON.stringify([FIT_RULES_VERSION, CAREER_FACTS, WORK_EVIDENCE, skillGroups, profile, sections]))
+        .digest('hex')
+        .slice(0, 16)
+    );
+  return knowledgeHash;
+}
+
+/**
+ * The judge varies a little run to run even at temperature 0, so a posting's
+ * verdict is saved in Convex and reused until the facts or write-ups change.
+ */
+async function savedEvaluation(inputKey: string, input: FitInput): Promise<FitEvaluation> {
+  const evaluationKey = `${createHash('sha256').update(inputKey.replace(/\s+/g, ' ')).digest('hex').slice(0, 16)}:${await judgedAgainst()}`;
+  const saved = await getSavedEvaluation(evaluationKey);
+  if (saved) {
+    const parsed = JSON.parse(saved) as FitEvaluation & { evidence: { fitIds: [number, string][] } };
+    return { ...parsed, evidence: { ...parsed.evidence, fitIds: new Map(parsed.evidence.fitIds) } };
+  }
+  const failuresBefore = judgeFailures;
+  const evaluation = await evaluateFitOnce(input);
+  // A failed search reads as a gap; don't keep a verdict made during an outage.
+  if (judgeFailures !== failuresBefore) return evaluation;
+  await saveEvaluation({
+    evaluationKey,
+    roleTitle: evaluation.roleTitle,
+    companyName: evaluation.companyName,
+    evaluation: JSON.stringify({ ...evaluation, evidence: { ...evaluation.evidence, fitIds: [...evaluation.evidence.fitIds] } }),
+  });
+  return evaluation;
 }
 
 async function evaluateFitOnce(input: FitInput): Promise<FitEvaluation> {

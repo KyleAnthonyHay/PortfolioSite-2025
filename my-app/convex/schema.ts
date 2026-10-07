@@ -25,4 +25,13 @@ export default defineSchema({
     companyName: v.optional(v.string()),
     extracted: v.any(),
   }).index('by_hash', ['hash']),
+  /** A posting's judged fit, keyed by the posting and a hash of the facts and write-ups it was judged against. */
+  fitEvaluations: defineTable({
+    key: v.string(),
+    savedAt: v.number(),
+    roleTitle: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    /** The evaluation as JSON text. */
+    evaluation: v.string(),
+  }).index('by_key', ['key']),
 });

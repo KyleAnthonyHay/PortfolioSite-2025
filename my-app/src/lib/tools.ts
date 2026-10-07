@@ -252,6 +252,9 @@ function sourceLabel(source: 'résumé' | 'his account'): string {
   return source === 'résumé' ? 'from his résumé' : 'in his own words, not yet on his résumé';
 }
 
+/** Search or judge calls that failed and were read as "no evidence"; a fit made during one is not saved. */
+export let judgeFailures = 0;
+
 /** Retrieves candidate sections for each question and judges them in one model call. */
 /**
  * Extra rules when the items are job requirements: a recruiter reads "match"
@@ -368,6 +371,7 @@ async function judgeChunk(
           }).slice(0, perQuestion + named.length);
         })
         .catch((error) => {
+          judgeFailures++;
           console.error('judgeEvidence: search failed', error);
           return [] as KnowledgeHit[];
         })
@@ -451,6 +455,7 @@ Return one entry for every ITEM, in order. Return JSON: {"items":[{"index":0,"ve
       };
     });
   } catch (error) {
+    judgeFailures++;
     console.error('judgeEvidence: judge failed', error);
     return questions.map(() => empty);
   }
@@ -839,6 +844,9 @@ export const MAX_REQUIREMENTS = 20;
  */
 const KINDS_OF_WORK = new Set(['AI agents', 'Prompt engineering']);
 
+/** Requirements about temperament rather than work done; the rubric already says related at most, the judge doesn't always hold to it. */
+const DISPOSITION = /\b(mindset|adaptab\w*|ambigu\w*|thrive\w*|resilien\w*|growth)\b/i;
+
 /**
  * The fit check itself, shared by assess_job_fit and the recruiter brief.
  * A row is a match only when a write-up shows him doing it: keyword hits and
@@ -896,6 +904,11 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
         } else {
           evidence = `${lead.why} About ${years} years of use, mostly on personal and training projects.`;
         }
+      }
+      // A write-up shows what he built, not a disposition: "growth mindset" or "thrives in ambiguity" is related at most.
+      if (status === 'match' && DISPOSITION.test(requirement)) {
+        status = 'related';
+        evidence = `${lead.why} (shows the work, not the trait itself)`;
       }
       results[index] = { requirement, status, evidence, projects };
     });
