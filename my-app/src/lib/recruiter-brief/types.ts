@@ -15,6 +15,7 @@ export interface RoleMatch {
   /** The job itself ("experience as a data scientist in finance") rather than one skill. */
   core?: boolean;
   projectIds: number[];
+  verificationStatus?: 'unknown';
 }
 
 /** How far the recommendation may go, set by the fit check rather than the writer. */
@@ -32,7 +33,7 @@ export interface RecruiterBrief {
   /** The fit check's overall read; absent for a general brief with no posting. */
   overallRead?: string;
   /** How many claims the second model checked, and how many it rewrote or removed. */
-  verification?: { checked: number; rewritten: number; removed: number };
+  verification?: { checked: number; rewritten: number; removed: number; unknown?: number };
 }
 
 /** One piece of portfolio evidence the brief was allowed to cite. */

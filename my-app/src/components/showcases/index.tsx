@@ -6,6 +6,7 @@ import {
   FolderTree,
   Gauge,
   Globe,
+  Highlighter,
   LayoutDashboard,
   Library,
   MessageSquare,
@@ -69,12 +70,28 @@ const selahNote: Showcase = {
       media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/summary.png', alt: 'AI-generated sermon summary' } },
     },
     {
+      label: 'Ask',
+      icon: <MessageSquare className={ic} />,
+      title: 'Ask the sermon what you missed.',
+      description:
+        'A chat per sermon, answered by an agent that searches that message\'s transcript, its detected references and the Bible text, in the translation you pick. It works mid-recording too, and you can ask by voice.',
+      media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/ask.png', alt: 'Asking SelahNote what a sermon was about' } },
+    },
+    {
       label: 'Scripture',
       icon: <BookOpen className={ic} />,
       title: 'Every reference caught and timestamped.',
       description:
         'Scripture mentions are detected as they are spoken, matched against the text, and linked back to the moment in the recording.',
       media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/references.png', alt: 'Detected scripture references with timestamps' } },
+    },
+    {
+      label: 'Bible',
+      icon: <Highlighter className={ic} />,
+      title: 'A Bible that works offline, with your highlights.',
+      description:
+        'KJV and World English Bible text ship inside the app. Tap a verse to highlight it in a colour, save it, copy it or share it, and the reader remembers where you left off.',
+      media: { kind: 'phone', screen: { type: 'image', src: '/demos/selahnote/bible.png', alt: 'Matthew 13 in the built-in Bible reader with highlighted verses' } },
     },
     {
       label: 'Organize',

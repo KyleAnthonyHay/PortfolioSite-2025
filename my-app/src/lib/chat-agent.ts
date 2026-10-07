@@ -14,6 +14,7 @@ import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget 
 import { notifyFitCheck, notifyRecruiterBrief } from './notify';
 import { makeRecruiterBriefTool } from './recruiter-brief/tool';
 import { makeFitTool, sameRole } from './fit-tool';
+import { looksLikePosting } from './recruiter-brief/tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
 
@@ -32,6 +33,11 @@ async function visitorSection(context?: VisitorContext): Promise<{ text: string;
     '\n\n## Visitor',
     `The visitor is considering Kyle-Anthony for a technical role${context.role ? `: ${context.role}` : ''}. Lean on the projects and experience most relevant to that role when you answer, without overstating anything. When they ask whether he is a fit and name no other role, use this one.`,
   ];
+  if (!context.jobUrl) {
+    lines.push(
+      'They shared no posting at intake. When they list requirements or share a posting in the chat, judge fit against those with assess_job_fit as usual. Only when they ask whether he is a fit with nothing listed and no posting, do not assess: call get_experience for the role, describe his relevant experience briefly without a fit verdict, and ask for the posting link or pasted description.'
+    );
+  }
   if (context.jobUrl) {
     const posting = await readJobPosting(context.jobUrl).catch(() => null);
     if (posting?.ok) {
@@ -78,9 +84,10 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief, even when the same message shares a posting link or description: pass the link as jobUrl and call nothing else in that turn. It finds a posting shared earlier in the chat by itself; do not paste one into the call. Never say a brief was made unless this tool ran.
 - "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → assess_job_fit with no requirements and nothing else in that turn. It finds the posting (the newest one), reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
 - A list of requirements the visitor typed, with no posting → assess_job_fit with that list. ${REQUIREMENT_RULES} Do not call other tools in that turn.
+- "Is he a fit?" with only a role title (from the intake or the chat), when the visitor listed no requirements and shared no posting → never assess_job_fit, and never guess what such a posting usually asks for. Call get_experience with the role as the query, describe his relevant experience in two or three sentences without saying whether he is a fit, and ask them to share the posting link or paste the description so you can judge the real requirements. If their message names any requirements at all (technologies, years, a degree), that is a typed list: use the rule above.
 - To read a posting's contents without judging fit → get_job_posting with the visitor's link.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
-- When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type with no posting, call assess_job_fit with 5-7 requirements typical of that role; for an area of interest, search or list the relevant projects.
+- When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type with no posting, call get_experience for that role, describe his relevant experience briefly without a fit verdict, and ask for the posting link or pasted description; never assess fit against requirements they did not give. For an area of interest, search or list the relevant projects.
 - "Has he worked at big tech / FAANG / a startup?" → get_background with 'experience', then name the employers on his résumé and stop. No yes or no, and no judgment of what kind of company an employer is.
 - Questions about SelahNote's users, paying subscribers, App Store rating or reviews → get_project for SelahNote with the question as query, not the links tool.
 If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates, an employer's details, big-tech experience, weaknesses), say it is not stated and suggest asking him; never infer it from nearby facts, and never state a negative you can't source either.
@@ -125,6 +132,17 @@ function toLangChain(history: ConversationMessage[]): BaseMessage[] {
 /** A request for the shareable brief, which the small model tends to answer with a fit check instead. */
 const BRIEF_REQUEST =
   /\b(recruiter brief|candidate (brief|profile|summary)|one[- ]pager|(a |the )?brief (i|we) can (send|share|forward)|turn this into a (recruiter )?brief|(send|forward|share) (it |this )?(to|with) (my|the|our) hiring manager|something (i|we) can send)/i;
+
+/** A fit question that names no role, requirements or posting: the one case where asking beats answering. */
+const FIT_QUESTION = /\bfit\b/i;
+const FIT_DETAILS = /[,;\n]|\d|https?:\/\/|\b(need|needs|require|requires|requirements?|must|stack|looking for|experience with|engineer|developer|role|position|job|ios|android|mobile|backend|frontend|full[- ]?stack|web|data|ml|ai|devops|cloud)\b/i;
+
+function isUnqualifiedFitQuestion(message: string, history: ConversationMessage[], context?: VisitorContext): boolean {
+  if (!FIT_QUESTION.test(message) || FIT_DETAILS.test(message) || context?.role || context?.jobUrl) return false;
+  const earlier = history.filter((m) => m.role === 'user').map((m) => m.content);
+  if (earlier.some((m) => /https?:\/\//i.test(m) || looksLikePosting(m))) return false;
+  return !history.some((m) => m.role === 'assistant' && m.content.startsWith('[Asked the visitor'));
+}
 
 function isSmallTalk(message: string): boolean {
   const words = message.trim().split(/\s+/);
@@ -273,13 +291,17 @@ export async function* runAgent(
   for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
     const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
     const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
+    // "Is he a fit for my team?" with nothing to judge against: ask what the role is rather than guess.
+    const mustAsk = round === 0 && !wantsBrief && !justAsked && isUnqualifiedFitQuestion(userMessage, history, context);
     const allowTools = round < MAX_TOOL_ROUNDS;
     const model = allowTools
       ? getBaseModel().bindTools(
           tools,
           wantsBrief
             ? { tool_choice: { type: 'function', function: { name: 'generate_recruiter_brief' } } }
-            : forceTool
+            : mustAsk
+              ? { tool_choice: { type: 'function', function: { name: 'ask_visitor' } } }
+              : forceTool
               ? { tool_choice: 'required' }
               : {}
         )
@@ -416,6 +438,16 @@ export async function* runAgent(
 
     // A question card ends the turn; the visitor's choice starts the next one.
     if (asked) break;
+  }
+
+  // A fit question answered without a posting or a typed list gets a general
+  // answer; the posting is what a real check needs, so always ask for it.
+  const fitAsked = FIT_QUESTION.test(userMessage) || (justAsked && history.some((m) => m.role === 'user' && FIT_QUESTION.test(m.content)));
+  const postingShared = /https?:\/\//i.test(sharedText) || [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content)].some(looksLikePosting);
+  if (fitAsked && !postingShared && !fitShown && !asked && answer.trim() && !/\b(posting|job description|requirements)\b/i.test(answer)) {
+    const delta = `\n\nIf you share the posting link or paste the job description, I can check him against its actual requirements.`;
+    answer += delta;
+    yield { type: 'text', delta };
   }
 
   yield { type: 'answered' };

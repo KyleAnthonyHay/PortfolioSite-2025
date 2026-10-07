@@ -48,7 +48,7 @@ export function FitReportPdf({ report, context, createdAt }: { report: FitReport
           <View key={index} style={s.row} wrap={false}>
             <View style={s.rowTop}>
               <Text style={s.requirement}>{index + 1}. {row.requirement}</Text>
-              <Text style={[s.status, { color: pdfPalette[row.status].color, backgroundColor: pdfPalette[row.status].background }]}>{labels[row.status]}</Text>
+              <Text style={[s.status, { color: pdfPalette[row.status].color, backgroundColor: pdfPalette[row.status].background }]}>{row.verificationStatus === 'unknown' ? 'Needs review' : labels[row.status]}</Text>
             </View>
             <Text style={s.evidence}>{row.evidence}</Text>
             {row.projects.length > 0 && <View style={s.projects}>{row.projects.map((project) => (

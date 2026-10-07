@@ -1,0 +1,32 @@
+[
+  {
+    "id": "missing-specialist-experience",
+    "input": {"knownRequirements": ["5+ years of professional software engineering experience", "Operate Kubernetes clusters in production", "Production Swift iOS applications"]},
+    "expected": [["gap"], ["gap"], ["strong"]]
+  },
+  {
+    "id": "adjacent-is-not-direct",
+    "input": {"knownRequirements": ["Revenue forecasting as a finance analyst", "On-call incident response for large-scale distributed infrastructure", "Fine-tuning DistilBERT for sentiment analysis"]},
+    "expected": [["gap", "relevant"], ["gap", "relevant"], ["strong"]]
+  },
+  {
+    "id": "attribution-and-production",
+    "input": {"knownRequirements": ["Deploying the Sentio+ RoBERTa model to live production users", "Docker infrastructure implemented personally on the Sentio+ team project", "Hands-on Claude through AWS Bedrock"]},
+    "expected": [["gap", "relevant"], ["gap"], ["strong"]]
+  },
+  {
+    "id": "ambiguous-graduation",
+    "input": {"knownRequirements": ["Bachelor's degree in Computer Science", "Graduated within 24 months of October 7, 2026", "Master's degree required"]},
+    "expected": [["strong"], ["unknown"], ["gap"]]
+  },
+  {
+    "id": "posting-extraction",
+    "input": {"jobDescription": "ExampleCo — Junior iOS Engineer. Required: experience building production Swift iOS apps; a bachelor's degree in computer science; graduation within 24 months of October 7, 2026. Nice to have: Kubernetes experience. This is a junior software engineering role."},
+    "expectedExtracted": [
+      {"pattern": "Swift", "allowed": ["strong"]},
+      {"pattern": "bachelor|degree", "allowed": ["strong", "unknown"]},
+      {"pattern": "graduat|24 months", "allowed": ["unknown"]},
+      {"pattern": "Kubernetes", "allowed": ["gap"], "required": false}
+    ]
+  }
+]

@@ -156,8 +156,7 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
 
   return (
     <div className="pointer-events-none absolute inset-x-0 bottom-0 z-40">
-      <div className="h-12 bg-gradient-to-t from-paper to-transparent" />
-      <div className="bg-paper px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="bg-gradient-to-t from-paper via-paper/85 to-transparent px-4 pb-[max(1rem,env(safe-area-inset-bottom))] pt-10">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -166,7 +165,7 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
           className="pointer-events-auto relative mx-auto w-full max-w-3xl"
         >
           {menuOpen && <CommandMenu commands={matches} highlighted={highlighted} onHover={setHighlighted} onPick={pick} />}
-          <div className="flex items-end gap-2 rounded-[22px] border border-zinc-200 bg-white py-2 pl-5 pr-2 shadow-[0_12px_32px_-18px_rgba(0,0,0,0.25)] transition-[border-color,box-shadow] duration-300 focus-within:border-zinc-300 focus-within:shadow-[0_16px_40px_-18px_rgba(0,0,0,0.3)]">
+          <div className="flex items-end gap-2 rounded-[26px] border border-zinc-200/80 bg-white/90 py-2 pl-5 pr-2 shadow-[0_12px_32px_-18px_rgba(0,0,0,0.25)] backdrop-blur-xl transition-[border-color,box-shadow] duration-300 focus-within:border-zinc-300 focus-within:shadow-[0_16px_40px_-18px_rgba(0,0,0,0.3)]">
             <textarea
               ref={inputRef}
               value={value}

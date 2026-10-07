@@ -37,7 +37,7 @@ export function fitReportEmailHtml(report: Extract<Widget, { kind: 'fit_report' 
     return `<span style="display:inline-block;margin:0 5px 4px 0;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:500;background:${meta.background};color:${meta.color}">${report.summary[status]} ${meta.label.toLowerCase()}</span>`;
   }).join('');
   const rows = report.requirements.map((row) => {
-    const meta = statuses[row.status];
+    const meta = { ...statuses[row.status], label: row.verificationStatus === 'unknown' ? 'Needs review' : statuses[row.status].label };
     const projects = row.projects.map((project) => `<a href="${escapeHtml(new URL(project.href, SITE_URL).href)}" style="display:inline-block;margin:6px 4px 0 0;padding:2px 8px;border:1px solid #e4e4e7;border-radius:999px;font-size:11px;color:#52525b;text-decoration:none">${escapeHtml(project.title)}</a>`).join('');
     return `<tr><td style="padding:14px 16px;border-top:1px solid #f4f4f5">
 <span style="display:inline-block;padding:1px 7px;margin-bottom:5px;border-radius:999px;background:${meta.background};color:${meta.color};font-size:10px;font-weight:600">${meta.label}</span>
