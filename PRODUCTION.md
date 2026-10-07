@@ -24,6 +24,8 @@ through `misc` → `dev` → `main`.
   Both PDFs share a branded photo header, rounded sections, status pills, and
   the website's colors. The recruiter PDF uses the same renderer for email and
   website downloads; fit PDFs preserve every requirement across page breaks.
+  Both notifications include the visitor's original job-posting URL when one
+  was selected from the current message, chat history, or intake.
   They attach the full assessed report as a PDF and the chat as
   Markdown. If PDF rendering fails, the email still includes the complete report
   and explicitly notes that the PDF could not be generated.
