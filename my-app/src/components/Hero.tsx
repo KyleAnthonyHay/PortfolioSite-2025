@@ -109,9 +109,7 @@ const Hero = () => {
               </a>
               <Link href="/chat">
                 <span className="inline-flex items-center gap-2 border border-zinc-200 hover:border-zinc-300 hover:bg-white rounded-xl h-12 px-7 text-sm font-medium text-zinc-600 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200">
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                  </svg>
+                  <Image src="/agent.png" alt="" width={24} height={24} className="h-6 w-6 shrink-0 object-contain" />
                   Talk to my AI Agent
                 </span>
               </Link>
