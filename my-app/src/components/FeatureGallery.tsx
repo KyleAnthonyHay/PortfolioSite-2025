@@ -20,7 +20,8 @@ const ease = [0.16, 1, 0.3, 1] as const;
 
 /**
  * Three screens, three features. Each capture is a whole app window, shown
- * uncropped on a soft panel, with the story of that feature underneath.
+ * uncropped and centred on a soft panel, with the story of that feature
+ * underneath.
  */
 export default function FeatureGallery({ heading, features }: { heading: string; features: Feature[] }) {
   return (
@@ -38,8 +39,8 @@ export default function FeatureGallery({ heading, features }: { heading: string;
             viewport={{ once: true, margin: '-10%' }}
             transition={{ duration: 0.8, ease, delay: i * 0.08 }}
           >
-            <div className="relative overflow-hidden rounded-[1.5rem] bg-zinc-100/80 border border-slate-200/50 p-4 pb-0 md:p-5 md:pb-0">
-              <div className="relative aspect-[16/10] overflow-hidden rounded-t-xl border border-b-0 border-slate-200/70 bg-white shadow-[0_18px_40px_-24px_rgba(0,0,0,0.25)]">
+            <div className="relative overflow-hidden rounded-[1.5rem] bg-zinc-100/80 border border-slate-200/50 p-4 md:p-5">
+              <div className="relative aspect-[16/10] overflow-hidden rounded-xl border border-slate-200/70 bg-white shadow-[0_18px_40px_-24px_rgba(0,0,0,0.25)]">
                 {feature.html ? (
                   <SnapshotFrame html={feature.html} highlight={feature.highlight} fallback={feature.image} alt={feature.alt} />
                 ) : (
