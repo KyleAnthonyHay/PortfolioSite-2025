@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "postings:forget": "node scripts/forget-posting.mjs"
+    "postings:forget": "node --env-file=.env.local scripts/forget-posting.mjs"
   },
   "dependencies": {
     "@formspree/react": "^3.0.0",

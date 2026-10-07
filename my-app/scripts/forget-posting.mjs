@@ -1,26 +1,15 @@
-// Forget saved posting extractions so they are read fresh next time.
+// Forget saved posting extractions (Convex postingExtractions) so they are extracted again.
 // npm run postings:forget -- regal        (role or company contains "regal")
 // npm run postings:forget -- --all
-import fs from 'fs/promises';
-import path from 'path';
+// Uses NEXT_PUBLIC_CONVEX_URL and BRIEF_WRITE_KEY from .env.local, so it acts on that deployment.
+import { ConvexHttpClient } from 'convex/browser';
+import { anyApi } from 'convex/server';
 
-const dir = process.env.PORTFOLIO_POSTINGS_DIR || path.resolve(process.cwd(), '.cache/postings');
-const term = process.argv[2]?.toLowerCase();
-if (!term) {
-  console.log('Usage: npm run postings:forget -- <role or company> | --all');
+const match = process.argv[2];
+const { NEXT_PUBLIC_CONVEX_URL: url, BRIEF_WRITE_KEY: key } = process.env;
+if (!match || !url || !key) {
+  console.log('Usage: npm run postings:forget -- <role or company> | --all (needs NEXT_PUBLIC_CONVEX_URL and BRIEF_WRITE_KEY)');
   process.exit(1);
 }
-const files = (await fs.readdir(dir).catch(() => [])).filter((name) => name.endsWith('.json'));
-let removed = 0;
-for (const name of files) {
-  const file = path.join(dir, name);
-  const { extracted } = JSON.parse(await fs.readFile(file, 'utf-8'));
-  const label = `${extracted.roleTitle ?? ''} ${extracted.companyName ?? ''}`.trim();
-  if (term === '--all' || label.toLowerCase().includes(term)) {
-    await fs.unlink(file);
-    console.log(`Forgot ${label || name}`);
-    removed++;
-  }
-}
-console.log(removed ? `${removed} posting(s) will be extracted again.` : 'No saved posting matched.');
-process.exit(0);
+const forgotten = await new ConvexHttpClient(url).mutation(anyApi.postings.forget, { key, match });
+console.log(forgotten.length ? `Forgot: ${forgotten.join(', ')}` : 'No saved posting matched.');

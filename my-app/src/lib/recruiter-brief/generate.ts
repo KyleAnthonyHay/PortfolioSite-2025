@@ -18,7 +18,7 @@ import {
   type RoleMatch,
   type StoredBrief,
 } from './types';
-import { newPublicId, saveBrief } from './store';
+import { getSavedPosting, newPublicId, saveBrief, savePosting } from './store';
 
 /**
  * Recruiter brief pipeline:
@@ -81,30 +81,17 @@ interface ExtractedPosting {
 const extractions = new Map<string, Promise<ExtractedPosting>>();
 
 /**
- * Extractions are also saved to disk, one file per posting, so a server
- * restart doesn't re-split the same posting into different rows. Delete a
- * file (or run `npm run postings:forget`) to extract that posting again.
- * Where the disk is read-only (Vercel), this quietly falls back to memory.
+ * Extractions are also saved in Convex, one row per posting, so a restart or
+ * another server doesn't re-split the same posting into different rows.
+ * `npm run postings:forget` clears a posting so it is extracted again.
  */
-const postingsDir = process.env.PORTFOLIO_POSTINGS_DIR || path.resolve(process.cwd(), '.cache/postings');
-
-function postingFile(text: string): string {
-  const hash = createHash('sha256').update(text.replace(/\s+/g, ' ').trim()).digest('hex').slice(0, 16);
-  return path.join(postingsDir, `${hash}.json`);
-}
-
 async function savedExtraction(text: string): Promise<ExtractedPosting> {
-  const file = postingFile(text);
-  try {
-    return JSON.parse(await fs.readFile(file, 'utf-8')).extracted as ExtractedPosting;
-  } catch {
-    const extracted = await extractRequirementsOnce(text);
-    await fs
-      .mkdir(postingsDir, { recursive: true })
-      .then(() => fs.writeFile(file, JSON.stringify({ savedAt: new Date().toISOString(), extracted }, null, 2)))
-      .catch(() => undefined);
-    return extracted;
-  }
+  const hash = createHash('sha256').update(text.replace(/\s+/g, ' ').trim()).digest('hex').slice(0, 16);
+  const saved = await getSavedPosting<ExtractedPosting>(hash);
+  if (saved) return saved;
+  const extracted = await extractRequirementsOnce(text);
+  await savePosting({ hash, roleTitle: extracted.roleTitle, companyName: extracted.companyName, extracted });
+  return extracted;
 }
 
 function extractRequirements(jobDescription: string): Promise<ExtractedPosting> {

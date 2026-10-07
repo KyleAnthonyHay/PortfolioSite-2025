@@ -45,3 +45,27 @@ export async function getBrief(publicId: string): Promise<StoredBrief | null> {
     return null;
   }
 }
+
+/**
+ * Requirement rows extracted from a posting (convex/postings.ts), so a
+ * posting gets the same rows after a restart or on another server. Failures
+ * return null and the caller extracts again.
+ */
+export async function getSavedPosting<T>(hash: string): Promise<T | null> {
+  const key = process.env.BRIEF_WRITE_KEY;
+  if (!key || !process.env.NEXT_PUBLIC_CONVEX_URL) return null;
+  try {
+    return ((await convex().query(api.postings.get, { key, hash })) as T | null) ?? null;
+  } catch (error) {
+    console.error('postings: could not load', hash, error);
+    return null;
+  }
+}
+
+export async function savePosting(posting: { hash: string; roleTitle?: string; companyName?: string; extracted: unknown }): Promise<void> {
+  const key = process.env.BRIEF_WRITE_KEY;
+  if (!key || !process.env.NEXT_PUBLIC_CONVEX_URL) return;
+  await convex()
+    .mutation(api.postings.save, { key, ...posting })
+    .catch((error) => console.error('postings: could not save', posting.hash, error));
+}
