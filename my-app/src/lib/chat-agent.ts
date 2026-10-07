@@ -11,7 +11,7 @@ import { concat } from '@langchain/core/utils/stream';
 import { allTools, describeToolCall, parseToolResult, readJobPosting, type ToolResult } from './tools';
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
-import { notifyFitCheck } from './notify';
+import { notifyFitCheck, notifyRecruiterBrief } from './notify';
 import { makeRecruiterBriefTool } from './recruiter-brief/tool';
 import { makeFitTool, sameRole } from './fit-tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
@@ -395,6 +395,21 @@ export async function* runAgent(
       const outcome = await withTimeout(notice, 6000, 'failed' as const);
       if (outcome === 'sent') {
         yield { type: 'step', step: { id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the report by email so he can follow up today'] } };
+      }
+    }
+
+    const brief = results.find(({ result }) => result.widget?.kind === 'recruiter_brief')?.result.widget;
+    if (brief?.kind === 'recruiter_brief') {
+      // Await delivery while the streamed response stays open; the saved brief
+      // and visitor's download remain available even if email fails.
+      const outcome = await notifyRecruiterBrief({
+        view: brief.view,
+        context,
+        transcript: [...history, { role: 'user', content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])],
+      });
+      if (outcome === 'sent') {
+        stepCounter += 1;
+        yield { type: 'step', step: { id: `step-${stepCounter}`, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this brief', status: 'done', detail: ['He gets the brief by email, with the conversation so far'] } };
       }
     }
 

@@ -17,7 +17,11 @@ through `misc` → `dev` → `main`.
   notes, and fit notifications go to `kyleanthonyhay@gmail.com`, always with
   `haykyle917@gmail.com` CC'd. Notes set Reply-To to the visitor. Failed sends
   retain a mail-app fallback. Supabase and Formspree are unused.
-  Fit notifications attach the full assessed report as a PDF and the chat as
+  Recruiter-brief generation also sends the same PDF as the website download,
+  its saved share link, and the chat transcript. A PDF-rendering failure still
+  sends the saved brief link with an explicit attachment-failure note.
+  Fit notifications use the website's badge, card, and project-link styling.
+  They attach the full assessed report as a PDF and the chat as
   Markdown. If PDF rendering fails, the email still includes the complete report
   and explicitly notes that the PDF could not be generated.
 - Scheduling: https://calendly.com/haykyle917/30min.
