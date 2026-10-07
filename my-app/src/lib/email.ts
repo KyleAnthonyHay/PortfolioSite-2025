@@ -16,7 +16,8 @@ export function isEmailConfigured(): boolean {
 
 export interface EmailAttachment {
   filename: string;
-  content: string;
+  content: string | Uint8Array;
+  contentType?: string;
 }
 
 export async function emailKyle(message: {
@@ -42,7 +43,8 @@ export async function emailKyle(message: {
         reply_to: message.replyTo,
         attachments: message.attachments?.map((file) => ({
           filename: file.filename,
-          content: Buffer.from(file.content, 'utf8').toString('base64'),
+          content: (typeof file.content === 'string' ? Buffer.from(file.content, 'utf8') : Buffer.from(file.content)).toString('base64'),
+          content_type: file.contentType,
         })),
       }),
       signal: AbortSignal.timeout(8000),
