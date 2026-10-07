@@ -1,6 +1,5 @@
 import { NextRequest } from 'next/server';
-import { runAgent } from '@/lib/chat-agent';
-import type { ChatEvent } from '@/lib/chat-events';
+import { agentStream } from '@/lib/chat-stream';
 import { MAX_MESSAGE_LENGTH, sanitizeContext, sanitizeConversationId, sanitizeHistory } from '@/lib/chat-request';
 
 export const runtime = 'nodejs';
@@ -26,35 +25,10 @@ export async function POST(request: NextRequest) {
     return Response.json({ error: 'Message is too long' }, { status: 413 });
   }
 
-  const history = sanitizeHistory(body.history);
-  const context = sanitizeContext(body.context);
-  const conversationId = sanitizeConversationId(body.conversationId);
-  const encoder = new TextEncoder();
-
-  const stream = new ReadableStream<Uint8Array>({
-    async start(controller) {
-      const send = (event: ChatEvent) => controller.enqueue(encoder.encode(`${JSON.stringify(event)}\n`));
-      try {
-        for await (const event of runAgent(message, history, { signal: request.signal, context, conversationId })) {
-          if (request.signal.aborted) break;
-          send(event);
-        }
-      } catch (error) {
-        if (!request.signal.aborted) {
-          console.error('Chat error:', error);
-          send({ type: 'error', message: 'Something went wrong while answering. Please try again.' });
-        }
-      } finally {
-        controller.close();
-      }
-    },
-  });
-
-  return new Response(stream, {
-    headers: {
-      'Content-Type': 'application/x-ndjson; charset=utf-8',
-      'Cache-Control': 'no-cache, no-transform',
-      'X-Accel-Buffering': 'no',
-    },
+  return agentStream(request.signal, {
+    message,
+    history: sanitizeHistory(body.history),
+    context: sanitizeContext(body.context),
+    conversationId: sanitizeConversationId(body.conversationId),
   });
 }

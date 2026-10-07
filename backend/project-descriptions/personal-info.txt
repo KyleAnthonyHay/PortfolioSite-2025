@@ -154,7 +154,6 @@ iOS Applications:
 - Built native iOS apps with SwiftUI and UIKit
 - Implemented MVVM architecture with Combine for reactive data flow
 - Created expense tracking app with SwiftUI Charts, async data fetching, and hierarchical category management
-- Developed country information app with REST API integration and async/await concurrency
 - Built audio recording app with AVFoundation, WebSocket streaming, and SwiftData persistence
 
 Full-Stack Web Applications:

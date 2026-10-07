@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'motion/react';
-import { ArrowDown, ArrowLeft, Briefcase, Check, Copy, RefreshCw, X } from 'lucide-react';
+import { ArrowDown, ArrowLeft, AudioLines, Briefcase, Check, Copy, RefreshCw, X } from 'lucide-react';
 import type { ActivityStep, ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from '@/lib/chat-events';
 import ActivitySteps from './ActivitySteps';
 import Composer from './Composer';
@@ -17,6 +17,10 @@ import WidgetRenderer from './widgets';
 import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
 import ChatSwitcher from './ChatSwitcher';
 import { chatTitle, loadArchive, MAX_CHATS, saveArchive, stampFor, type StoredChat } from './chat-history';
+import CallEndedEntry from './voice/CallEndedEntry';
+import CallCard from './voice/CallCard';
+import { useVoiceCall, type Delegation } from './voice/useVoiceCall';
+import type { CallEndReason } from './voice/types';
 
 interface UserMessage {
   id: string;
@@ -24,6 +28,8 @@ interface UserMessage {
   content: string;
   /** Client clock, for the time stamps between messages. */
   at?: number;
+  /** Spoken on a call rather than typed. */
+  voice?: boolean;
 }
 
 interface AssistantMessage {
@@ -40,9 +46,20 @@ interface AssistantMessage {
   /** Client clock: when the turn started and when the answer (or the turn) first landed. */
   startedAt?: number;
   endedAt?: number;
+  /** Came from a call: the agent's answer to a spoken question, or the voice's own small talk. */
+  voice?: boolean;
 }
 
-type ChatMessage = UserMessage | AssistantMessage;
+/** The "Call ended" line a call leaves in the chat. Never sent to the agent. */
+interface CallMessage {
+  id: string;
+  role: 'call';
+  at: number;
+  durationMs: number;
+  reason: CallEndReason;
+}
+
+type ChatMessage = UserMessage | AssistantMessage | CallMessage;
 
 const STORAGE_KEY = 'portfolio-chat-v2';
 const CONTEXT_KEY = 'portfolio-chat-context';
@@ -123,6 +140,7 @@ const widgetNames: Partial<Record<Widget['kind'], string>> = {
 /** The chat as plain messages for the note's transcript: prose, plus what cards were shown. */
 function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
   return messages
+    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call')
     .map((m) => {
       if (m.role === 'user') return { role: m.role, content: m.content };
       const cards = m.widgets.map((w) => {
@@ -133,6 +151,24 @@ function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
       });
       const shown = cards.length > 0 ? `[Shown: ${cards.join('; ')}]` : '';
       return { role: m.role, content: [m.content.trim(), shown].filter(Boolean).join('\n\n') };
+    })
+    .filter((m) => m.content.trim().length > 0);
+}
+
+/** The chat as the agent's history. A turn that only asked a question has no prose; it sends the question so the agent knows what the next message answers. */
+function toHistory(messages: ChatMessage[]): ConversationMessage[] {
+  return messages
+    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call')
+    .map((m) => {
+      if (m.role === 'assistant' && !m.content.trim()) {
+        const asked = m.widgets.find((w) => w.kind === 'question');
+        if (asked && asked.kind === 'question') return { role: m.role, content: `[Asked the visitor: ${asked.question}]` };
+      }
+      if (m.role === 'assistant') {
+        const projectCards = m.widgets.flatMap((w) => (w.kind === 'project' ? [w.project.id] : []));
+        if (projectCards.length > 0) return { role: m.role, content: m.content, projectCards };
+      }
+      return { role: m.role, content: m.content };
     })
     .filter((m) => m.content.trim().length > 0);
 }
@@ -170,7 +206,7 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
 const STAMP_GAP_MS = 10 * 60_000;
 
 function messageTime(message: ChatMessage): number | undefined {
-  return message.role === 'user' ? message.at : message.startedAt;
+  return message.role === 'assistant' ? message.startedAt : message.at;
 }
 
 function CopyButton({ text }: { text: string }) {
@@ -216,6 +252,9 @@ export default function ChatInterface() {
   const stickToBottomRef = useRef(true);
   const [atBottom, setAtBottom] = useState(true);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  /** The live call's session id, for telling the voice about typed turns. */
+  const callSessionRef = useRef<(() => string | null) | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
 
   const isStreaming = messages.some((m) => m.role === 'assistant' && m.status === 'streaming');
 
@@ -342,37 +381,26 @@ export default function ChatInterface() {
   };
 
   const send = useCallback(
-    async (text: string, options?: { replaceFromIndex?: number }) => {
+    async (text: string, options?: { replaceFromIndex?: number; voice?: Delegation & { userId: string | null } }) => {
       const trimmed = text.trim();
       if (!trimmed) return;
       abortRef.current?.abort();
 
+      const voice = options?.voice;
       const base =
         options?.replaceFromIndex !== undefined
           ? messagesRef.current.slice(0, options.replaceFromIndex)
           : messagesRef.current;
-      // A turn that only asked a question has no prose; send the question
-      // itself so the agent knows what the visitor's next message answers.
-      const history: ConversationMessage[] = base
-        .map((m) => {
-          if (m.role === 'assistant' && !m.content.trim()) {
-            const asked = m.widgets.find((w) => w.kind === 'question');
-            if (asked && asked.kind === 'question') return { role: m.role, content: `[Asked the visitor: ${asked.question}]` };
-          }
-          if (m.role === 'assistant') {
-            const projectCards = m.widgets.flatMap((w) => (w.kind === 'project' ? [w.project.id] : []));
-            if (projectCards.length > 0) return { role: m.role, content: m.content, projectCards };
-          }
-          return { role: m.role, content: m.content };
-        })
-        .filter((m) => m.content.trim().length > 0);
+      // A spoken question is already on screen as the visitor's voice bubble; the history stops before it.
+      const spokenIndex = voice?.userId ? base.findIndex((m) => m.id === voice.userId) : -1;
+      const history = toHistory(spokenIndex >= 0 ? base.slice(0, spokenIndex) : base);
 
       const assistantId = newId();
-      const next: ChatMessage[] = [
-        ...base,
-        { id: newId(), role: 'user', content: trimmed, at: Date.now() },
-        { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now() },
-      ];
+      const assistant: AssistantMessage = { id: assistantId, role: 'assistant', content: '', steps: [], widgets: [], sources: [], suggestions: [], status: 'streaming', startedAt: Date.now(), ...(voice ? { voice: true } : {}) };
+      const next: ChatMessage[] =
+        spokenIndex >= 0
+          ? [...base, assistant]
+          : [...base, { id: newId(), role: 'user', content: trimmed, at: Date.now(), ...(voice ? { voice: true } : {}) }, assistant];
       stickToBottomRef.current = true;
       setMessages(next);
 
@@ -385,10 +413,16 @@ export default function ChatInterface() {
         );
 
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(voice ? '/api/voice/delegate' : '/api/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ message: trimmed, history, context: visitorRef.current ?? undefined, conversationId: conversationRef.current }),
+          body: JSON.stringify({
+            message: trimmed,
+            history,
+            context: visitorRef.current ?? undefined,
+            conversationId: conversationRef.current,
+            ...(voice ? { sessionId: voice.sessionId, delegationId: voice.delegationId } : {}),
+          }),
           signal: controller.signal,
         });
         if (!response.ok || !response.body) throw new Error(`Request failed (${response.status})`);
@@ -409,6 +443,16 @@ export default function ChatInterface() {
           }
         }
         update((m) => (m.status === 'streaming' ? { ...m, status: 'done', endedAt: m.endedAt ?? Date.now() } : m));
+        // Typed during a call: let the voice know what was said, so the two stay one conversation.
+        const callSession = callSessionRef.current?.();
+        if (!voice && callSession) {
+          const answered = messagesRef.current.find((m) => m.id === assistantId);
+          void fetch('/api/voice', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'context', sessionId: callSession, user: trimmed, assistant: answered?.role === 'assistant' ? answered.content : '' }),
+          }).catch(() => {});
+        }
       } catch (error) {
         if ((error as Error).name === 'AbortError') {
           update((m) => ({ ...m, status: 'done' }));
@@ -427,6 +471,100 @@ export default function ChatInterface() {
     []
   );
 
+  // Spoken turns. The visitor's speech becomes a voice bubble as it is
+  // transcribed; a hand-off sends it to the agent like a typed message; the
+  // voice's own small talk becomes a reply bubble. Bubbles group by pauses,
+  // since the two sides can talk over each other. While the voice reads an
+  // agent answer aloud, that answer is already on screen, so its words are
+  // left out until the voice has gone quiet after the answer.
+  const voiceUserRef = useRef<{ id: string; at: number } | null>(null);
+  const voiceReplyRef = useRef<{ id: string; at: number } | null>(null);
+  const handedOffUserRef = useRef<string | null>(null);
+  const readingRef = useRef<{ done: boolean; at: number } | null>(null);
+  const call = useVoiceCall({
+    history: () => toHistory(messagesRef.current),
+    onUserSpeech: (delta) => {
+      const now = Date.now();
+      const open = voiceUserRef.current;
+      if (open && now - open.at < 1800) {
+        voiceUserRef.current = { id: open.id, at: now };
+        setMessages((prev) => prev.map((m) => (m.id === open.id && m.role === 'user' ? { ...m, content: m.content + delta } : m)));
+        return;
+      }
+      // Recognition noise on its own (a lone symbol or comma) doesn't start a bubble.
+      if (!/[\p{L}\p{N}]/u.test(delta)) return;
+      const fresh = newId();
+      voiceUserRef.current = { id: fresh, at: now };
+      stickToBottomRef.current = true;
+      setMessages((prev) => [...prev, { id: fresh, role: 'user', voice: true, content: delta.trimStart(), at: now }]);
+    },
+    onAssistantSpeech: (delta) => {
+      const now = Date.now();
+      const reading = readingRef.current;
+      if (reading) {
+        if (!reading.done || now - reading.at < 3000) {
+          readingRef.current = { done: reading.done, at: now };
+          return;
+        }
+        readingRef.current = null;
+      }
+      const open = voiceReplyRef.current;
+      if (open && now - open.at < 2500) {
+        voiceReplyRef.current = { id: open.id, at: now };
+        setMessages((prev) => prev.map((m) => (m.id === open.id && m.role === 'assistant' ? { ...m, content: m.content + delta } : m)));
+        return;
+      }
+      if (!/[\p{L}\p{N}]/u.test(delta)) return;
+      const fresh = newId();
+      voiceReplyRef.current = { id: fresh, at: now };
+      setMessages((prev) => [
+        ...prev,
+        { id: fresh, role: 'assistant', voice: true, content: delta.trimStart(), steps: [], widgets: [], sources: [], suggestions: [], status: 'done', startedAt: now, endedAt: now },
+      ]);
+    },
+    onHandOff: () => {
+      readingRef.current = { done: false, at: Date.now() };
+      handedOffUserRef.current = voiceUserRef.current?.id ?? null;
+      voiceUserRef.current = null;
+      voiceReplyRef.current = null;
+    },
+    onDelegation: (delegation) => {
+      const userId = handedOffUserRef.current;
+      handedOffUserRef.current = null;
+      const bubble = userId ? messagesRef.current.find((m) => m.id === userId) : undefined;
+      const question = delegation.text || (bubble?.role === 'user' ? bubble.content : '');
+      void send(question.trim() || '(The visitor spoke, but the words were not transcribed.)', { voice: { ...delegation, userId } }).finally(() => {
+        if (readingRef.current) readingRef.current = { done: true, at: Date.now() };
+      });
+    },
+    onEnded: ({ durationMs, reason }) => {
+      voiceUserRef.current = null;
+      voiceReplyRef.current = null;
+      readingRef.current = null;
+      stickToBottomRef.current = true;
+      setMessages((prev) => [...prev, { id: newId(), role: 'call', at: Date.now(), durationMs, reason }]);
+    },
+    onNotice: setNotice,
+  });
+  callSessionRef.current = call.sessionId;
+  // Only the most recent call's log is kept, so only its row offers to copy it.
+  const lastCallId = messages.reduce<string | null>((id, m) => (m.role === 'call' ? m.id : id), null);
+
+  useEffect(() => {
+    if (!notice) return;
+    const timer = window.setTimeout(() => setNotice(null), 7000);
+    return () => window.clearTimeout(timer);
+  }, [notice]);
+
+  // The homepage's Call button lands here with ?call=1.
+  const calledFromLinkRef = useRef(false);
+  useEffect(() => {
+    if (!isHydrated || calledFromLinkRef.current || searchParams.get('call') !== '1') return;
+    calledFromLinkRef.current = true;
+    void call.start();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isHydrated]);
+
   useEffect(() => {
     if (isHydrated && initialQuery && !hasSentInitialRef.current) {
       hasSentInitialRef.current = true;
@@ -444,6 +582,7 @@ export default function ChatInterface() {
   const handleStop = () => abortRef.current?.abort();
 
   const handleNewChat = (options?: { discard?: boolean }) => {
+    if (call.active) call.hangUp();
     abortRef.current?.abort();
     if (!options?.discard) stashCurrent();
     setMessages([]);
@@ -462,6 +601,7 @@ export default function ChatInterface() {
   const openChat = (id: string) => {
     const chat = archiveRef.current.find((item) => item.id === id);
     if (!chat || id === conversationRef.current) return;
+    if (call.active) call.hangUp();
     abortRef.current?.abort();
     stashCurrent();
     updateArchive(archiveRef.current.filter((item) => item.id !== id));
@@ -542,7 +682,7 @@ export default function ChatInterface() {
       </header>
 
       <div ref={scrollerRef} className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-y-contain">
-        <div className="mx-auto w-full max-w-3xl px-4 pb-48 pt-8">
+        <div className={`mx-auto w-full max-w-3xl px-4 pb-48 transition-[padding] duration-300 ${call.active ? 'pt-28' : 'pt-8'}`}>
           {isHydrated && messages.length === 0 && (
             <EmptyState
               onIntake={
@@ -596,6 +736,14 @@ export default function ChatInterface() {
                 const time = messageTime(message);
                 const previous = index > 0 ? messageTime(messages[index - 1]) : undefined;
                 const stamp = time !== undefined && (previous === undefined || time - previous > STAMP_GAP_MS) ? stampFor(time) : null;
+                if (message.role === 'call') {
+                  return (
+                    <motion.div key={message.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={spring}>
+                      {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
+                      <CallEndedEntry durationMs={message.durationMs} reason={message.reason} onCopyLog={call.logging && message.id === lastCallId ? call.copyLog : undefined} />
+                    </motion.div>
+                  );
+                }
                 return message.role === 'user' ? (
                   <motion.div
                     key={message.id}
@@ -606,6 +754,7 @@ export default function ChatInterface() {
                     {stamp && <p className="mb-4 text-center text-[12px] text-zinc-400">{stamp}</p>}
                     <div className="flex justify-end">
                       <div className="max-w-[85%] whitespace-pre-wrap [overflow-wrap:anywhere] rounded-[22px] rounded-br-md bg-accent-blue px-4 py-2.5 text-[16px] leading-[1.4] text-white">
+                        {message.voice && <AudioLines aria-label="Spoken" className="-mt-0.5 mr-1.5 inline h-3.5 w-3.5 opacity-75" />}
                         {message.content}
                       </div>
                     </div>
@@ -629,6 +778,7 @@ export default function ChatInterface() {
                     {message.content && (
                       <div className="flex">
                         <div className="max-w-[88%] rounded-[22px] rounded-bl-md bg-zinc-100 px-4 py-2.5">
+                          {message.voice && !message.steps.length && <AudioLines aria-label="Spoken" className="mb-1 h-3.5 w-3.5 text-zinc-400" />}
                           <Markdown content={message.content} streaming={message.status === 'streaming'} />
                         </div>
                       </div>
@@ -733,7 +883,44 @@ export default function ChatInterface() {
         onStop={handleStop}
         isStreaming={isStreaming}
         inputRef={inputRef}
+        onTalk={call.active ? undefined : () => void call.start()}
       />
+      <AnimatePresence>
+        {call.active && (
+          <CallCard
+            key="call"
+            phase={call.phase}
+            muted={call.muted}
+            remainingMs={call.remainingMs}
+            level={call.level}
+            warning={call.warning}
+            onDismissWarning={call.dismissWarning}
+            onMute={call.toggleMute}
+            onHangUp={call.hangUp}
+            onCopyLog={call.logging ? call.copyLog : undefined}
+          />
+        )}
+      </AnimatePresence>
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            key="notice"
+            role="status"
+            initial={{ opacity: 0, y: -12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className="pointer-events-none absolute inset-x-0 top-[100px] z-50 flex justify-center px-4"
+          >
+            <p className="pointer-events-auto flex w-full max-w-[400px] items-start gap-2 rounded-2xl border border-zinc-200 bg-white px-3.5 py-2.5 text-[13.5px] leading-snug text-zinc-800 shadow-[0_12px_28px_-16px_rgba(0,0,0,0.3)]">
+              <span className="flex-1">{notice}</span>
+              <button type="button" onClick={() => setNotice(null)} aria-label="Dismiss" className="-mr-1 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900">
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </p>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <BriefNudge
         engaged={fitShown || userMessages.length >= 3}
         ready={briefReady}

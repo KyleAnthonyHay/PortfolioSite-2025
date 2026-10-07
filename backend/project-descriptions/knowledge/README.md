@@ -11,4 +11,4 @@ The older `.txt` files one folder up are untouched and still feed the current si
 
 ## Open questions for Kyle
 
-- Hardest part of each project, in your own words. It is marked in the Challenges section of SelahNote, Creator Dashboard, OnTract, Sentio+, V1 ProdBot, SoundSnag, YarnScript and Country Viewer.
+- Hardest part of each project, in your own words. It is marked in the Challenges section of SelahNote, Creator Dashboard, OnTract, Sentio+, V1 ProdBot, SoundSnag and YarnScript.
