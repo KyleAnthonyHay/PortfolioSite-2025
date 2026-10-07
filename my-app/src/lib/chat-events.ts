@@ -162,10 +162,12 @@ export type Widget =
       fallbackEmail: string;
     }
   | { kind: 'resume'; name: string; headline: string; viewUrl: string; downloadUrl: string; pages?: number; size?: string }
-  | { kind: 'recruiter_brief'; view: BriefView }
+  | { kind: 'recruiter_brief'; view: BriefView; jobUrl?: string }
   | {
       kind: 'fit_report';
       role?: string;
+      /** The visitor-supplied posting selected by the assessment tool. */
+      jobUrl?: string;
       requirements: FitRequirement[];
       summary: { match: number; related: number; gap: number };
     };

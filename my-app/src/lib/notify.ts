@@ -50,6 +50,7 @@ export async function notifyFitCheck(input: {
       `Role: ${role}`,
       `Visitor: ${describeVisitor(context)}`,
       `Result: ${tally}`,
+      ...(report.jobUrl ? [`Job posting: ${report.jobUrl}`] : []),
       '',
       ...report.requirements.map((r) => `- [${statusLabel[r.status]}] ${r.requirement}: ${r.evidence}`),
       '',
@@ -70,10 +71,11 @@ const announcedBriefs = new Set<string>();
 
 export async function notifyRecruiterBrief(input: {
   view: BriefView;
+  jobUrl?: string;
   context?: VisitorContext;
   transcript: ConversationMessage[];
 }): Promise<'sent' | 'skipped' | 'failed'> {
-  const { view, context, transcript } = input;
+  const { view, context, transcript, jobUrl } = input;
   if (!isEmailConfigured() || announcedBriefs.has(view.publicId)) return 'skipped';
   announcedBriefs.add(view.publicId);
   if (announcedBriefs.size > 500) announcedBriefs.delete(announcedBriefs.values().next().value!);
@@ -98,6 +100,7 @@ export async function notifyRecruiterBrief(input: {
       text: [
         'A visitor created a recruiter brief on your portfolio.',
         `Brief: ${briefTitle(view)}`,
+        ...(jobUrl ? [`Job posting: ${jobUrl}`] : []),
         `Visitor: ${describeVisitor(context)}`,
         `Recommendation: ${view.brief.recommendation.nextStep}. ${view.brief.recommendation.rationale}`,
         `View or download: ${url}`,
@@ -105,7 +108,7 @@ export async function notifyRecruiterBrief(input: {
         note,
         'Visitors stay anonymous unless they also leave you a note.',
       ].join('\n'),
-      html: recruiterBriefEmailHtml(view, context, note),
+      html: recruiterBriefEmailHtml(view, context, note, jobUrl),
       attachments: [
         ...(attachment ? [attachment] : []),
         { filename: 'chat-transcript.md', content: transcriptMarkdown(transcript, context), contentType: 'text/markdown' },

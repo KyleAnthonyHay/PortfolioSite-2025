@@ -26,6 +26,11 @@ ${card}
 const cardStyle = 'width:100%;border:1px solid #e4e4e7;border-radius:16px;background:#ffffff;border-spacing:0;overflow:hidden';
 const eyebrowStyle = 'margin:0 0 3px;font-size:10px;font-weight:500;text-transform:uppercase;letter-spacing:1.5px;color:#a1a1aa';
 
+function postingLink(url?: string): string {
+  if (!url || !/^https?:\/\//i.test(url)) return '';
+  return `<p style="margin:8px 0 12px;font-size:12px;color:#71717a;overflow-wrap:anywhere"><strong>Job posting:</strong> <a href="${escapeHtml(url)}" style="color:#047857;text-decoration:underline;word-break:break-all">${escapeHtml(url)}</a></p>`;
+}
+
 export function fitReportEmailHtml(report: Extract<Widget, { kind: 'fit_report' }>, context: VisitorContext | undefined, note: string): string {
   const badges = (['match', 'related', 'gap'] as const).map((status) => {
     const meta = statuses[status];
@@ -40,15 +45,16 @@ export function fitReportEmailHtml(report: Extract<Widget, { kind: 'fit_report' 
 <p style="margin:0;font-size:12px;line-height:1.65;color:#71717a">${escapeHtml(row.evidence)}</p>${projects}</td></tr>`;
   }).join('');
   const card = `<table role="presentation" cellpadding="0" cellspacing="0" style="${cardStyle}"><tr><td style="padding:16px">
-<p style="${eyebrowStyle}">Fit report</p><h2 style="margin:0 0 10px;font-size:16px;font-weight:600">${escapeHtml(report.role || context?.role || 'Unspecified role')}</h2>${badges}</td></tr>${rows}</table>`;
+<p style="${eyebrowStyle}">Fit report</p><h2 style="margin:0 0 10px;font-size:16px;font-weight:600">${escapeHtml(report.role || context?.role || 'Unspecified role')}</h2>${postingLink(report.jobUrl)}${badges}</td></tr>${rows}</table>`;
   return shell('Someone just ran a fit check', context, card, note);
 }
 
-export function recruiterBriefEmailHtml(view: BriefView, context: VisitorContext | undefined, note: string): string {
+export function recruiterBriefEmailHtml(view: BriefView, context: VisitorContext | undefined, note: string, jobUrl?: string): string {
   const { recommendation } = view.brief;
   const url = `${SITE_URL}/brief/${encodeURIComponent(view.publicId)}`;
   const card = `<table role="presentation" cellpadding="0" cellspacing="0" style="${cardStyle}"><tr><td style="padding:20px">
 <p style="${eyebrowStyle}">Recruiter brief</p><h2 style="margin:0 0 12px;font-size:18px;font-weight:600">${escapeHtml(briefTitle(view))}</h2>
+${postingLink(jobUrl)}
 <p style="margin:0 0 8px;font-size:14px;font-weight:600">${escapeHtml(recommendation.nextStep)}</p>
 <p style="margin:0 0 20px;font-size:13px;color:#71717a">${escapeHtml(recommendation.rationale)}</p>
 <a href="${escapeHtml(url)}" style="display:inline-block;padding:9px 16px;background:#18181b;color:#ffffff;border-radius:999px;font-size:13px;font-weight:500;text-decoration:none">Open recruiter brief</a>

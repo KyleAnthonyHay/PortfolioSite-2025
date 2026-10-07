@@ -404,6 +404,7 @@ export async function* runAgent(
       // and visitor's download remain available even if email fails.
       const outcome = await notifyRecruiterBrief({
         view: brief.view,
+        jobUrl: brief.jobUrl,
         context,
         transcript: [...history, { role: 'user', content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])],
       });

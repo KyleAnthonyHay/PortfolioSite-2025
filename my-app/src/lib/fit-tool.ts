@@ -112,7 +112,7 @@ export function makeFitTool(options: { userMessage: string; history: Conversatio
       return JSON.stringify({
         content,
         citedProjectIds: [...new Set(rows.flatMap((r) => r.projects.map((p) => p.id)))],
-        widget: { kind: 'fit_report', role: title, requirements: rows, summary },
+        widget: { kind: 'fit_report', role: title, requirements: rows, summary, jobUrl: posting.url },
       });
     },
     {
