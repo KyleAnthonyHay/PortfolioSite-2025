@@ -1,9 +1,10 @@
 'use client';
 
+import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { ArrowRight, Phone } from 'lucide-react';
-import { motion } from 'motion/react';
+import { ArrowRight, Info, Phone, X } from 'lucide-react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { IconSlider } from '@/components/IconSlider';
 import { IconSliderGroup } from '@/components/IconSliderGroup';
 import { useIntro } from '@/components/home/IntroContext';
@@ -14,6 +15,39 @@ const Hero = () => {
   // Waits for the opening loader to hand over before anything rises in.
   const { phase } = useIntro();
   const mounted = phase !== 'intro';
+  const [hintOpen, setHintOpen] = useState(false);
+  const [hintPinned, setHintPinned] = useState(false);
+  const hintTrigger = useRef<HTMLButtonElement>(null);
+  const reduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    if (phase !== 'done') return;
+    try {
+      if (sessionStorage.getItem('kah-agent-hint-seen')) return;
+      sessionStorage.setItem('kah-agent-hint-seen', '1');
+    } catch { /* The hint also works when browser storage is unavailable. */ }
+    const show = window.setTimeout(() => setHintOpen(true), 600);
+    return () => window.clearTimeout(show);
+  }, [phase]);
+
+  useEffect(() => {
+    if (!hintOpen || hintPinned) return;
+    const hide = window.setTimeout(() => setHintOpen(false), 10000);
+    return () => window.clearTimeout(hide);
+  }, [hintOpen, hintPinned]);
+
+  useEffect(() => {
+    if (!hintOpen) return;
+    const dismiss = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setHintOpen(false);
+        hintTrigger.current?.focus();
+      }
+    };
+    window.addEventListener('keydown', dismiss);
+    return () => window.removeEventListener('keydown', dismiss);
+  }, [hintOpen]);
+
   const ease = [0.16, 1, 0.3, 1] as const;
 
 
@@ -99,25 +133,66 @@ const Hero = () => {
                 the eye lands on it before anything else; the résumé is a quiet
                 secondary link beside it.
               */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="relative mb-2">
+                <button
+                  ref={hintTrigger}
+                  type="button"
+                  aria-expanded={hintOpen}
+                  aria-controls="agent-hint"
+                  onClick={() => { setHintPinned(true); setHintOpen(!hintOpen); }}
+                  className="inline-flex min-h-11 items-center gap-1.5 rounded-lg text-xs font-medium text-zinc-500 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-accent-blue"
+                >
+                  <Info aria-hidden="true" className="h-3.5 w-3.5" />
+                  What can I ask?
+                </button>
+                <AnimatePresence>
+                  {hintOpen && (
+                    <motion.div
+                      id="agent-hint"
+                      initial={{ opacity: 0, y: reduceMotion ? 0 : 5, scale: reduceMotion ? 1 : 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: reduceMotion ? 0 : 3 }}
+                      transition={{ duration: reduceMotion ? 0 : 0.18 }}
+                      onPointerEnter={() => setHintPinned(true)}
+                      onFocusCapture={() => setHintPinned(true)}
+                      className="absolute bottom-full left-0 z-10 mb-1 flex w-full max-w-[340px] items-start rounded-2xl border border-zinc-200 bg-white p-3 pr-1 shadow-[0_8px_30px_-12px_rgba(0,0,0,0.18)]"
+                    >
+                      <p className="py-1 text-sm leading-relaxed text-zinc-600">
+                        Ask about my work, experience, or fit for your team. Type or call.
+                      </p>
+                      <button
+                        type="button"
+                        aria-label="Dismiss agent hint"
+                        onClick={() => { setHintOpen(false); hintTrigger.current?.focus(); }}
+                        className="-mt-1 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-zinc-400 hover:bg-zinc-100 hover:text-zinc-900 focus-visible:outline-2 focus-visible:outline-accent-blue"
+                      >
+                        <X aria-hidden="true" className="h-4 w-4" />
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              <div className="flex flex-nowrap items-center gap-2 sm:flex-wrap sm:gap-3">
                 {/* One blue control with two ways in: type to the agent, or call it. */}
-                <div className="inline-flex h-[52px] items-stretch overflow-hidden rounded-xl bg-accent-blue text-white shadow-[0_10px_28px_-8px_rgba(10,132,255,0.6)] transition-shadow duration-200 hover:shadow-[0_14px_32px_-8px_rgba(10,132,255,0.7)]">
+                <div className="inline-flex h-[52px] min-w-0 flex-1 items-stretch sm:flex-none overflow-hidden rounded-xl bg-accent-blue text-white shadow-[0_10px_28px_-8px_rgba(10,132,255,0.6)] transition-shadow duration-200 hover:shadow-[0_14px_32px_-8px_rgba(10,132,255,0.7)]">
                 <Link
                   href="/chat"
-                  className="group inline-flex items-center gap-2.5 pl-4 pr-5 text-[15px] font-medium hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
+                  onClick={() => setHintOpen(false)}
+                  className="group inline-flex min-w-0 flex-1 items-center gap-1.5 pl-2.5 pr-2 text-[13px] sm:flex-none sm:gap-2.5 sm:pl-4 sm:pr-5 sm:text-[15px] font-medium hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
                 >
-                  <span className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/15">
-                    <Image src="/agent.png" alt="" width={26} height={26} className="h-[26px] w-[26px] object-contain" />
+                  <span className="relative flex h-6 w-6 shrink-0 sm:h-8 sm:w-8 items-center justify-center rounded-full bg-white/15">
+                    <Image src="/agent.png" alt="" width={26} height={26} className="h-5 w-5 object-contain sm:h-[26px] sm:w-[26px]" />
                     <span aria-hidden className="absolute -right-0.5 -top-0.5 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-accent-blue" />
                   </span>
-                  Talk to my AI Agent
-                  <ArrowRight aria-hidden="true" className="h-4 w-4 shrink-0 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  <span>Talk to my AI Agent</span>
+                  <ArrowRight aria-hidden="true" className="hidden h-4 w-4 shrink-0 sm:block transition-transform duration-200 group-hover:translate-x-0.5" />
                 </Link>
                 <Link
                   href="/chat?call=1"
+                  onClick={() => setHintOpen(false)}
                   aria-label="Call my AI Agent"
                   title="Call my AI Agent"
-                  className="inline-flex items-center gap-1.5 border-l border-white/25 px-4 text-[14px] font-medium hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
+                  className="inline-flex shrink-0 items-center gap-1.5 border-l border-white/25 px-3 sm:px-4 text-[14px] font-medium hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
                 >
                   <Phone aria-hidden="true" className="h-4 w-4" />
                   <span className="max-sm:hidden">Call</span>
@@ -134,7 +209,7 @@ const Hero = () => {
                   href="/resume"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center rounded-xl h-[52px] px-5 text-sm font-medium text-zinc-600 hover:bg-white hover:text-zinc-900 border border-transparent hover:border-zinc-200 active:scale-[0.98] transition-all duration-200"
+                  className="inline-flex items-center rounded-xl h-[52px] shrink-0 whitespace-nowrap px-1 text-xs sm:px-5 sm:text-sm font-medium text-zinc-600 hover:bg-white hover:text-zinc-900 border border-transparent hover:border-zinc-200 active:scale-[0.98] transition-all duration-200"
                 >
                   View Resume
                 </a>
