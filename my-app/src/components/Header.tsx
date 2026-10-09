@@ -37,7 +37,7 @@ const Header = () => {
           onChange={(e) => setInput(e.target.value)}
           placeholder="Ask my agent about Kyle-Anthony…"
           aria-label="Ask my agent"
-          className="w-[calc(100vw-2rem)] sm:w-96 pl-12 py-3.5 pr-12 bg-white/90 backdrop-blur-xl text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] text-base sm:text-sm"
+          className="w-[calc(100vw-2rem)] sm:w-96 pl-12 py-3.5 pr-12 bg-white/90 backdrop-blur-xl text-zinc-900 placeholder-zinc-400 rounded-2xl border border-zinc-200/60 focus:outline-none focus:ring-2 focus:ring-zinc-300/50 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.1)] text-base sm:not-any-pointer-coarse:text-sm"
         />
         <button
           type="submit"

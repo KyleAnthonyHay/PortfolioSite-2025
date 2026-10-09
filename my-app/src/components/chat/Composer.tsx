@@ -201,7 +201,7 @@ export default function Composer({ value, onChange, onSend, onCommand, onStop, i
               aria-label="Message"
               aria-autocomplete="list"
               enterKeyHint="send"
-              className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] sm:text-[15px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
+              className="block min-h-[36px] flex-1 resize-none bg-transparent py-[7px] text-[16px] leading-[22px] sm:not-any-pointer-coarse:text-[15px] text-zinc-900 placeholder-zinc-400 caret-zinc-900 outline-none"
             />
             {onTalk && !value.trim() && (
               <button
