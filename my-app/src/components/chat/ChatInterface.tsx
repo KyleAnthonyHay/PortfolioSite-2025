@@ -230,7 +230,7 @@ function CopyButton({ text }: { text: string }) {
         }
       }}
       aria-label="Copy answer"
-      className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
+      className="flex h-7 w-7 any-pointer-coarse:h-9 any-pointer-coarse:w-9 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
@@ -871,7 +871,7 @@ export default function ChatInterface() {
                             type="button"
                             onClick={() => regenerate(index)}
                             aria-label="Regenerate answer"
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
+                            className="flex h-7 w-7 any-pointer-coarse:h-9 any-pointer-coarse:w-9 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
                           </button>

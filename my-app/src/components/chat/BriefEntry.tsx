@@ -58,7 +58,7 @@ export function BriefButton({
   }, [ready]);
 
   const base =
-    "relative inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all active:scale-[0.97]";
+    "relative inline-flex h-8 any-pointer-coarse:h-10 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all active:scale-[0.97]";
 
   if (briefId) {
     return (
@@ -221,7 +221,7 @@ export function BriefNudge({
     : "";
 
   const button =
-    "inline-flex h-9 w-full items-center justify-center rounded-xl px-3 text-[13px] font-medium transition-colors active:scale-[0.98]";
+    "inline-flex h-9 any-pointer-coarse:h-11 w-full items-center justify-center rounded-xl px-3 text-[13px] font-medium transition-colors active:scale-[0.98]";
   const primary = `${button} bg-accent-blue text-white hover:brightness-95`;
   const secondary = `${button} border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50`;
 
@@ -384,7 +384,7 @@ export function BriefNudge({
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Dismiss"
-                  className="absolute right-3 top-3 rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                  className="absolute right-3 top-3 any-pointer-coarse:right-1.5 any-pointer-coarse:top-1.5 rounded-full p-1 any-pointer-coarse:p-2.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>

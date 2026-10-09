@@ -108,7 +108,7 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           <button
             type="button"
             onClick={onBrief}
-            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98]"
+            className="ml-auto inline-flex h-8 any-pointer-coarse:h-10 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98]"
           >
             <FileText className="h-3.5 w-3.5" /> Turn this into a brief
           </button>
