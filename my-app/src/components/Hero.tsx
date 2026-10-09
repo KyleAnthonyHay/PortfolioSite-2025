@@ -27,11 +27,15 @@ const Hero = () => {
   // exactly one screen instead of overflowing by the header's height. Its
   // bottom padding is deliberately heavier than the top: with items-center
   // that pulls the content up, trimming the dead space above the avatar while
-  // still leaving a hint of the next section below the fold.
+  // still leaving a hint of the next section below the fold. On a portrait
+  // tablet a full-height frame leaves a tall empty band above and below,
+  // so there the hero is only as tall as its content.
   return (
-    <section className="min-h-[calc(100dvh-4.5rem)] flex items-center relative">
+    <section className="min-h-[calc(100dvh-4.5rem)] md:portrait:min-h-0 flex items-center relative">
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 w-full">
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center pt-12 pb-20 lg:pt-8 lg:pb-28">
+        {/* Just past lg (iPad landscape, 12.9" portrait) the text column gets a
+            little more of the row so the headline and buttons stay on their lines. */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 lg:max-[1100px]:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] gap-12 lg:gap-16 lg:max-[1100px]:gap-10 items-center pt-12 pb-20 lg:pt-8 lg:pb-28 md:portrait:pt-20 md:portrait:pb-16">
           <div className="order-2 lg:order-1">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
