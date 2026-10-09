@@ -155,7 +155,8 @@ export default function ProjectCard({
             </span>
           )}
         </div>
-        <p className={`text-zinc-400 text-sm ${detailed ? 'leading-relaxed' : ''} ${openApp ? (detailed ? 'pb-10' : 'pr-28') : ''}`}>
+        {/* A narrow card drops the tagline above the Open app button instead of squeezing it beside. */}
+        <p className={`text-zinc-400 text-sm ${detailed ? 'leading-relaxed' : ''} ${openApp ? (detailed ? 'pb-10' : 'pr-28 @max-[22rem]:pr-0 @max-[22rem]:pb-10') : ''}`}>
           {detailed ? project.description : project.tagline}
         </p>
       </div>
@@ -163,7 +164,7 @@ export default function ProjectCard({
   );
 
   return (
-    <div className={`relative ${className}`}>
+    <div className={`@container relative ${className}`}>
       <Link href={`/projects/${project.id}`} className="block h-full">
         {content}
       </Link>
