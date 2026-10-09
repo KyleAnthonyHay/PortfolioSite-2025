@@ -5,19 +5,19 @@ import type { BriefView } from '@/lib/recruiter-brief/view';
 import { ACCENT, LEVEL_WORD, VERDICT_WORD, toOnePager } from '@/lib/recruiter-brief/onepager';
 
 /**
- * The recruiter brief as one page, in the site's type and its one accent
- * colour. BriefPdf.tsx sets the same content from the same toOnePager().
+ * The recruiter brief as one page, in the site's type and status colours.
+ * BriefPdf.tsx sets the same content from the same toOnePager().
  */
 
 const eyebrow = 'text-[11px] uppercase tracking-widest text-zinc-400 font-medium';
 
 function Dot({ level }: { level: MatchLevel }) {
-  // Strong: filled accent. Relevant: accent ring. Gap: grey ring.
+  // Strong: filled accent. Relevant: muted purple ring. Gap: grey ring.
   const style =
     level === 'strong'
       ? { background: ACCENT, borderColor: ACCENT }
       : level === 'relevant'
-        ? { background: 'transparent', borderColor: ACCENT }
+        ? { background: 'transparent', borderColor: '#6b4f8a' }
         : { background: 'transparent', borderColor: '#d4d4d8' };
   return <span className="inline-block h-2.5 w-2.5 shrink-0 rounded-full border-2" style={style} aria-hidden />;
 }

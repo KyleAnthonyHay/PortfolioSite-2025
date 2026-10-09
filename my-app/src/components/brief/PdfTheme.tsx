@@ -7,7 +7,7 @@ Font.registerHyphenationCallback((word) => [word]);
 export const pdfPalette = {
   ink: '#18181b', muted: '#71717a', border: '#e4e4e7', canvas: '#fafafa', accent: '#10b981',
   match: { color: '#047857', background: '#ecfdf5' },
-  related: { color: '#b45309', background: '#fffbeb' },
+  related: { color: '#6b4f8a', background: '#f3eff8' },
   gap: { color: '#71717a', background: '#f4f4f5' },
 };
 

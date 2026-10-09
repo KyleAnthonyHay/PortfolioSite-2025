@@ -2,11 +2,11 @@ import type { VisitorContext, Widget } from './chat-events';
 import { describeVisitor, escapeHtml } from './email';
 import { briefTitle, SITE_URL, type BriefView } from './recruiter-brief/view';
 
-// FitReportWidget's emerald, amber and zinc palette, with inline styles and
+// FitReportWidget's emerald, muted purple and zinc palette, with inline styles and
 // presentation tables so the card also reads well in Gmail and Outlook.
 const statuses = {
   match: { label: 'Match', color: '#047857', background: '#ecfdf5' },
-  related: { label: 'Related', color: '#b45309', background: '#fffbeb' },
+  related: { label: 'Related', color: '#6b4f8a', background: '#f3eff8' },
   gap: { label: 'Gap', color: '#71717a', background: '#f4f4f5' },
 } as const;
 

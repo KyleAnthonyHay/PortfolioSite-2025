@@ -8,7 +8,7 @@ import type { FitStatus, Widget } from '@/lib/chat-events';
 
 const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; chip: string }> = {
   match: { label: 'Supported match', icon: CircleCheck, color: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700' },
-  related: { label: 'Needs confirmation', icon: CircleDot, color: 'text-amber-500', chip: 'bg-amber-50 text-amber-700' },
+  related: { label: 'Needs confirmation', icon: CircleDot, color: 'text-[#6b4f8a]', chip: 'bg-[#f3eff8] text-[#6b4f8a]' },
   gap: { label: 'Confirmed gap', icon: CircleMinus, color: 'text-zinc-400', chip: 'bg-zinc-100 text-zinc-500' },
 };
 
