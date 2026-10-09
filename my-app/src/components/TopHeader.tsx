@@ -39,7 +39,7 @@ const TopHeader = () => {
           <Wordmark hidden={phase !== 'done'} />
         </Link>
 
-        <motion.div {...reveal(0.1)} className="hidden md:flex items-center gap-1">
+        <motion.div {...reveal(0.1)} className="hidden lg:flex items-center gap-1">
           {[
             { href: '/', label: 'Home' },
             { href: '/#products', label: 'Products' },
@@ -69,25 +69,29 @@ const TopHeader = () => {
           ))}
         </motion.div>
 
-        {/* The agent is the one filled button in the header; everything else stays quiet. */}
-        <motion.div {...reveal(0.2)} className="hidden md:flex items-center gap-2">
+        {/*
+          The agent is the one filled button in the header; everything else stays quiet.
+          On a tablet (md to lg) the full row doesn't fit, so only the agent
+          button stays visible and the rest folds into the menu beside it.
+        */}
+        <motion.div {...reveal(0.2)} className="hidden md:flex items-center gap-2 max-lg:ml-auto max-lg:mr-2">
           <a
             href="/Kyle-Anthony_Resume.pdf"
             target="_blank"
             rel="noopener noreferrer"
-            className="px-3 py-2 text-sm font-medium text-zinc-500 rounded-lg hover:bg-zinc-100/80 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200"
+            className="max-lg:hidden px-3 py-2 text-sm font-medium text-zinc-500 rounded-lg hover:bg-zinc-100/80 hover:text-zinc-900 active:scale-[0.98] transition-all duration-200"
           >
             Resume
           </a>
           <Link
             href="/contact"
-            className="px-4 py-2 text-sm font-medium text-zinc-700 border border-zinc-300/80 rounded-xl hover:bg-zinc-100 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
+            className="max-lg:hidden px-4 py-2 text-sm font-medium text-zinc-700 border border-zinc-300/80 rounded-xl hover:bg-zinc-100 hover:border-zinc-300 active:scale-[0.98] transition-all duration-200"
           >
             Contact
           </Link>
           <Link
             href="/chat"
-            className="inline-flex items-center gap-2 pl-2.5 pr-4 py-1.5 text-sm font-medium text-white bg-accent-blue rounded-xl shadow-[0_6px_18px_-6px_rgba(10,132,255,0.6)] hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
+            className="inline-flex items-center gap-2 whitespace-nowrap pl-2.5 pr-4 py-1.5 max-lg:py-2 text-sm font-medium text-white bg-accent-blue rounded-xl shadow-[0_6px_18px_-6px_rgba(10,132,255,0.6)] hover:bg-[#0077e6] active:scale-[0.98] transition-all duration-200"
           >
             <Image src="/agent.png" alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
             Ask my agent
@@ -96,7 +100,7 @@ const TopHeader = () => {
 
         <button
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          className="md:hidden p-2 text-zinc-600 hover:text-zinc-900 active:scale-[0.95] transition-all duration-200"
+          className="lg:hidden p-2 -mr-2 h-11 w-11 inline-flex items-center justify-center text-zinc-600 hover:text-zinc-900 active:scale-[0.95] transition-all duration-200"
           aria-label="Toggle menu"
         >
           {isMenuOpen ? <CloseIcon /> : <HamburgerIcon />}
@@ -111,14 +115,14 @@ const TopHeader = () => {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -8 }}
           transition={{ duration: 0.28, ease: [0.16, 1, 0.3, 1] }}
-          className="md:hidden absolute top-full left-0 right-0 bg-paper border-b border-slate-200/50 shadow-[0_24px_40px_-24px_rgba(0,0,0,0.18)] z-50"
+          className="lg:hidden absolute top-full left-0 right-0 bg-paper border-b border-slate-200/50 shadow-[0_24px_40px_-24px_rgba(0,0,0,0.18)] z-50"
         >
           <motion.div
             initial={{ opacity: 0, y: -6 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1], delay: 0.06 }}
-            className="flex flex-col px-6 py-4 gap-1"
+            className="flex flex-col max-w-[1400px] mx-auto px-6 md:px-10 py-4 gap-1"
           >
             {[
               { href: '/', label: 'Home' },
@@ -149,10 +153,11 @@ const TopHeader = () => {
               </a>
             ))}
             <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-zinc-200/60">
+              {/* Already beside the menu button from md up. */}
               <Link
                 href="/chat"
                 onClick={closeMenu}
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white bg-accent-blue rounded-xl shadow-[0_8px_20px_-8px_rgba(10,132,255,0.6)] hover:bg-[#0077e6] transition-all"
+                className="md:hidden inline-flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium text-white bg-accent-blue rounded-xl shadow-[0_8px_20px_-8px_rgba(10,132,255,0.6)] hover:bg-[#0077e6] transition-all"
               >
                 <Image src="/agent.png" alt="" width={22} height={22} className="h-[22px] w-[22px] object-contain" />
                 Ask my agent
