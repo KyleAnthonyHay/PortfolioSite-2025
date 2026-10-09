@@ -152,7 +152,7 @@ const TopHeader = () => {
                 {link.label}
               </a>
             ))}
-            <div className="flex flex-col gap-2 pt-4 mt-2 border-t border-zinc-200/60">
+            <div className="flex flex-col md:flex-row gap-2 pt-4 mt-2 border-t border-zinc-200/60">
               {/* Already beside the menu button from md up. */}
               <Link
                 href="/chat"
