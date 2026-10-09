@@ -44,18 +44,21 @@ export function FitReportPdf({ report, context, createdAt }: { report: FitReport
             <Text key={status} style={[pdfTheme.badge, { color: pdfPalette[status].color, backgroundColor: pdfPalette[status].background }]}>{report.summary[status]} {labels[status]}</Text>
           ))}</View>
         </View>
-        {report.requirements.map((row, index) => (
+        {report.requirements.map((row, index) => {
+          const displayStatus = row.verificationStatus === 'unknown' ? 'related' : row.status;
+          return (
           <View key={index} style={s.row} wrap={false}>
             <View style={s.rowTop}>
               <Text style={s.requirement}>{index + 1}. {row.requirement}</Text>
-              <Text style={[s.status, { color: pdfPalette[row.status].color, backgroundColor: pdfPalette[row.status].background }]}>{row.verificationStatus === 'unknown' ? 'Needs confirmation' : labels[row.status]}</Text>
+              <Text style={[s.status, { color: pdfPalette[displayStatus].color, backgroundColor: pdfPalette[displayStatus].background }]}>{labels[displayStatus]}</Text>
             </View>
             <Text style={s.evidence}>{row.evidence}</Text>
             {row.projects.length > 0 && <View style={s.projects}>{row.projects.map((project) => (
               <Link key={project.id} style={s.link} src={`${site}${project.href}`}>{project.title}</Link>
             ))}</View>}
           </View>
-        ))}
+          );
+        })}
         <Text style={s.note}>The same results shown in the portfolio fit check. Generated from portfolio evidence; it can still make mistakes. Visitors remain anonymous unless they leave contact details.</Text>
       </Page>
     </Document>
