@@ -11,7 +11,7 @@ import BriefActions from '@/components/brief/BriefActions';
 
 const dot: Record<MatchLevel, string> = {
   strong: 'bg-zinc-900',
-  relevant: 'bg-zinc-300',
+  relevant: 'bg-[#6b4f8a]',
   gap: 'border border-dashed border-zinc-400',
 };
 
