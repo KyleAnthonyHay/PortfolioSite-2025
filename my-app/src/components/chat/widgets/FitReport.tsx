@@ -66,7 +66,7 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           className={`divide-y divide-zinc-100 ${clamped ? 'overflow-y-auto overscroll-contain [scrollbar-width:thin]' : ''}`}
         >
           {requirements.map((item) => {
-            const meta = statusMeta[item.status];
+            const meta = statusMeta[item.verificationStatus === 'unknown' ? 'related' : item.status];
             const Icon = meta.icon;
             return (
               <li key={item.requirement} className="flex gap-3 px-4 py-3">
