@@ -3,7 +3,7 @@ import type { MatchLevel } from '@/lib/recruiter-brief/types';
 import { SITE_URL, type BriefView } from '@/lib/recruiter-brief/view';
 import { ACCENT, LEVEL_WORD, VERDICT_WORD, toOnePager } from '@/lib/recruiter-brief/onepager';
 
-import { PdfBrandHeader, pdfPalette, pdfTheme } from './PdfTheme';
+import { PdfBadge, PdfBrandHeader, pdfPalette, pdfTheme } from './PdfTheme';
 
 /**
  * The one-page PDF: the web brief's content and layout from toOnePager(),
@@ -37,7 +37,7 @@ function absolute(href: string): string {
 /** Compact status pills use the same palette as the fit-check email. */
 function Level({ level, size = 8 }: { level: MatchLevel; size?: number }) {
   const tone = pdfPalette[level === 'strong' ? 'match' : level === 'relevant' ? 'related' : 'gap'];
-  return <Text style={[pdfTheme.badge, { color: tone.color, fontSize: size, backgroundColor: tone.background, paddingVertical: 2, lineHeight: 1 }]}>{LEVEL_WORD[level]}</Text>;
+  return <PdfBadge color={tone.color} background={tone.background} size={size}>{LEVEL_WORD[level]}</PdfBadge>;
 }
 
 function Bullet({ color, hollow }: { color: string; hollow?: boolean }) {
