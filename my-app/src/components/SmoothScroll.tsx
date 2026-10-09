@@ -17,9 +17,12 @@ export default function SmoothScroll() {
     if (!window.location.hash) window.scrollTo(0, 0);
     if (pathname?.startsWith('/chat')) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    // Phones keep native momentum scrolling; Lenis only adds lag there and
-    // fights the rubber-band. In-page anchors glide via CSS instead.
-    if (window.matchMedia('(pointer: coarse)').matches) return;
+    // Phones and tablets keep native momentum scrolling; Lenis only adds lag
+    // there and fights the rubber-band. In-page anchors glide via CSS instead.
+    // An iPad with a trackpad or Magic Keyboard reports a fine primary
+    // pointer and a desktop user agent, so any touch input counts too.
+    const touch = window.matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 1;
+    if (touch) return;
 
     const lenis = new Lenis({ duration: 1.1, easing: (t) => 1 - Math.pow(1 - t, 4) });
     if (!window.location.hash) lenis.scrollTo(0, { immediate: true });

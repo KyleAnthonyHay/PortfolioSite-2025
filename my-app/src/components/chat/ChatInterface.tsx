@@ -309,11 +309,12 @@ export default function ChatInterface() {
     persistContext(next);
   }, []);
 
-  // Desktop only: on a phone a programmatic focus would raise the keyboard
-  // over the opening card before the visitor has asked for it.
+  // Desktop only: on a phone or iPad a programmatic focus would raise the
+  // keyboard over the opening card before the visitor has asked for it. An
+  // iPad with a trackpad reports a fine primary pointer, hence any-pointer.
   useEffect(() => {
     if (!isHydrated || isStreaming) return;
-    if (window.matchMedia('(pointer: coarse)').matches) return;
+    if (window.matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 1) return;
     inputRef.current?.focus();
   }, [isHydrated, isStreaming]);
 
