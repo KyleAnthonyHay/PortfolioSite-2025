@@ -23,8 +23,6 @@ export default function SendBriefDialog({ publicId, open, onClose }: { publicId:
 
   useEffect(() => {
     if (!open) return;
-    setState('idle');
-    setError('');
     const focus = window.setTimeout(() => inputRef.current?.focus(), 60);
     const onKey = (event: KeyboardEvent) => event.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);

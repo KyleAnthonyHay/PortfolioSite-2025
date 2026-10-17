@@ -1,7 +1,7 @@
 import type { VisitorContext, Widget } from './chat-events';
 import { describeVisitor, escapeHtml } from './email';
 import { briefTitle, SITE_URL, type BriefView } from './recruiter-brief/view';
-import { LEVEL_WORD, VERDICT_WORD, toOnePager } from './recruiter-brief/onepager';
+import { STATUS_LABEL, VERDICT_WORD, toFitSheet } from './recruiter-brief/sheet';
 
 // FitReportWidget's emerald, muted purple and zinc palette, with inline styles and
 // presentation tables so the card also reads well in Gmail and Outlook.
@@ -65,12 +65,11 @@ ${postingLink(jobUrl)}
 
 /** The brief as sent to a visitor who asked for it: the one page's verdict and role match, the link and the PDF. */
 export function briefForVisitorEmailHtml(view: BriefView, url: string): string {
-  const page = toOnePager(view);
-  const dot = { strong: '#10b981', relevant: '#6b4f8a', gap: '#a1a1aa' } as const;
+  const page = toFitSheet(view);
   const rows = page.rows
     .map(
-      (row) => `<tr><td style="padding:9px 0;border-top:1px solid #f4f4f5;font-size:13px;color:#18181b;vertical-align:top">${escapeHtml(row.requirement)}</td>
-<td style="padding:9px 0 9px 12px;border-top:1px solid #f4f4f5;font-size:12px;color:${dot[row.level]};white-space:nowrap;vertical-align:top">&#9679; ${LEVEL_WORD[row.level]}</td></tr>`
+      (row) => `<tr><td style="padding:9px 0;border-top:1px solid #f4f4f5;font-size:13px;color:#18181b;vertical-align:top"><strong style="font-weight:600">${escapeHtml(row.requirement)}</strong><br><span style="color:#71717a;font-size:12px">${escapeHtml(row.evidence)}</span></td>
+<td style="padding:9px 0 9px 12px;border-top:1px solid #f4f4f5;font-size:12px;color:${statuses[row.status].color};white-space:nowrap;vertical-align:top">${STATUS_LABEL[row.status]}</td></tr>`
     )
     .join('');
   return `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta charset="utf-8"><title>${escapeHtml(briefTitle(view))}</title></head>

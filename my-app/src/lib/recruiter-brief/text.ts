@@ -1,30 +1,25 @@
-import { LEVEL_WORD, VERDICT_WORD, toOnePager } from './onepager';
+import { STATUS_LABEL, VERDICT_WORD, toFitSheet } from './sheet';
 import { SITE_URL, type BriefView } from './view';
 
 /**
- * The one page as plain text, for the Copy button: the same lines as the web
+ * The fit check as plain text, for the Copy button: the same rows as the web
  * page and the PDF, ready to paste into an email or an ATS note.
  */
 export function briefText(view: BriefView, origin = SITE_URL): string {
-  const page = toOnePager(view);
+  const sheet = toFitSheet(view);
   const { candidate } = view;
   const out: string[] = [
     `${candidate.name} · ${candidate.headline} · ${candidate.location}`,
-    page.general ? 'General profile, not a role match' : `Prepared for: ${page.title}`,
+    sheet.general ? 'General profile, not a role match' : `Fit check: ${sheet.title}`,
     '',
-    `${VERDICT_WORD[page.verdict.level]}. Recommendation: ${page.verdict.nextStep}. ${page.verdict.reason}`,
-    '',
-    page.snapshot,
+    `${VERDICT_WORD[sheet.verdict.level]}. Recommendation: ${sheet.verdict.nextStep}. ${sheet.verdict.reason}`,
   ];
-  if (page.rows.length) {
-    out.push('', 'Role match');
-    for (const row of page.rows) out.push(`- ${row.requirement}: ${LEVEL_WORD[row.level]} (${row.evidence})`);
-    if (page.moreRows > 0) out.push(`- +${page.moreRows} more lower-priority requirements`);
+  if (sheet.rows.length) {
+    out.push('', `Requirements (${sheet.summary.match} supported, ${sheet.summary.related} to confirm, ${sheet.summary.gap} gaps)`);
+    for (const row of sheet.rows) {
+      out.push(`- ${row.requirement}: ${STATUS_LABEL[row.status]}. ${row.evidence}${row.projects.length ? ` (${row.projects.map((p) => p.title).join(', ')})` : ''}`);
+    }
   }
-  if (page.why.length) out.push('', 'Why consider him', ...page.why.map((line) => `- ${line}`));
-  if (page.work.length) out.push('', 'Relevant work', ...page.work.map((work) => `- ${work.title}: ${work.line}`));
-  if (page.validate.length) out.push('', 'To validate', ...page.validate.map((line) => `- ${line}`));
-  if (page.questions.length) out.push('', 'Interview questions', ...page.questions.map((line) => `- ${line}`));
   out.push('', `Full brief and PDF: ${origin.replace(/\/$/, '')}/brief/${view.publicId}`, `Contact: ${candidate.email}`);
   return out.join('\n');
 }

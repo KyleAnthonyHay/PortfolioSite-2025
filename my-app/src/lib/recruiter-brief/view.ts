@@ -34,7 +34,7 @@ export interface BriefView {
   brief: RecruiterBrief;
   projects: BriefProjectView[];
   /** Project names for the evidence chips in Role Match. */
-  projectNames: Record<number, { title: string; href: string }>;
+  projectNames: Record<number, { title: string; href: string; image?: string }>;
 }
 
 export const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL || 'https://kyleanthonyhay.com').replace(/\/$/, '');
@@ -63,7 +63,7 @@ export function toBriefView(record: StoredBrief): BriefView {
   const projectNames: BriefView['projectNames'] = {};
   for (const id of ids) {
     const project = projectById(id);
-    if (project) projectNames[id] = { title: project.title, href: project.href };
+    if (project) projectNames[id] = { title: project.title, href: project.href, image: project.image };
   }
 
   return {

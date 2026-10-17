@@ -26,6 +26,8 @@ export default function BriefActions({
 }) {
   const [flash, setFlash] = useState<'copied' | 'linked' | null>(null);
   const [sending, setSending] = useState(false);
+  // A fresh dialog each time it opens, so a past send or error never shows.
+  const [sendKey, setSendKey] = useState(0);
   const path = `/brief/${publicId}`;
   const height = size === 'sm' ? 'h-8 any-pointer-coarse:h-10 text-[13px]' : 'h-9 any-pointer-coarse:h-11 text-sm';
   const button = `px-3.5 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl font-medium transition-all duration-200 active:scale-[0.98] ${height}`;
@@ -72,7 +74,8 @@ export default function BriefActions({
 
   return (
     // Phones: three equal controls in a row, with the two filled ones full width.
-    <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+    // Wider: the controls on the left, Send me this on its own at the right.
+    <div className="grid w-full grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center">
       {showOpen && (
         <a href={path} target="_blank" rel="noopener noreferrer" className={`${button} col-span-3 bg-zinc-900 text-white hover:bg-zinc-800`}>
           Open brief <FiArrowUpRight className="h-3.5 w-3.5" />
@@ -89,10 +92,13 @@ export default function BriefActions({
         {flash === 'linked' ? <FiCheck className="h-3.5 w-3.5 text-accent-blue" /> : <FiShare className="h-3.5 w-3.5" />}
         {flash === 'linked' ? 'Link copied' : 'Share link'}
       </button>
-      <button type="button" onClick={() => setSending(true)} className={`${button} col-span-3 bg-accent-blue text-white hover:brightness-95`}>
+      <button type="button" onClick={() => {
+          setSendKey((key) => key + 1);
+          setSending(true);
+        }} className={`${button} col-span-3 bg-accent-blue text-white hover:brightness-95 sm:ml-auto`}>
         <FiMail className="h-3.5 w-3.5" /> Send me this
       </button>
-      <SendBriefDialog publicId={publicId} open={sending} onClose={closeSend} />
+      <SendBriefDialog key={sendKey} publicId={publicId} open={sending} onClose={closeSend} />
     </div>
   );
 }
