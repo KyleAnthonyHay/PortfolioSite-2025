@@ -46,6 +46,13 @@ export async function getBrief(publicId: string): Promise<StoredBrief | null> {
   }
 }
 
+/** Records a visitor's request to have a brief emailed to them. */
+export async function recordBriefRequest(request: { publicId: string; email: string; roleTitle?: string; companyName?: string; sent: boolean }): Promise<void> {
+  const key = process.env.BRIEF_WRITE_KEY;
+  if (!key) throw new Error('BRIEF_WRITE_KEY is not set');
+  await convex().mutation(api.recruiterBriefs.recordRequest, { key, ...request });
+}
+
 /**
  * Requirement rows extracted from a posting (convex/postings.ts), so a
  * posting gets the same rows after a restart or on another server. Failures

@@ -1,6 +1,7 @@
 import type { VisitorContext, Widget } from './chat-events';
 import { describeVisitor, escapeHtml } from './email';
 import { briefTitle, SITE_URL, type BriefView } from './recruiter-brief/view';
+import { LEVEL_WORD, VERDICT_WORD, toOnePager } from './recruiter-brief/onepager';
 
 // FitReportWidget's emerald, muted purple and zinc palette, with inline styles and
 // presentation tables so the card also reads well in Gmail and Outlook.
@@ -60,4 +61,31 @@ ${postingLink(jobUrl)}
 <a href="${escapeHtml(url)}" style="display:inline-block;padding:9px 16px;background:#18181b;color:#ffffff;border-radius:999px;font-size:13px;font-weight:500;text-decoration:none">Open recruiter brief</a>
 </td></tr></table>`;
   return shell('Someone created a recruiter brief', context, card, note);
+}
+
+/** The brief as sent to a visitor who asked for it: the one page's verdict and role match, the link and the PDF. */
+export function briefForVisitorEmailHtml(view: BriefView, url: string): string {
+  const page = toOnePager(view);
+  const dot = { strong: '#10b981', relevant: '#6b4f8a', gap: '#a1a1aa' } as const;
+  const rows = page.rows
+    .map(
+      (row) => `<tr><td style="padding:9px 0;border-top:1px solid #f4f4f5;font-size:13px;color:#18181b;vertical-align:top">${escapeHtml(row.requirement)}</td>
+<td style="padding:9px 0 9px 12px;border-top:1px solid #f4f4f5;font-size:12px;color:${dot[row.level]};white-space:nowrap;vertical-align:top">&#9679; ${LEVEL_WORD[row.level]}</td></tr>`
+    )
+    .join('');
+  return `<!doctype html><html lang="en"><head><meta name="viewport" content="width=device-width,initial-scale=1"><meta charset="utf-8"><title>${escapeHtml(briefTitle(view))}</title></head>
+<body style="margin:0;padding:24px 12px;background:#fafafa;color:#18181b;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;font-size:14px;line-height:1.55">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:600px;margin:0 auto"><tr><td>
+<p style="margin:0 0 8px;font-size:10px;letter-spacing:1.6px;color:#a1a1aa;text-transform:uppercase">Kyle-Anthony Hay / Brief</p>
+<h1 style="margin:0 0 18px;font-size:22px;font-weight:600;letter-spacing:-0.5px">${escapeHtml(page.general ? 'Candidate profile' : page.title)}</h1>
+<table role="presentation" cellpadding="0" cellspacing="0" style="${cardStyle}"><tr><td style="padding:20px">
+<p style="${eyebrowStyle}">${escapeHtml(VERDICT_WORD[page.verdict.level])}</p>
+<p style="margin:0 0 6px;font-size:15px;font-weight:600">${escapeHtml(page.verdict.nextStep)}</p>
+<p style="margin:0 0 14px;font-size:13px;color:#71717a">${escapeHtml(page.verdict.reason)}</p>
+${rows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 18px">${rows}</table>` : ''}
+<a href="${escapeHtml(url)}" style="display:inline-block;padding:10px 18px;background:#0a84ff;color:#ffffff;border-radius:12px;font-size:13px;font-weight:500;text-decoration:none">Open the brief</a>
+</td></tr></table>
+<p style="margin:16px 0 0;font-size:12px;color:#71717a">The PDF is attached. Reply to this email to reach Kyle-Anthony directly.</p>
+<p style="margin:20px 0 0;font-size:11px"><a href="${escapeHtml(SITE_URL)}" style="color:#a1a1aa;text-decoration:none">kyleanthonyhay.com</a></p>
+</td></tr></table></body></html>`;
 }

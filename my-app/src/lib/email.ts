@@ -20,7 +20,27 @@ export interface EmailAttachment {
   contentType?: string;
 }
 
-export async function emailKyle(message: {
+export function emailKyle(message: {
+  subject: string;
+  html: string;
+  text: string;
+  replyTo?: string;
+  attachments?: EmailAttachment[];
+}): Promise<{ ok: true } | { ok: false; error: string }> {
+  const to = process.env.NOTIFY_EMAIL || profile.email;
+  return sendEmail({ ...message, to: [to], cc: [profile.emailCc].filter((email) => email !== to) });
+}
+
+/** Where mail about the site goes: Kyle-Anthony's inbox. */
+export function kyleInbox(): string {
+  return process.env.NOTIFY_EMAIL || profile.email;
+}
+
+/** Any message through Resend; emailKyle() is this addressed to Kyle-Anthony. */
+export async function sendEmail(message: {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   html: string;
   text: string;
@@ -35,8 +55,9 @@ export async function emailKyle(message: {
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         from: process.env.RESEND_FROM || "Kyle's Agent <onboarding@resend.dev>",
-        to: [process.env.NOTIFY_EMAIL || profile.email],
-        cc: [profile.emailCc].filter((email) => email !== (process.env.NOTIFY_EMAIL || profile.email)),
+        to: message.to,
+        cc: message.cc?.length ? message.cc : undefined,
+        bcc: message.bcc?.length ? message.bcc : undefined,
         subject: message.subject,
         html: message.html,
         text: message.text,
