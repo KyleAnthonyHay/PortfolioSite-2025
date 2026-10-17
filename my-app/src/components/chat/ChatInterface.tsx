@@ -685,8 +685,10 @@ export default function ChatInterface() {
   const latestBrief = [...messages]
     .reverse()
     .flatMap((m) => (m.role === 'assistant' ? [...m.widgets].reverse() : []))
-    .find((w) => w.kind === 'recruiter_brief');
-  const briefId = latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : undefined;
+    .find((w) => w.kind === 'recruiter_brief' || (w.kind === 'fit_report' && w.brief));
+  // A fit check is the brief; chats saved before they were merged may hold a separate brief card.
+  const briefId =
+    latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : latestBrief?.kind === 'fit_report' ? latestBrief.brief?.publicId : undefined;
   const makeBrief = () => send(BRIEF_PROMPT);
 
   return (
