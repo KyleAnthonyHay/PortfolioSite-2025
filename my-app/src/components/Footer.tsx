@@ -65,7 +65,7 @@ const Footer = () => {
       </div>
       <div className="max-w-[1400px] mx-auto px-6 md:px-10 mt-20 flex items-center justify-between font-mono text-[11px] text-zinc-400">
         <span>© {new Date().getFullYear()} Kyle-Anthony Hay</span>
-        <span>Brooklyn, NY</span>
+        <span>New York, NY</span>
       </div>
     </footer>
   );

@@ -10,7 +10,7 @@ import type { ContactLink, JourneyNode, SkillGroup, TimelineItem } from './chat-
 export const profile = {
   name: 'Kyle-Anthony Hay',
   headline: 'AI Engineer & Developer',
-  location: 'Brooklyn, New York',
+  location: 'New York, New York',
   summary:
     'Software developer focused on mobile and frontend work, with production experience shipping AI-powered products: RAG systems, vector search, and LLM orchestration. Currently an AI Engineer at Cognizant; always building on the side.',
   availability: [
