@@ -6,6 +6,7 @@
  */
 
 import type { BriefView } from './recruiter-brief/view';
+import type { RecommendationLevel } from './recruiter-brief/types';
 
 export type ProjectCategory = 'iOS Apps' | 'macOS Apps' | 'Web Apps';
 
@@ -171,6 +172,8 @@ export type Widget =
       jobUrl?: string;
       requirements: FitRequirement[];
       summary: { match: number; related: number; gap: number };
+      /** The saved brief this fit check was written up as, for its download and share link. */
+      brief?: { publicId: string; nextStep: string; level: RecommendationLevel };
     };
 
 export interface SourceRef {

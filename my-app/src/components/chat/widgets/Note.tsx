@@ -14,7 +14,7 @@ export interface ChatHandle {
 }
 
 const field =
-  'w-full rounded-xl border border-zinc-200 bg-white px-3 text-[16px] text-ink placeholder-zinc-400 sm:text-[14px] outline-none transition-colors focus:border-zinc-400';
+  'w-full rounded-xl border border-zinc-200 bg-white px-3 text-[16px] text-ink placeholder-zinc-400 sm:not-any-pointer-coarse:text-[14px] outline-none transition-colors focus:border-zinc-400';
 
 const errors: Record<string, string> = {
   invalid_email: 'That email address does not look right.',

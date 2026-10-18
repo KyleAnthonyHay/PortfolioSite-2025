@@ -33,14 +33,14 @@ const WebResume = () => {
   return (
     <section id="experience" className="scroll-mt-20 py-20 md:py-28" ref={ref}>
       <div className="max-w-[1400px] mx-auto px-6 md:px-10">
-        <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-12 lg:gap-20">
+        <div className="grid grid-cols-1 md:grid-cols-[260px_1fr] lg:grid-cols-[340px_1fr] gap-12 md:gap-10 lg:gap-20">
           {/* Left: Profile */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ ...spring }}
           >
-            <div className="bg-white rounded-[2rem] p-8 border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] text-center">
+            <div className="bg-white rounded-[2rem] p-8 md:max-lg:p-6 border border-zinc-200/80 shadow-[0_4px_20px_-8px_rgba(0,0,0,0.06)] text-center">
               <div className="w-full aspect-[4/5] relative rounded-[1.5rem] overflow-hidden mb-6">
                 <Image
                   src="/profile-2.jpg"

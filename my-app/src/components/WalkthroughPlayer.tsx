@@ -16,6 +16,8 @@ interface WalkthroughPlayerProps {
  * controls appear on hover: two small buttons in the corner, for sound and
  * play/pause, and a progress bar along the bottom edge that can be clicked
  * or dragged to skip through. Playback pauses while the video is off screen.
+ * Touch screens have no hover, so on an iPad or phone the controls stay up,
+ * at finger size, with a taller strip to grab the scrub bar by.
  */
 export default function WalkthroughPlayer({ src, poster, className = '', frameless = false }: WalkthroughPlayerProps) {
   const ref = useRef<HTMLVideoElement>(null);
@@ -134,7 +136,7 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
   };
 
   const button =
-    'flex h-9 w-9 items-center justify-center rounded-full bg-zinc-900/80 text-white backdrop-blur-sm transition-colors hover:bg-zinc-900';
+    'flex h-9 w-9 any-pointer-coarse:h-11 any-pointer-coarse:w-11 items-center justify-center rounded-full bg-zinc-900/80 text-white backdrop-blur-sm transition-colors hover:bg-zinc-900';
 
   return (
     <div
@@ -173,7 +175,7 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
         aria-valuenow={Math.round(progress * 100)}
         onPointerDown={onBarPointerDown}
         onKeyDown={onBarKeyDown}
-        className={`group/bar absolute inset-x-0 bottom-0 z-10 flex h-5 cursor-pointer touch-none items-end opacity-0 transition-opacity duration-300 focus:opacity-100 focus:outline-none group-hover:opacity-100 ${
+        className={`group/bar absolute inset-x-0 bottom-0 z-10 flex h-5 any-pointer-coarse:h-8 cursor-pointer touch-none items-end opacity-0 any-pointer-coarse:opacity-100 transition-opacity duration-300 focus:opacity-100 focus:outline-none group-hover:opacity-100 ${
           scrubbing ? 'opacity-100' : ''
         }`}
       >
@@ -187,7 +189,7 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
           />
         </div>
       </div>
-      <div className="pointer-events-none absolute bottom-5 right-4 flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+      <div className="pointer-events-none absolute bottom-5 right-4 any-pointer-coarse:bottom-9 any-pointer-coarse:right-3 flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 any-pointer-coarse:pointer-events-auto any-pointer-coarse:opacity-100">
         <button type="button" onClick={toggleMute} aria-label={muted ? 'Turn sound on' : 'Turn sound off'} className={button}>
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
         </button>

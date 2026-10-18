@@ -5,6 +5,7 @@ import BriefDocument from '@/components/brief/BriefDocument';
 import BriefActions from '@/components/brief/BriefActions';
 import { getBrief } from '@/lib/recruiter-brief/store';
 import { briefTitle, toBriefView } from '@/lib/recruiter-brief/view';
+import { briefText } from '@/lib/recruiter-brief/text';
 
 /**
  * Read-only shared brief. Kept as its own route with the brief loaded on the
@@ -36,7 +37,7 @@ export default async function BriefPage({ params }: { params: Promise<{ publicId
       <main className="pt-6 pb-24 sm:pt-16 md:pt-24">
         <div className="max-w-[920px] mx-auto px-4 sm:px-6 md:px-10">
           <div className="mb-6 flex justify-end md:mb-10">
-            <BriefActions publicId={view.publicId} />
+            <BriefActions publicId={view.publicId} title={briefTitle(view)} text={briefText(view)} />
           </div>
           <BriefDocument view={view} />
         </div>

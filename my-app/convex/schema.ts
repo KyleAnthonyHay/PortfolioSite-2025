@@ -43,6 +43,18 @@ export default defineSchema({
     evidenceReferences: v.any(),
     version: v.number(),
   }).index('by_publicId', ['publicId']),
+  /** Visitors who asked for a brief by email: an opt-in, so Kyle-Anthony can follow up. */
+  briefRequests: defineTable({
+    publicId: v.string(),
+    email: v.string(),
+    createdAt: v.number(),
+    roleTitle: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    /** Whether the email went out; false when Resend is not configured or failed. */
+    sent: v.boolean(),
+  })
+    .index('by_publicId', ['publicId'])
+    .index('by_email', ['email']),
   postingExtractions: defineTable({
     /** sha256 of the posting text with whitespace collapsed, first 16 hex characters. */
     hash: v.string(),

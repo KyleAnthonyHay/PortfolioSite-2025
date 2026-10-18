@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { CircleCheck, CircleDot, CircleMinus, FileText } from 'lucide-react';
 import type { FitStatus, Widget } from '@/lib/chat-events';
+import BriefActions from '@/components/brief/BriefActions';
 
 const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; chip: string }> = {
   match: { label: 'Supported match', icon: CircleCheck, color: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700' },
@@ -16,7 +17,7 @@ const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{
 const VISIBLE_ROWS = 5;
 
 export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, { kind: 'fit_report' }>; onBrief?: () => void }) {
-  const { role, requirements, summary } = widget;
+  const { role, requirements, summary, brief } = widget;
   const listRef = useRef<HTMLUListElement>(null);
   const [maxHeight, setMaxHeight] = useState<number>();
   const [atEnd, setAtEnd] = useState(false);
@@ -46,7 +47,7 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
     <div className="overflow-hidden agent-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-zinc-100 px-4 py-3">
         <div>
-          <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">Fit report</p>
+          <p className="text-[10px] font-medium uppercase tracking-widest text-zinc-400">Fit check</p>
           {role && <p className="text-sm font-semibold text-zinc-900">{role}</p>}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -57,6 +58,11 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           ))}
         </div>
       </div>
+      {brief && (
+        <p className="border-b border-zinc-100 px-4 py-2.5 text-[13px] text-zinc-900">
+          <span className="font-medium">Recommendation:</span> {brief.nextStep.replace(/\.\s*$/, '')}
+        </p>
+      )}
       <p className="px-4 py-2 text-xs text-zinc-500">Based on documented evidence. Confirm unrecorded experience with Kyle-Anthony.</p>
       <div className="relative">
         <ul
@@ -102,13 +108,18 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           />
         )}
       </div>
-      {onBrief && (
+      {brief ? (
+        <div className="border-t border-zinc-100 px-4 py-3">
+          <p className="mb-2 text-[12px] text-zinc-400">This check is also a one-page brief to send the hiring manager.</p>
+          <BriefActions publicId={brief.publicId} title={role} showOpen size="sm" />
+        </div>
+      ) : onBrief && (
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-zinc-100 px-4 py-2.5">
           <p className="text-[12px] text-zinc-400">Need something to send the hiring manager?</p>
           <button
             type="button"
             onClick={onBrief}
-            className="ml-auto inline-flex h-8 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98]"
+            className="ml-auto inline-flex h-8 any-pointer-coarse:h-10 shrink-0 items-center gap-1.5 rounded-full bg-zinc-900 px-3.5 text-[13px] font-medium text-white transition-colors hover:bg-zinc-800 active:scale-[0.98]"
           >
             <FileText className="h-3.5 w-3.5" /> Turn this into a brief
           </button>
