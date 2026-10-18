@@ -59,7 +59,7 @@ const WebResume = () => {
               <h3 className="text-zinc-900 text-xl font-semibold mb-1 tracking-tight">Kyle-Anthony Hay</h3>
               <p className="text-zinc-400 text-sm mb-6">
                 AI Engineer & Developer
-                <br />Brooklyn, NY
+                <br />New York, NY
               </p>
 
               <div className="flex justify-center gap-2 mb-6">
