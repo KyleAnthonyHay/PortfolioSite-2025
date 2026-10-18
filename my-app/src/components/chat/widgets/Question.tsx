@@ -139,7 +139,7 @@ export function QuestionCard({ widget, active, answer, onAnswer }: QuestionCardP
                 }
               }}
               placeholder="Something else…"
-              className="min-w-0 flex-1 bg-transparent text-[16px] text-ink placeholder-zinc-400 sm:text-[14px] outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[16px] text-ink placeholder-zinc-400 sm:not-any-pointer-coarse:text-[14px] outline-none"
             />
           </label>
         )}

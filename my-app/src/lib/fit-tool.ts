@@ -5,7 +5,8 @@ import type { ConversationMessage, FitRequirement, VisitorContext } from './chat
 import { projectById, toCard } from './project-catalog';
 import { MAX_REQUIREMENTS } from './tools';
 import { workArrangement } from './facts';
-import { describeCeiling, evaluateFit, STATUS_FOR, type FitEvaluation } from './recruiter-brief/generate';
+import { describeCeiling, evaluateFit, generateRecruiterBrief, STATUS_FOR, type FitEvaluation } from './recruiter-brief/generate';
+import { toBriefView, type BriefView } from './recruiter-brief/view';
 import { findPosting, looksLikePosting } from './recruiter-brief/tool';
 
 /**
@@ -19,6 +20,16 @@ export function lastEvaluation(conversationId?: string, source?: string): FitEva
   const stored = conversationId ? evaluations.get(conversationId) : undefined;
   const value = stored?.source === source ? stored?.evaluation : undefined;
   return value?.evaluationIdentity === evaluationIdentity() && !value.needsReview && !value.usedFallback ? value : undefined;
+}
+
+/**
+ * The brief written from each fit check, by its share id, so the chat can
+ * email Kyle-Anthony the same brief the visitor sees without loading it back.
+ */
+const briefViews = new Map<string, BriefView>();
+
+export function briefFor(publicId?: string): BriefView | undefined {
+  return publicId ? briefViews.get(publicId) : undefined;
 }
 
 const URL_IN_TEXT = /https?:\/\/\S+/i;
@@ -114,6 +125,24 @@ export function makeFitTool(options: { receivedAt?: number; userMessage: string;
       };
 
       const title = evaluation.roleTitle ?? role ?? context?.role;
+
+      // The fit check and the brief are one thing: the same evaluation, written
+      // up and saved, so the card can be downloaded or shared as it stands.
+      const view = await generateRecruiterBrief({
+        jobDescription: posting.text,
+        roleTitle: posting.title ?? title,
+        knownRequirements: posting.text ? undefined : given.slice(0, MAX_REQUIREMENTS),
+        evaluation,
+      })
+        .then(toBriefView)
+        .catch((error) => {
+          console.error('fit check: the brief could not be written', error);
+          return undefined;
+        });
+      if (view) {
+        briefViews.set(view.publicId, view);
+        if (briefViews.size > 200) briefViews.delete(briefViews.keys().next().value!);
+      }
       const typed = [role, context?.role].find((r) => r && title && !sameRole(r, title));
       const read = evaluation.read ?? 'partial fit: real gaps to weigh';
       const content = [
@@ -123,6 +152,9 @@ export function makeFitTool(options: { receivedAt?: number; userMessage: string;
         `Overall read: ${read}. Recommended next step: ${describeCeiling(evaluation)}. State this read and next step as written; never call it a stronger fit.`,
         evaluation.logistics.some((item) => !workArrangement(item).met) ? 'Location and work-arrangement gaps are things he has not stated; say they need asking, not that he fails them.' : '',
         ...rows.map((r) => `- [${r.status === 'match' ? 'SUPPORTED MATCH' : r.status === 'related' || r.verificationStatus === 'unknown' ? 'NEEDS CONFIRMATION' : 'CONFIRMED GAP'}] ${r.requirement} — ${r.evidence}`),
+        view
+          ? `This card is also the shareable brief (link /brief/${view.publicId}): the visitor can open it, download it, copy it, share the link or have it emailed to them from the card. Mention that in one short clause; do not offer to make a separate brief.`
+          : '',
         'Supported evidence first, then requirements to confirm with Kyle-Anthony, then confirmed shortfalls if any, then the read. The portfolio is not his complete history. Missing documentation never proves he lacks experience. Do not call other tools in this turn.',
       ]
         .filter(Boolean)
@@ -131,13 +163,20 @@ export function makeFitTool(options: { receivedAt?: number; userMessage: string;
       return JSON.stringify({
         content,
         citedProjectIds: [...new Set(rows.flatMap((r) => r.projects.map((p) => p.id)))],
-        widget: { kind: 'fit_report', role: title, requirements: rows, summary, jobUrl: posting.url },
+        widget: {
+          kind: 'fit_report',
+          role: title,
+          requirements: rows,
+          summary,
+          jobUrl: posting.url,
+          ...(view && { brief: { publicId: view.publicId, nextStep: view.brief.recommendation.nextStep, level: view.brief.recommendation.level } }),
+        },
       });
     },
     {
       name: 'assess_job_fit',
       description:
-        "Judge Kyle-Anthony against a job: a posting link or pasted description (in this message or earlier in the chat), or a list of requirements the visitor typed. The tool finds and reads any posting itself and extracts its requirements, so for a posting leave requirements empty. Only when the visitor typed their own list (no posting), pass it as requirements, one short phrase each. Shows a supported match / needs confirmation / confirmed gap report with an overall read and recommended next step.",
+        "Judge Kyle-Anthony against a job: a posting link or pasted description (in this message or earlier in the chat), or a list of requirements the visitor typed. The tool finds and reads any posting itself and extracts its requirements, so for a posting leave requirements empty. Only when the visitor typed their own list (no posting), pass it as requirements, one short phrase each. Shows a supported match / needs confirmation / confirmed gap report with an overall read and recommended next step. The report is also the shareable recruiter brief (download, copy, share link, email), so use it too when the visitor wants something to send a hiring manager: 'create a recruiter brief', 'a one-pager on him for this role'.",
       schema: z.object({
         postingId: z.string().optional().describe('Actual posting source ID from check_chat_updates. Required for a historical posting, including a typed URL received during a voice turn. Do not select an older source when the visitor is promising a new posting.'),
         role: z.string().optional().describe("Role title if the visitor gave one, e.g. 'Senior iOS Engineer'. Never invent one."),

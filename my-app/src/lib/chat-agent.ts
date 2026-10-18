@@ -13,8 +13,7 @@ import { allTools, describeToolCall, parseToolResult, type ToolResult } from './
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
 import { notifyFitCheck, notifyRecruiterBrief } from './notify';
-import { makeRecruiterBriefTool } from './recruiter-brief/tool';
-import { makeFitTool } from './fit-tool';
+import { briefFor, makeFitTool } from './fit-tool';
 import { looksLikePosting } from './recruiter-brief/tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
@@ -69,7 +68,7 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting to leave him a message, pass something on, or have him get back to them → send_note, with a short draft in their voice from what they told you.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
-- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → generate_recruiter_brief, even when the same message shares a posting link or description: check_chat_updates first, select the supplied postingId the visitor intends, then generate the brief; do not paste one into the call. Never say a brief was made unless this tool ran.
+- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → assess_job_fit: the fit report is the shareable brief, with download, copy, share-link and email buttons on its card. check_chat_updates first, select the supplied postingId the visitor intends; do not paste a posting into the call. If a fit report for that posting is already on screen, point to its buttons instead of running it again. Never say a brief was made unless this tool ran.
 - "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → check_chat_updates first, then assess_job_fit with the intended postingId and no requirements. It reads that selected source, reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
 - A list of requirements the visitor typed, with no posting → assess_job_fit with that list. ${REQUIREMENT_RULES} Do not call other tools in that turn.
 - "Is he a fit?" with only a role title (from the intake or the chat), when the visitor listed no requirements and shared no posting → never assess_job_fit, and never guess what such a posting usually asks for. Call get_experience with the role as the query, describe his relevant experience in two or three sentences without saying whether he is a fit, and ask them to share the posting link or paste the description so you can judge the real requirements. If their message names any requirements at all (technologies, years, a degree), that is a typed list: use the rule above.
@@ -276,10 +275,9 @@ export async function* runAgent(
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
-  const briefTool = makeRecruiterBriefTool({ receivedAt: options.receivedAt, userMessage, history, context, conversationId });
   const fitTool = makeFitTool({ receivedAt: options.receivedAt, userMessage, history, context, conversationId });
   const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
-  const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool, briefTool];
+  const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
   // Links the visitor actually shared; the model must not fetch any other.
   const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
@@ -296,7 +294,7 @@ export async function* runAgent(
           checkArrivals
             ? { tool_choice: { type: 'function', function: { name: 'check_chat_updates' } } }
             : wantsBrief
-            ? { tool_choice: { type: 'function', function: { name: 'generate_recruiter_brief' } } }
+            ? { tool_choice: { type: 'function', function: { name: 'assess_job_fit' } } }
             : mustAsk
               ? { tool_choice: { type: 'function', function: { name: 'ask_visitor' } } }
               : forceTool
@@ -401,38 +399,24 @@ export async function* runAgent(
       if (result.widget?.kind === 'question') asked = true;
     }
 
-    // notify_kyle: a fit check is the moment a recruiter is serious, so Kyle-Anthony hears about it.
+    // notify_kyle: a fit check is the moment a recruiter is serious, so Kyle-Anthony hears about it,
+    // with the brief it was written up as when there is one.
     const report = results.find(({ result }) => result.widget?.kind === 'fit_report')?.result.widget;
     if (report?.kind === 'fit_report' && !fitShown) {
       fitShown = true;
       stepCounter += 1;
       const id = `step-${stepCounter}`;
-      const notice = notifyFitCheck({
-        report,
-        context,
-        conversationId,
-        transcript: [...history, { role: 'user', content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])],
-      }).catch(() => 'failed' as const);
+      const transcript = [...history, { role: 'user' as const, content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])];
+      const view = briefFor(report.brief?.publicId);
+      const notice = (
+        view
+          ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript })
+          : notifyFitCheck({ report, context, conversationId, transcript })
+      ).catch(() => 'failed' as const);
       // Only shown when an email actually goes out; without a Resend key this is silent.
-      const outcome = await withTimeout(notice, 6000, 'failed' as const);
+      const outcome = await withTimeout(notice, 15000, 'failed' as const);
       if (outcome === 'sent') {
-        yield { type: 'step', step: { id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the report by email so he can follow up today'] } };
-      }
-    }
-
-    const brief = results.find(({ result }) => result.widget?.kind === 'recruiter_brief')?.result.widget;
-    if (brief?.kind === 'recruiter_brief') {
-      // Await delivery while the streamed response stays open; the saved brief
-      // and visitor's download remain available even if email fails.
-      const outcome = await notifyRecruiterBrief({
-        view: brief.view,
-        jobUrl: brief.jobUrl,
-        context,
-        transcript: [...history, { role: 'user', content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])],
-      });
-      if (outcome === 'sent') {
-        stepCounter += 1;
-        yield { type: 'step', step: { id: `step-${stepCounter}`, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this brief', status: 'done', detail: ['He gets the brief by email, with the conversation so far'] } };
+        yield { type: 'step', step: { id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the brief by email so he can follow up today'] } };
       }
     }
 
@@ -470,8 +454,6 @@ export async function* runAgent(
     );
     // After a fit check, one follow-up always offers a way to reach him.
     if (fitShown && items.length > 0) items.splice(Math.min(items.length, 3) - 1, 1, "I'd like Kyle-Anthony to follow up with me.");
-    // After a fit check, offer the shareable version once.
-    if (fitShown && items.length > 1 && !shownWidgets.has('recruiter_brief')) items.splice(0, 1, 'Make a recruiter brief I can share.');
     if (items.length > 0) yield { type: 'suggestions', items };
   }
 

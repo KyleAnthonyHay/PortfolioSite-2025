@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { FileText, X } from "lucide-react";
 import { useMediaQuery } from "@/lib/use-media-query";
+import { celebrate as burst } from "@/lib/celebrate";
+import SuccessCheck from "@/components/ui/SuccessCheck";
 
 export const BRIEF_PROMPT =
   "Make a recruiter brief I can send to the hiring manager.";
@@ -58,7 +60,7 @@ export function BriefButton({
   }, [ready]);
 
   const base =
-    "relative inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all active:scale-[0.97]";
+    "relative inline-flex h-8 any-pointer-coarse:h-10 items-center gap-1.5 rounded-full px-3 text-[12px] font-medium transition-all active:scale-[0.97]";
 
   if (briefId) {
     return (
@@ -105,6 +107,8 @@ export function BriefButton({
 
 /** How long the nudge stays up before it dismisses itself. */
 const NUDGE_MS = 8_000;
+/** How long the check holds before the card leaves. */
+const DONE_MS = 1_900;
 
 /**
  * One offer per visit to take a brief along, when the cursor heads for the
@@ -137,41 +141,15 @@ export function BriefNudge({
   const eligible = engaged && !busy;
   const phone = useMediaQuery("(max-width: 640px)");
 
-  const celebrate = async (source: HTMLElement | null) => {
+  const checkRef = useRef<HTMLSpanElement>(null);
+
+  // The offer swaps for a check that draws itself; the burst leaves the check
+  // as its stroke lands, the bottom bar runs out the hold, then the card goes.
+  const celebrate = () => {
     setDone(true);
     setPaused(true);
-    if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const { default: confetti } = await import("canvas-confetti");
-      const rect = source?.getBoundingClientRect();
-      const origin = rect
-        ? {
-            x: (rect.left + rect.width / 2) / window.innerWidth,
-            y: (rect.top + rect.height / 2) / window.innerHeight,
-          }
-        : { x: 0.5, y: 0.5 };
-      const colors = ["#0a84ff", "#5ac8fa", "#bfdbfe", "#ffffff", "#18181b"];
-      confetti({
-        particleCount: 70,
-        spread: 70,
-        startVelocity: 32,
-        scalar: 0.9,
-        ticks: 160,
-        origin,
-        colors,
-        zIndex: 100,
-      });
-      confetti({
-        particleCount: 30,
-        spread: 120,
-        startVelocity: 18,
-        scalar: 0.7,
-        ticks: 140,
-        origin,
-        colors,
-        zIndex: 100,
-      });
-    }
-    window.setTimeout(() => setOpen(false), 1500);
+    window.requestAnimationFrame(() => burst(checkRef.current));
+    window.setTimeout(() => setOpen(false), DONE_MS);
   };
 
   useEffect(() => {
@@ -221,44 +199,19 @@ export function BriefNudge({
     : "";
 
   const button =
-    "inline-flex h-9 w-full items-center justify-center rounded-xl px-3 text-[13px] font-medium transition-colors active:scale-[0.98]";
+    "inline-flex h-9 any-pointer-coarse:h-11 w-full items-center justify-center rounded-xl px-3 text-[13px] font-medium transition-colors active:scale-[0.98]";
   const primary = `${button} bg-accent-blue text-white hover:brightness-95`;
   const secondary = `${button} border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50`;
 
-  const check = (
-    <motion.span
-      initial={{ scale: 0.6, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ type: "spring", stiffness: 380, damping: 18 }}
-      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-blue text-white"
-    >
-      <svg
-        viewBox="0 0 24 24"
-        className="h-4 w-4"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth={2.4}
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-      >
-        <motion.path
-          d="M5 12.5l4.5 4.5L19 7.5"
-          initial={{ pathLength: 0 }}
-          animate={{ pathLength: 1 }}
-          transition={{ duration: 0.35, delay: 0.1, ease: "easeOut" }}
-        />
-      </svg>
-    </motion.span>
-  );
+  const check = <SuccessCheck ref={checkRef} />;
 
   const bar = done ? (
     <motion.div
       aria-hidden
-      initial={{ scaleX: 0 }}
-      animate={{ scaleX: 1 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-accent-blue"
+      initial={{ scaleX: 1 }}
+      animate={{ scaleX: 0 }}
+      transition={{ duration: DONE_MS / 1000, ease: "linear" }}
+      className="absolute inset-x-0 bottom-0 h-[3px] origin-left bg-accent-blue/70"
     />
   ) : (
     <div
@@ -281,9 +234,10 @@ export function BriefNudge({
         <motion.div
           role="dialog"
           aria-label="Take the brief with you"
+          layout
           initial={{ opacity: 0, y: -16 }}
           animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -12 }}
+          exit={{ opacity: 0, y: -14, scale: 0.97, filter: "blur(4px)" }}
           transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
           onPointerEnter={() => setPaused(true)}
           onPointerLeave={() => setPaused(false)}
@@ -299,9 +253,14 @@ export function BriefNudge({
           {done ? (
             <>
               {check}
-              <p className="min-w-0 flex-1 truncate text-[13px] font-medium text-zinc-900">
+              <motion.p
+                initial={{ opacity: 0, x: -6 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.35, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="min-w-0 flex-1 truncate py-1.5 text-[13px] font-medium text-zinc-900"
+              >
                 {briefId ? "Downloading your brief" : "Brief on its way"}
-              </p>
+              </motion.p>
             </>
           ) : (
             <>
@@ -313,16 +272,16 @@ export function BriefNudge({
                 <a
                   href={`/brief/${briefId}/pdf`}
                   download
-                  onClick={(event) => celebrate(event.currentTarget)}
+                  onClick={celebrate}
                   className="inline-flex h-7 shrink-0 items-center rounded-full bg-accent-blue px-3 text-[12px] font-medium text-white"
                 >
-                  PDF
+                  Download
                 </a>
               ) : (
                 <button
                   type="button"
-                  onClick={(event) => {
-                    celebrate(event.currentTarget);
+                  onClick={() => {
+                    celebrate();
                     onMake();
                   }}
                   className="inline-flex h-7 shrink-0 items-center rounded-full bg-accent-blue px-3 text-[12px] font-medium text-white"
@@ -347,9 +306,10 @@ export function BriefNudge({
           <motion.div
             role="dialog"
             aria-label="Take the brief with you"
+            layout
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 8 }}
+            exit={{ opacity: 0, y: 14, scale: 0.96, filter: "blur(4px)" }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
             onPointerEnter={() => setPaused(true)}
             onPointerLeave={() => setPaused(false)}
@@ -367,7 +327,11 @@ export function BriefNudge({
             {done ? (
               <div className="flex items-center gap-3 py-1">
                 {check}
-                <div>
+                <motion.div
+                  initial={{ opacity: 0, x: -8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.4, delay: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                >
                   <p className="text-sm font-semibold text-zinc-900">
                     {briefId ? "Downloading your brief" : "Brief on its way"}
                   </p>
@@ -376,7 +340,7 @@ export function BriefNudge({
                       ? "The PDF is saving now."
                       : "The agent is writing it in the chat."}
                   </p>
-                </div>
+                </motion.div>
               </div>
             ) : (
               <>
@@ -384,7 +348,7 @@ export function BriefNudge({
                   type="button"
                   onClick={() => setOpen(false)}
                   aria-label="Dismiss"
-                  className="absolute right-3 top-3 rounded-full p-1 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+                  className="absolute right-3 top-3 any-pointer-coarse:right-1.5 any-pointer-coarse:top-1.5 rounded-full p-1 any-pointer-coarse:p-2.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
                 >
                   <X className="h-3.5 w-3.5" />
                 </button>
@@ -406,10 +370,10 @@ export function BriefNudge({
                       <a
                         href={`/brief/${briefId}/pdf`}
                         download
-                        onClick={(event) => celebrate(event.currentTarget)}
+                        onClick={celebrate}
                         className={primary}
                       >
-                        Download PDF
+                        Download
                       </a>
                       <a
                         href={mail}
@@ -422,8 +386,8 @@ export function BriefNudge({
                   ) : (
                     <button
                       type="button"
-                      onClick={(event) => {
-                        celebrate(event.currentTarget);
+                      onClick={() => {
+                        celebrate();
                         onMake();
                       }}
                       className={primary}

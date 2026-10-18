@@ -66,18 +66,21 @@ export async function notifyFitCheck(input: {
   return result.ok ? 'sent' : 'failed';
 }
 
-/** One notification for each generated, saved brief, separate from its fit check. */
+/** One notification for each fit check's brief, and one per chat and role however often it reruns. */
 const announcedBriefs = new Set<string>();
 
 export async function notifyRecruiterBrief(input: {
   view: BriefView;
   jobUrl?: string;
   context?: VisitorContext;
+  conversationId?: string;
   transcript: ConversationMessage[];
 }): Promise<'sent' | 'skipped' | 'failed'> {
-  const { view, context, transcript, jobUrl } = input;
-  if (!isEmailConfigured() || announcedBriefs.has(view.publicId)) return 'skipped';
+  const { view, context, transcript, jobUrl, conversationId } = input;
+  const chatKey = conversationId ? `${conversationId}:${briefTitle(view).toLowerCase()}` : undefined;
+  if (!isEmailConfigured() || announcedBriefs.has(view.publicId) || (chatKey && announced.has(chatKey))) return 'skipped';
   announcedBriefs.add(view.publicId);
+  if (chatKey) announced.add(chatKey);
   if (announcedBriefs.size > 500) announcedBriefs.delete(announcedBriefs.values().next().value!);
 
   try {
@@ -96,9 +99,9 @@ export async function notifyRecruiterBrief(input: {
       ? 'The recruiter brief PDF and the chat so far are attached. Open the brief above to view or share it.'
       : 'The PDF could not be attached. Open the saved brief above to view or download it. The chat so far is attached.';
     const result = await emailKyle({
-      subject: `Recruiter brief: ${briefTitle(view)}`,
+      subject: `Fit check: ${briefTitle(view)} (${view.brief.recommendation.nextStep})`,
       text: [
-        'A visitor created a recruiter brief on your portfolio.',
+        'A visitor ran a fit check on your portfolio agent.',
         `Brief: ${briefTitle(view)}`,
         ...(jobUrl ? [`Job posting: ${jobUrl}`] : []),
         `Visitor: ${describeVisitor(context)}`,
@@ -114,7 +117,10 @@ export async function notifyRecruiterBrief(input: {
         { filename: 'chat-transcript.md', content: transcriptMarkdown(transcript, context), contentType: 'text/markdown' },
       ],
     });
-    if (!result.ok) announcedBriefs.delete(view.publicId);
+    if (!result.ok) {
+      announcedBriefs.delete(view.publicId);
+      if (chatKey) announced.delete(chatKey);
+    }
     return result.ok ? 'sent' : 'failed';
   } catch (error) {
     announcedBriefs.delete(view.publicId);

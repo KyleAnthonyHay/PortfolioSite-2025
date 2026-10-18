@@ -311,11 +311,12 @@
 }
 
 /* Lenis runs on pointer devices only; touch gets native scrolling, with
-   anchors still gliding and clearing the sticky header. */
-@media (pointer: coarse) {
+   anchors still gliding and clearing the sticky header. any-pointer catches
+   an iPad with a trackpad attached, whose primary pointer reads as fine. */
+@media (any-pointer: coarse) {
   html { scroll-behavior: smooth; scroll-padding-top: 72px; }
 }
-@media (pointer: coarse) and (prefers-reduced-motion: reduce) {
+@media (any-pointer: coarse) and (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
 }
 

@@ -109,7 +109,7 @@ export function ProjectsWidget({ widget }: { widget: Extract<Widget, { kind: 'pr
           type="button"
           onClick={() => scrollBy(-1)}
           aria-label="Scroll left"
-          className="absolute -left-3 top-[76px] hidden h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-md transition-all hover:bg-zinc-50 active:scale-95 md:flex"
+          className="absolute -left-3 top-[76px] hidden h-8 w-8 any-pointer-coarse:h-10 any-pointer-coarse:w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-md transition-all hover:bg-zinc-50 active:scale-95 md:flex"
         >
           <ChevronLeft className="h-4 w-4" />
         </button>
@@ -119,7 +119,7 @@ export function ProjectsWidget({ widget }: { widget: Extract<Widget, { kind: 'pr
           type="button"
           onClick={() => scrollBy(1)}
           aria-label="Scroll right"
-          className="absolute -right-3 top-[76px] hidden h-8 w-8 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-md transition-all hover:bg-zinc-50 active:scale-95 md:flex"
+          className="absolute -right-3 top-[76px] hidden h-8 w-8 any-pointer-coarse:h-10 any-pointer-coarse:w-10 items-center justify-center rounded-full border border-zinc-200 bg-white text-zinc-600 shadow-md transition-all hover:bg-zinc-50 active:scale-95 md:flex"
         >
           <ChevronRight className="h-4 w-4" />
         </button>

@@ -230,7 +230,7 @@ function CopyButton({ text }: { text: string }) {
         }
       }}
       aria-label="Copy answer"
-      className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
+      className="flex h-7 w-7 any-pointer-coarse:h-9 any-pointer-coarse:w-9 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
     >
       {copied ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
     </button>
@@ -309,11 +309,12 @@ export default function ChatInterface() {
     persistContext(next);
   }, []);
 
-  // Desktop only: on a phone a programmatic focus would raise the keyboard
-  // over the opening card before the visitor has asked for it.
+  // Desktop only: on a phone or iPad a programmatic focus would raise the
+  // keyboard over the opening card before the visitor has asked for it. An
+  // iPad with a trackpad reports a fine primary pointer, hence any-pointer.
   useEffect(() => {
     if (!isHydrated || isStreaming) return;
-    if (window.matchMedia('(pointer: coarse)').matches) return;
+    if (window.matchMedia('(any-pointer: coarse)').matches || navigator.maxTouchPoints > 1) return;
     inputRef.current?.focus();
   }, [isHydrated, isStreaming]);
 
@@ -684,8 +685,10 @@ export default function ChatInterface() {
   const latestBrief = [...messages]
     .reverse()
     .flatMap((m) => (m.role === 'assistant' ? [...m.widgets].reverse() : []))
-    .find((w) => w.kind === 'recruiter_brief');
-  const briefId = latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : undefined;
+    .find((w) => w.kind === 'recruiter_brief' || (w.kind === 'fit_report' && w.brief));
+  // A fit check is the brief; chats saved before they were merged may hold a separate brief card.
+  const briefId =
+    latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : latestBrief?.kind === 'fit_report' ? latestBrief.brief?.publicId : undefined;
   const makeBrief = () => send(BRIEF_PROMPT);
 
   return (
@@ -870,7 +873,7 @@ export default function ChatInterface() {
                             type="button"
                             onClick={() => regenerate(index)}
                             aria-label="Regenerate answer"
-                            className="flex h-7 w-7 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
+                            className="flex h-7 w-7 any-pointer-coarse:h-9 any-pointer-coarse:w-9 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-200/60 hover:text-ink"
                           >
                             <RefreshCw className="h-3.5 w-3.5" />
                           </button>

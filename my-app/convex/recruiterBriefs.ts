@@ -47,3 +47,19 @@ export const get = query({
     return rest;
   },
 });
+
+/** A visitor's opt-in to receive a brief by email; kept whether or not the email sends. */
+export const recordRequest = mutation({
+  args: {
+    key: v.string(),
+    publicId: v.string(),
+    email: v.string(),
+    roleTitle: v.optional(v.string()),
+    companyName: v.optional(v.string()),
+    sent: v.boolean(),
+  },
+  handler: async (ctx, { key, ...request }) => {
+    if (!authorized(key)) throw new Error('Not allowed');
+    await ctx.db.insert('briefRequests', { ...request, createdAt: Date.now() });
+  },
+});

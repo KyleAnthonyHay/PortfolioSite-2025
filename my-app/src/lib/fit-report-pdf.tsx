@@ -2,7 +2,7 @@ import { Document, Link, Page, StyleSheet, Text, View, renderToBuffer } from '@r
 import type { VisitorContext, Widget } from './chat-events';
 import { describeVisitor } from './email';
 import { profile } from './profile';
-import { PdfBrandHeader, pdfPalette, pdfTheme } from '@/components/brief/PdfTheme';
+import { PdfBadge, PdfBrandHeader, pdfPalette, pdfTheme } from '@/components/brief/PdfTheme';
 
 type FitReport = Extract<Widget, { kind: 'fit_report' }>;
 
@@ -18,7 +18,6 @@ const s = StyleSheet.create({
   row: { ...pdfTheme.card, padding: 10, marginBottom: 6 },
   rowTop: { flexDirection: 'row', alignItems: 'flex-start', marginBottom: 5 },
   requirement: { flex: 1, fontFamily: 'Helvetica-Bold', paddingRight: 16 },
-  status: pdfTheme.badge,
   evidence: { color: '#71717a', fontSize: 9.5, lineHeight: 1.4 },
   projects: { marginTop: 5, flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
   link: { color: '#52525b', textDecoration: 'none', fontSize: 8, borderWidth: 0.6, borderColor: '#e4e4e7', borderRadius: 12, paddingHorizontal: 7, paddingVertical: 3 },
@@ -41,7 +40,7 @@ export function FitReportPdf({ report, context, createdAt }: { report: FitReport
           <Text style={s.meta}>Visitor: {describeVisitor(context)}</Text>
           <Text style={s.meta}>Generated {date} ET</Text>
           <View style={s.tally}>{(['match', 'related', 'gap'] as const).map((status) => (
-            <Text key={status} style={[pdfTheme.badge, { color: pdfPalette[status].color, backgroundColor: pdfPalette[status].background }]}>{report.summary[status]} {labels[status]}</Text>
+            <PdfBadge key={status} color={pdfPalette[status].color} background={pdfPalette[status].background}>{report.summary[status]} {labels[status]}</PdfBadge>
           ))}</View>
         </View>
         {report.requirements.map((row, index) => {
@@ -50,7 +49,7 @@ export function FitReportPdf({ report, context, createdAt }: { report: FitReport
           <View key={index} style={s.row} wrap={false}>
             <View style={s.rowTop}>
               <Text style={s.requirement}>{index + 1}. {row.requirement}</Text>
-              <Text style={[s.status, { color: pdfPalette[displayStatus].color, backgroundColor: pdfPalette[displayStatus].background }]}>{labels[displayStatus]}</Text>
+              <PdfBadge color={pdfPalette[displayStatus].color} background={pdfPalette[displayStatus].background}>{labels[displayStatus]}</PdfBadge>
             </View>
             <Text style={s.evidence}>{row.evidence}</Text>
             {row.projects.length > 0 && <View style={s.projects}>{row.projects.map((project) => (
