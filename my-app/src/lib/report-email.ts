@@ -82,6 +82,7 @@ export function briefForVisitorEmailHtml(view: BriefView, url: string): string {
 <p style="margin:0 0 6px;font-size:15px;font-weight:600">${escapeHtml(page.verdict.nextStep)}</p>
 <p style="margin:0 0 14px;font-size:13px;color:#71717a">${escapeHtml(page.verdict.reason)}</p>
 ${rows ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin:0 0 18px">${rows}</table>` : ''}
+${page.questions.length ? `<p style="${eyebrowStyle};margin-top:4px">Ask in the interview</p><ol style="margin:4px 0 18px;padding-left:18px;font-size:13px;color:#3f3f46">${page.questions.map((q) => `<li style="margin:0 0 6px">${escapeHtml(q)}</li>`).join('')}</ol>` : ''}
 <a href="${escapeHtml(url)}" style="display:inline-block;padding:10px 18px;background:#0a84ff;color:#ffffff;border-radius:12px;font-size:13px;font-weight:500;text-decoration:none">Open the brief</a>
 </td></tr></table>
 <p style="margin:16px 0 0;font-size:12px;color:#71717a">The PDF is attached. Reply to this email to reach Kyle-Anthony directly.</p>

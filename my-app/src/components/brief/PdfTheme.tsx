@@ -6,7 +6,7 @@ import { profile } from '@/lib/profile';
 Font.registerHyphenationCallback((word) => [word]);
 
 export const pdfPalette = {
-  ink: '#18181b', muted: '#71717a', border: '#e4e4e7', canvas: '#fafafa', accent: '#10b981',
+  ink: '#18181b', muted: '#71717a', border: '#e4e4e7', canvas: '#fafafa', accent: '#0a84ff', accentTint: '#e8f2ff',
   match: { color: '#047857', background: '#ecfdf5' },
   related: { color: '#6b4f8a', background: '#f3eff8' },
   gap: { color: '#71717a', background: '#f4f4f5' },
@@ -37,7 +37,8 @@ export function PdfBadge({ children, color, background, size = 8 }: { children: 
 
 /** Shared identity and document label for both attachment types. */
 export function PdfBrandHeader({ kind, candidate = { ...profile, photo: '/profile.jpg', links: [{ label: 'Portfolio', href: 'https://kyleanthonyhay.com' }] } }: {
-  kind: string;
+  /** A label at the top right; the brief leaves it out. */
+  kind?: string;
   candidate?: { name: string; headline: string; location: string; photo: string; email: string; links: { label: string; href: string }[] };
 }) {
   const photo = candidate.photo === '/profile.jpg' ? 'profile.jpg' : candidate.photo.replace(/^\//, '').replace(/\//g, '-').replace(/\.png$/i, '.jpg');
@@ -50,7 +51,7 @@ export function PdfBrandHeader({ kind, candidate = { ...profile, photo: '/profil
           <Text style={{ fontSize: 19, letterSpacing: -0.5, lineHeight: 1.15 }}>{candidate.name}</Text>
           <Text style={{ fontSize: 8.5, color: pdfPalette.muted, marginTop: 3 }}>{candidate.headline} · {candidate.location}</Text>
         </View>
-        <PdfBadge color="#ffffff" background="#18181b" size={7.5}>{kind}</PdfBadge>
+        {kind && <PdfBadge color="#ffffff" background="#18181b" size={7.5}>{kind}</PdfBadge>}
       </View>
       <View style={{ flexDirection: 'row', borderTopWidth: 2, borderTopColor: pdfPalette.accent, paddingTop: 7 }}>
         {candidate.links.map((link) => <Link key={link.label} src={link.href} style={{ fontSize: 8, color: pdfPalette.muted, textDecoration: 'none', marginRight: 14 }}>{link.label}</Link>)}

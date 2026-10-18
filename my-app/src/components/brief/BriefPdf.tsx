@@ -4,7 +4,7 @@ import { STATUS_COLOR, STATUS_LABEL } from '@/lib/fit-status';
 import { SITE_URL, type BriefView } from '@/lib/recruiter-brief/view';
 import { VERDICT_WORD, toFitSheet } from '@/lib/recruiter-brief/sheet';
 
-import { PdfBadge, PdfBrandHeader, pdfTheme } from './PdfTheme';
+import { PdfBadge, PdfBrandHeader, pdfPalette, pdfTheme } from './PdfTheme';
 
 /**
  * The brief as a PDF: the same fit check rows as the web page, from
@@ -53,17 +53,17 @@ export default function BriefPdf({ view }: { view: BriefView }) {
         <Text style={s.footer} fixed>
           Generated {date} by the AI agent on his portfolio, from his write-ups and résumé · {SITE_URL.replace(/^https?:\/\//, '')}/brief/{view.publicId}
         </Text>
-        <PdfBrandHeader kind="FIT CHECK" candidate={candidate} />
+        <PdfBrandHeader candidate={candidate} />
 
         <View style={pdfTheme.card} wrap={false}>
           <Text style={s.eyebrow}>Fit check</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
             <Text style={[s.title, { flex: 1, paddingRight: 12 }]}>{sheet.general ? 'General profile, not a role match' : sheet.title}</Text>
-            <PdfBadge color={positive ? STATUS_COLOR.match.color : zinc[700]} background={positive ? STATUS_COLOR.match.background : zinc[100]} size={8.5}>
+            <PdfBadge color={positive ? pdfPalette.accent : zinc[700]} background={positive ? pdfPalette.accentTint : zinc[100]} size={8.5}>
               {VERDICT_WORD[sheet.verdict.level]}
             </PdfBadge>
           </View>
-          <View style={{ marginTop: 10, paddingLeft: 9, borderLeftWidth: 2, borderLeftColor: positive ? '#10b981' : zinc[300] }}>
+          <View style={{ marginTop: 10, paddingLeft: 9, borderLeftWidth: 2, borderLeftColor: positive ? pdfPalette.accent : zinc[300] }}>
             <Text style={{ fontSize: 9.5, color: zinc[700], lineHeight: 1.45 }}>
               <Text style={{ fontFamily: 'Helvetica-Bold', color: zinc[900] }}>Recommendation: {sheet.verdict.nextStep}. </Text>
               {sheet.verdict.reason}
@@ -105,6 +105,18 @@ export default function BriefPdf({ view }: { view: BriefView }) {
                     </View>
                   )}
                 </View>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {sheet.questions.length > 0 && (
+          <View style={[pdfTheme.card, { marginTop: 8, padding: 10 }]} wrap={false}>
+            <Text style={s.eyebrow}>Ask in the interview</Text>
+            {sheet.questions.map((question, i) => (
+              <View key={question} style={{ flexDirection: 'row', marginTop: 5 }}>
+                <Text style={{ width: 12, fontSize: 9, color: pdfPalette.accent, fontFamily: 'Helvetica-Bold' }}>{i + 1}</Text>
+                <Text style={{ flex: 1, fontSize: 9, color: zinc[700], lineHeight: 1.4 }}>{question}</Text>
               </View>
             ))}
           </View>

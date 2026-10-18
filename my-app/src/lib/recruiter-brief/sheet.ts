@@ -23,6 +23,8 @@ export interface FitSheet {
   verdict: { nextStep: string; reason: string; level: RecommendationLevel };
   summary: Record<FitStatus, number>;
   rows: FitSheetRow[];
+  /** Suggested interview questions: the question alone, without its rationale. */
+  questions: string[];
 }
 
 const STATUS: Record<'strong' | 'relevant' | 'gap', FitStatus> = { strong: 'match', relevant: 'related', gap: 'gap' };
@@ -55,5 +57,6 @@ export function toFitSheet(view: BriefView): FitSheet {
       gap: rows.filter((r) => r.status === 'gap').length,
     },
     rows,
+    questions: brief.interviewQuestions.slice(0, 3).map((q) => q.question.trim()).filter(Boolean),
   };
 }

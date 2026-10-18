@@ -20,6 +20,7 @@ export function briefText(view: BriefView, origin = SITE_URL): string {
       out.push(`- ${row.requirement}: ${STATUS_LABEL[row.status]}. ${row.evidence}${row.projects.length ? ` (${row.projects.map((p) => p.title).join(', ')})` : ''}`);
     }
   }
+  if (sheet.questions.length) out.push('', 'Ask in the interview', ...sheet.questions.map((q, i) => `${i + 1}. ${q}`));
   out.push('', `Full brief and PDF: ${origin.replace(/\/$/, '')}/brief/${view.publicId}`, `Contact: ${candidate.email}`);
   return out.join('\n');
 }

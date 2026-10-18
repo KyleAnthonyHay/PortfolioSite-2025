@@ -53,12 +53,12 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
         <p className={eyebrow}>Fit check</p>
         <div className="mt-2 flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
           <h2 className="text-2xl tracking-tight text-zinc-900">{sheet.general ? 'General profile, not a role match' : sheet.title}</h2>
-          <p className={`flex items-center gap-2 text-[15px] font-medium ${positive ? 'text-emerald-600' : 'text-zinc-700'}`}>
-            <span className={`inline-block h-2 w-2 rounded-full ${positive ? 'bg-emerald-500' : 'bg-zinc-400'}`} aria-hidden />
+          <p className={`flex items-center gap-2 text-[15px] font-medium ${positive ? 'text-accent-blue' : 'text-zinc-700'}`}>
+            <span className={`inline-block h-2 w-2 rounded-full ${positive ? 'bg-accent-blue' : 'bg-zinc-400'}`} aria-hidden />
             {VERDICT_WORD[sheet.verdict.level]}
           </p>
         </div>
-        <p className={`mt-4 max-w-[70ch] border-l-2 pl-3 text-[15px] leading-relaxed text-zinc-700 ${positive ? 'border-emerald-500' : 'border-zinc-300'}`}>
+        <p className={`mt-4 max-w-[70ch] border-l-2 pl-3 text-[15px] leading-relaxed text-zinc-700 ${positive ? 'border-accent-blue' : 'border-zinc-300'}`}>
           <span className="font-medium text-zinc-900">Recommendation: {sheet.verdict.nextStep}.</span> {sheet.verdict.reason}
         </p>
       </section>
@@ -111,6 +111,20 @@ export default function BriefDocument({ view, compact = false }: { view: BriefVi
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {sheet.questions.length > 0 && (
+        <section className="mt-8">
+          <p className={eyebrow}>Ask in the interview</p>
+          <ol className="mt-3 space-y-2.5">
+            {sheet.questions.map((question, i) => (
+              <li key={question} className="flex gap-3 text-[15px] leading-snug text-zinc-700">
+                <span className="w-4 shrink-0 font-medium tabular-nums text-accent-blue">{i + 1}</span>
+                {question}
+              </li>
+            ))}
+          </ol>
         </section>
       )}
 
