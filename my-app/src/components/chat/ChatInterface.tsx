@@ -15,6 +15,7 @@ import Markdown from './Markdown';
 import SourcePills from './SourcePills';
 import WidgetRenderer from './widgets';
 import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
+import { FitWaitNotice } from './FitWaitNotice';
 import ChatSwitcher from './ChatSwitcher';
 import { chatTitle, loadArchive, MAX_CHATS, saveArchive, stampFor, type StoredChat } from './chat-history';
 import CallEndedEntry from './voice/CallEndedEntry';
@@ -698,6 +699,10 @@ export default function ChatInterface() {
   const briefId =
     latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : latestBrief?.kind === 'fit_report' ? latestBrief.brief?.publicId : undefined;
   const makeBrief = () => send(BRIEF_PROMPT);
+  // A fit check in progress: its step is running and its card hasn't arrived.
+  const fitRunning = messages.find(
+    (m) => m.role === 'assistant' && m.status === 'streaming' && m.steps.some((step) => step.tool === 'assess_job_fit' && step.status === 'running')
+  )?.id;
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -978,6 +983,7 @@ export default function ChatInterface() {
           </motion.div>
         )}
       </AnimatePresence>
+      <FitWaitNotice runId={fitRunning} />
       <BriefNudge
         engaged={fitShown || userMessages.length >= 3}
         ready={briefReady}

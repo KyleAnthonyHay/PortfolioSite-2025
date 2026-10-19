@@ -96,7 +96,7 @@ export default function SendBriefDialog({ publicId, open, onClose }: { publicId:
                     Send me this brief
                   </h2>
                   <p className="mt-1 text-[13px] leading-relaxed text-zinc-500">
-                    You&apos;ll get the brief and its PDF by email. Kyle-Anthony sees your address so he can follow up.
+                    You&apos;ll get the brief and its PDF by email.
                   </p>
                   <label htmlFor="send-brief-email" className="sr-only">
                     Email
@@ -130,6 +130,7 @@ export default function SendBriefDialog({ publicId, open, onClose }: { publicId:
                     {state === 'sending' && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/40 border-t-white" aria-hidden />}
                     {state === 'sending' ? 'Sending' : 'Send'}
                   </button>
+                  <p className="mt-2 text-center text-[12px] text-zinc-400">No spam. Just this brief.</p>
                 </motion.form>
               <AnimatePresence>
                 {state === 'sent' && (
