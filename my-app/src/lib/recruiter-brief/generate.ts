@@ -193,19 +193,21 @@ interface EvidenceSet {
   fitIds: Map<number, string>;
 }
 
-async function buildEvidence(queries: string[], broadQuery: string, fit: FitAssessment | null): Promise<EvidenceSet> {
+/** `fitResult` may still be running: retrieval doesn't need it, so the searches start alongside the fit check. */
+async function buildEvidence(queries: string[], broadQuery: string, fitResult: FitAssessment | null | Promise<FitAssessment | null>): Promise<EvidenceSet> {
   const search = (query: string, topK: number, recordType: 'project' | 'personal_info' = 'project') =>
     searchKnowledge(query, { recordType, topK }).catch((error) => {
       console.error('recruiter brief: search failed', error);
       return [] as KnowledgeHit[];
     });
 
-  const [perQuery, broad, personal, roles, sections] = await Promise.all([
+  const [perQuery, broad, personal, roles, sections, fit] = await Promise.all([
     Promise.all(queries.slice(0, 16).map((query) => search(query, 4))),
     search(broadQuery, 10),
     search(broadQuery, 3, 'personal_info'),
     projectRoles(),
     getKnowledgeSections(),
+    fitResult,
   ]);
 
   // Best score per section; at most four sections per project so one long
@@ -656,12 +658,12 @@ async function evaluateFitOnce(input: FitInput): Promise<FitEvaluation> {
   // 2. Fit check and retrieval run side by side.
   const broadQuery = [roleTitle, companyName, input.recruiterContext, jobDescription?.slice(0, 800)].filter(Boolean).join('. ') || 'software engineer, AI products, full-stack and iOS';
   const fitPromise = requirements.length > 0 ? assessRequirements(requirements.map((r) => r.text)) : Promise.resolve(null);
-  const fit = await fitPromise;
   const evidence = await buildEvidence(
     requirements.length > 0 ? requirements.map((r) => r.text) : [broadQuery],
     broadQuery,
-    fit
+    fitPromise
   );
+  const fit = await fitPromise;
 
   const roleMatches: RoleMatch[] =
     fit?.requirements.map((row, i) => ({

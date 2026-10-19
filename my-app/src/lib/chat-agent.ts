@@ -271,6 +271,8 @@ export async function* runAgent(
   let stepCounter = 0;
   let asked = false;
   let fitShown = false;
+  // The email to Kyle-Anthony runs while the answer streams; it is awaited before the turn ends.
+  let notice: { id: string; outcome: Promise<'sent' | 'skipped' | 'failed'> } | null = null;
 
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
@@ -281,181 +283,187 @@ export async function* runAgent(
   // Links the visitor actually shared; the model must not fetch any other.
   const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
-  for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
-    const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
-    const checkArrivals = round === 0 && (voice || context?.hiring || /\b(job|posting|listing|role|fit|brief)\b|https?:\/\//i.test(userMessage));
-    const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
-    // "Is he a fit for my team?" with nothing to judge against: ask what the role is rather than guess.
-    const mustAsk = round === 0 && !wantsBrief && !justAsked && isUnqualifiedFitQuestion(userMessage, history, context);
-    const allowTools = round < MAX_TOOL_ROUNDS;
-    const model = allowTools
-      ? getBaseModel().bindTools(
-          tools,
-          checkArrivals
-            ? { tool_choice: { type: 'function', function: { name: 'check_chat_updates' } } }
-            : wantsBrief
-            ? { tool_choice: { type: 'function', function: { name: 'assess_job_fit' } } }
-            : mustAsk
-              ? { tool_choice: { type: 'function', function: { name: 'ask_visitor' } } }
-              : forceTool
-              ? { tool_choice: 'required' }
-              : {}
-        )
-      : getBaseModel();
+  try {
+    for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
+      const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
+      const checkArrivals = round === 0 && (voice || context?.hiring || /\b(job|posting|listing|role|fit|brief)\b|https?:\/\//i.test(userMessage));
+      const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
+      // "Is he a fit for my team?" with nothing to judge against: ask what the role is rather than guess.
+      const mustAsk = round === 0 && !wantsBrief && !justAsked && isUnqualifiedFitQuestion(userMessage, history, context);
+      const allowTools = round < MAX_TOOL_ROUNDS;
+      const model = allowTools
+        ? getBaseModel().bindTools(
+            tools,
+            checkArrivals
+              ? { tool_choice: { type: 'function', function: { name: 'check_chat_updates' } } }
+              : wantsBrief
+              ? { tool_choice: { type: 'function', function: { name: 'assess_job_fit' } } }
+              : mustAsk
+                ? { tool_choice: { type: 'function', function: { name: 'ask_visitor' } } }
+                : forceTool
+                ? { tool_choice: 'required' }
+                : {}
+          )
+        : getBaseModel();
 
-    const stream = await model.stream(messages, { signal });
-    let gathered: AIMessageChunk | undefined;
-    let roundText = '';
+      const stream = await model.stream(messages, { signal });
+      let gathered: AIMessageChunk | undefined;
+      let roundText = '';
 
-    for await (const chunk of stream) {
-      gathered = gathered ? concat(gathered, chunk) : chunk;
-      const delta = typeof chunk.content === 'string' ? chunk.content : '';
-      if (delta) {
-        roundText += delta;
-        answer += delta;
-        yield { type: 'text', delta };
-      }
-    }
-
-    // Project names are not technologies. Correct this common model routing
-    // mistake before invoking the experience judge or showing a negative card.
-    const toolCalls = (gathered?.tool_calls ?? []).map((call) => {
-      if (call.name !== 'check_experience' || typeof call.args?.technology !== 'string') return call;
-      const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const technology = normalize(call.args.technology);
-      const project = catalog.find((item) => [item.title, ...item.aliases, ...item.corpusNames].some((name) => normalize(name) === technology));
-      return project ? { ...call, name: 'get_project', args: { name: project.title, query: userMessage } } : call;
-    });
-    if (toolCalls.length === 0) break;
-
-    messages.push(new AIMessage({ content: roundText, tool_calls: toolCalls }));
-
-    const steps = toolCalls.map((call) => {
-      stepCounter += 1;
-      const labels = describeToolCall(call.name, call.args ?? {});
-      return { id: `step-${stepCounter}`, call, labels, chip: stepChip(call.args ?? {}) };
-    });
-
-    for (const step of steps) {
-      yield {
-        type: 'step',
-        step: { id: step.id, tool: step.call.name, label: step.labels.running, status: 'running', chip: step.chip },
-      };
-    }
-
-    const results = await Promise.all(
-      steps.map(async (step) => {
-        const tool = tools.find((candidate) => candidate.name === step.call.name);
-        if (step.call.name === 'get_job_posting' && typeof step.call.args?.url === 'string' && !sharedText.includes(step.call.args.url.replace(/\/$/, ''))) {
-          return {
-            step,
-            result: {
-              content: 'The visitor did not share that link; never invent one. If they pasted a description, call assess_job_fit with no requirements: it reads the pasted text itself.',
-              citedProjectIds: [],
-            },
-          };
+      for await (const chunk of stream) {
+        gathered = gathered ? concat(gathered, chunk) : chunk;
+        const delta = typeof chunk.content === 'string' ? chunk.content : '';
+        if (delta) {
+          roundText += delta;
+          answer += delta;
+          yield { type: 'text', delta };
         }
-        if (!tool) return { step, result: { content: `Unknown tool ${step.call.name}`, citedProjectIds: [] } };
-        try {
-          const raw = await (tool as { invoke: (args: unknown) => Promise<unknown> }).invoke(step.call.args ?? {});
-          return { step, result: parseToolResult(raw) };
-        } catch (error) {
-          console.error(`Tool ${step.call.name} failed`, error);
-          return { step, result: { content: 'The tool failed; tell the visitor you could not look that up.', citedProjectIds: [] } };
-        }
-      })
-    );
-
-    if (signal?.aborted) return;
-
-    // A fit report already summarises everything; extra cards in the same
-    // round (a timeline, per-technology checks) would just crowd it.
-    const fitInRound = results.some(({ result }) => result.widget?.kind === 'fit_report');
-
-    for (const { step, result } of results) {
-      yield {
-        type: 'step',
-        step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done', chip: step.chip, detail: stepDetail(result) },
-      };
-      result.citedProjectIds.forEach((id) => cited.add(id));
-
-      let content = result.content;
-      if (result.widget?.kind === 'project' && earlierCards.has(result.widget.project.id)) {
-        // The card (and its walkthrough video) is already up from an earlier reply; answer in text.
-        content += `\n\n[The ${result.widget.project.title} card, with its walkthrough video, is already on screen from earlier in this chat, so it was not shown again. Answer in text. If the visitor asks to see the video or demo again, call show_demo.]`;
-      } else if (result.widget && (!fitInRound || result.widget.kind === 'fit_report')) {
-        const key = widgetKey(result.widget);
-        if (!shownWidgets.has(key)) {
-          shownWidgets.add(key);
-          projectIdsIn(result.widget).forEach((id) => shownProjects.add(id));
-          yield { type: 'widget', widget: result.widget };
-        }
-        content += '\n\n[A card with this information is shown to the visitor.]';
-      } else if (result.widget) {
-        content += '\n\n[Covered by the fit report card shown to the visitor.]';
       }
 
-      messages.push(new ToolMessage({ tool_call_id: step.call.id ?? step.id, content }));
-      if (result.widget?.kind === 'question') asked = true;
-    }
+      // Project names are not technologies. Correct this common model routing
+      // mistake before invoking the experience judge or showing a negative card.
+      const toolCalls = (gathered?.tool_calls ?? []).map((call) => {
+        if (call.name !== 'check_experience' || typeof call.args?.technology !== 'string') return call;
+        const normalize = (value: string) => value.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const technology = normalize(call.args.technology);
+        const project = catalog.find((item) => [item.title, ...item.aliases, ...item.corpusNames].some((name) => normalize(name) === technology));
+        return project ? { ...call, name: 'get_project', args: { name: project.title, query: userMessage } } : call;
+      });
+      if (toolCalls.length === 0) break;
 
-    // notify_kyle: a fit check is the moment a recruiter is serious, so Kyle-Anthony hears about it,
-    // with the brief it was written up as when there is one.
-    const report = results.find(({ result }) => result.widget?.kind === 'fit_report')?.result.widget;
-    if (report?.kind === 'fit_report' && !fitShown) {
-      fitShown = true;
-      stepCounter += 1;
-      const id = `step-${stepCounter}`;
-      const transcript = [...history, { role: 'user' as const, content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])];
-      const view = briefFor(report.brief?.publicId);
-      const notice = (
-        view
-          ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript })
-          : notifyFitCheck({ report, context, conversationId, transcript })
-      ).catch(() => 'failed' as const);
-      // Only shown when an email actually goes out; without a Resend key this is silent.
-      const outcome = await withTimeout(notice, 15000, 'failed' as const);
-      if (outcome === 'sent') {
-        yield { type: 'step', step: { id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the brief by email so he can follow up today'] } };
+      messages.push(new AIMessage({ content: roundText, tool_calls: toolCalls }));
+
+      const steps = toolCalls.map((call) => {
+        stepCounter += 1;
+        const labels = describeToolCall(call.name, call.args ?? {});
+        return { id: `step-${stepCounter}`, call, labels, chip: stepChip(call.args ?? {}) };
+      });
+
+      for (const step of steps) {
+        yield {
+          type: 'step',
+          step: { id: step.id, tool: step.call.name, label: step.labels.running, status: 'running', chip: step.chip },
+        };
       }
+
+      const results = await Promise.all(
+        steps.map(async (step) => {
+          const tool = tools.find((candidate) => candidate.name === step.call.name);
+          if (step.call.name === 'get_job_posting' && typeof step.call.args?.url === 'string' && !sharedText.includes(step.call.args.url.replace(/\/$/, ''))) {
+            return {
+              step,
+              result: {
+                content: 'The visitor did not share that link; never invent one. If they pasted a description, call assess_job_fit with no requirements: it reads the pasted text itself.',
+                citedProjectIds: [],
+              },
+            };
+          }
+          if (!tool) return { step, result: { content: `Unknown tool ${step.call.name}`, citedProjectIds: [] } };
+          try {
+            const raw = await (tool as { invoke: (args: unknown) => Promise<unknown> }).invoke(step.call.args ?? {});
+            return { step, result: parseToolResult(raw) };
+          } catch (error) {
+            console.error(`Tool ${step.call.name} failed`, error);
+            return { step, result: { content: 'The tool failed; tell the visitor you could not look that up.', citedProjectIds: [] } };
+          }
+        })
+      );
+
+      if (signal?.aborted) return;
+
+      // A fit report already summarises everything; extra cards in the same
+      // round (a timeline, per-technology checks) would just crowd it.
+      const fitInRound = results.some(({ result }) => result.widget?.kind === 'fit_report');
+
+      for (const { step, result } of results) {
+        yield {
+          type: 'step',
+          step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done', chip: step.chip, detail: stepDetail(result) },
+        };
+        result.citedProjectIds.forEach((id) => cited.add(id));
+
+        let content = result.content;
+        if (result.widget?.kind === 'project' && earlierCards.has(result.widget.project.id)) {
+          // The card (and its walkthrough video) is already up from an earlier reply; answer in text.
+          content += `\n\n[The ${result.widget.project.title} card, with its walkthrough video, is already on screen from earlier in this chat, so it was not shown again. Answer in text. If the visitor asks to see the video or demo again, call show_demo.]`;
+        } else if (result.widget && (!fitInRound || result.widget.kind === 'fit_report')) {
+          const key = widgetKey(result.widget);
+          if (!shownWidgets.has(key)) {
+            shownWidgets.add(key);
+            projectIdsIn(result.widget).forEach((id) => shownProjects.add(id));
+            yield { type: 'widget', widget: result.widget };
+          }
+          content += '\n\n[A card with this information is shown to the visitor.]';
+        } else if (result.widget) {
+          content += '\n\n[Covered by the fit report card shown to the visitor.]';
+        }
+
+        messages.push(new ToolMessage({ tool_call_id: step.call.id ?? step.id, content }));
+        if (result.widget?.kind === 'question') asked = true;
+      }
+
+      // notify_kyle: a fit check is the moment a recruiter is serious, so Kyle-Anthony hears about it,
+      // with the brief it was written up as when there is one.
+      const report = results.find(({ result }) => result.widget?.kind === 'fit_report')?.result.widget;
+      if (report?.kind === 'fit_report' && !fitShown) {
+        fitShown = true;
+        stepCounter += 1;
+        const id = `step-${stepCounter}`;
+        const transcript = [...history, { role: 'user' as const, content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])];
+        const view = briefFor(report.brief?.publicId);
+        const sending = (
+          view
+            ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript })
+            : notifyFitCheck({ report, context, conversationId, transcript })
+        ).catch(() => 'failed' as const);
+        notice = { id, outcome: withTimeout(sending, 15000, 'failed' as const) };
+      }
+
+      // A question card ends the turn; the visitor's choice starts the next one.
+      if (asked) break;
     }
 
-    // A question card ends the turn; the visitor's choice starts the next one.
-    if (asked) break;
+    // A fit question answered without a posting or a typed list gets a general
+    // answer; the posting is what a real check needs, so always ask for it.
+    const fitAsked = FIT_QUESTION.test(userMessage) || (justAsked && history.some((m) => m.role === 'user' && FIT_QUESTION.test(m.content)));
+    const postingShared = /https?:\/\//i.test(sharedText) || [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content)].some(looksLikePosting);
+    if (fitAsked && !postingShared && !fitShown && !asked && answer.trim() && !/\b(posting|job description|requirements)\b/i.test(answer)) {
+      const delta = `\n\nIf you share the posting link or paste the job description, I can check him against its actual requirements.`;
+      answer += delta;
+      yield { type: 'text', delta };
+    }
+
+    yield { type: 'answered' };
+
+    // Sources list every project the answer rests on: the ones it names first,
+    // then the ones its cards show. Projects a tool touched but nothing on
+    // screen uses (a check hidden behind a fit report) are left out.
+    const named = catalog.filter((project) => [...cited, ...shownProjects].includes(project.id) && answer.includes(project.title)).map((p) => p.id);
+    const sources = [...new Set([...named, ...[...cited].filter((id) => shownProjects.has(id))])]
+      .slice(0, 6)
+      .map(toSource)
+      .filter((source): source is SourceRef => source !== null);
+    if (sources.length > 0) yield { type: 'sources', sources };
+
+    if (answer.trim().length > 0 && !asked && !signal?.aborted) {
+      const items = await withTimeout(
+        suggestFollowUps(userMessage, answer).catch(() => [] as string[]),
+        5000,
+        [] as string[]
+      );
+      // After a fit check, one follow-up always offers a way to reach him.
+      if (fitShown && items.length > 0) items.splice(Math.min(items.length, 3) - 1, 1, "I'd like Kyle-Anthony to follow up with me.");
+      if (items.length > 0) yield { type: 'suggestions', items };
+    }
+
+    // Only shown when an email actually goes out; without a Resend key this is silent.
+    if (notice && (await notice.outcome) === 'sent') {
+      yield { type: 'step', step: { id: notice.id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the brief by email so he can follow up today'] } };
+    }
+
+    yield { type: 'done' };
+  } finally {
+    // An aborted or failed turn still lets the email finish rather than cutting it off.
+    if (notice) await notice.outcome;
   }
-
-  // A fit question answered without a posting or a typed list gets a general
-  // answer; the posting is what a real check needs, so always ask for it.
-  const fitAsked = FIT_QUESTION.test(userMessage) || (justAsked && history.some((m) => m.role === 'user' && FIT_QUESTION.test(m.content)));
-  const postingShared = /https?:\/\//i.test(sharedText) || [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content)].some(looksLikePosting);
-  if (fitAsked && !postingShared && !fitShown && !asked && answer.trim() && !/\b(posting|job description|requirements)\b/i.test(answer)) {
-    const delta = `\n\nIf you share the posting link or paste the job description, I can check him against its actual requirements.`;
-    answer += delta;
-    yield { type: 'text', delta };
-  }
-
-  yield { type: 'answered' };
-
-  // Sources list every project the answer rests on: the ones it names first,
-  // then the ones its cards show. Projects a tool touched but nothing on
-  // screen uses (a check hidden behind a fit report) are left out.
-  const named = catalog.filter((project) => [...cited, ...shownProjects].includes(project.id) && answer.includes(project.title)).map((p) => p.id);
-  const sources = [...new Set([...named, ...[...cited].filter((id) => shownProjects.has(id))])]
-    .slice(0, 6)
-    .map(toSource)
-    .filter((source): source is SourceRef => source !== null);
-  if (sources.length > 0) yield { type: 'sources', sources };
-
-  if (answer.trim().length > 0 && !asked && !signal?.aborted) {
-    const items = await withTimeout(
-      suggestFollowUps(userMessage, answer).catch(() => [] as string[]),
-      5000,
-      [] as string[]
-    );
-    // After a fit check, one follow-up always offers a way to reach him.
-    if (fitShown && items.length > 0) items.splice(Math.min(items.length, 3) - 1, 1, "I'd like Kyle-Anthony to follow up with me.");
-    if (items.length > 0) yield { type: 'suggestions', items };
-  }
-
-  yield { type: 'done' };
 }
