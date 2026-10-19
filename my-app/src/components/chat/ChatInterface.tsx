@@ -194,6 +194,14 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
     }
     case 'widget':
       return { ...message, widgets: [...message.widgets, event.widget] };
+    case 'brief': {
+      // The fit card went up first; its brief arrives once written.
+      const index = message.widgets.findLastIndex((w) => w.kind === 'fit_report');
+      if (index < 0) return message;
+      const widget = message.widgets[index];
+      const filled = widget.kind === 'fit_report' ? { ...widget, brief: event.brief, briefPending: false } : widget;
+      return { ...message, widgets: message.widgets.map((w, i) => (i === index ? filled : w)) };
+    }
     case 'answered':
       return { ...message, answered: true };
     case 'sources':

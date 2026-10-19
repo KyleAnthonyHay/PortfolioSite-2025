@@ -13,7 +13,8 @@ import { allTools, describeToolCall, parseToolResult, type ToolResult } from './
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
 import { notifyFitCheck, notifyRecruiterBrief } from './notify';
-import { briefFor, makeFitTool } from './fit-tool';
+import { makeFitTool } from './fit-tool';
+import type { BriefView } from './recruiter-brief/view';
 import { looksLikePosting } from './recruiter-brief/tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
@@ -238,6 +239,13 @@ ${CAREER_FACTS}`
     : [];
 }
 
+interface BriefJob {
+  job: Promise<BriefView | undefined>;
+  stepId?: string;
+  done?: { view?: BriefView };
+  sent?: boolean;
+}
+
 function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
   return Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
 }
@@ -273,11 +281,35 @@ export async function* runAgent(
   let fitShown = false;
   // The email to Kyle-Anthony runs while the answer streams; it is awaited before the turn ends.
   let notice: { id: string; outcome: Promise<'sent' | 'skipped' | 'failed'> } | null = null;
+  // The fit card shows as soon as the rows are judged; its brief is written while the answer streams.
+  // Set from the fit tool's callback, so the cast keeps TypeScript from narrowing it to null.
+  let brief = null as BriefJob | null;
+  /** The brief's events once it is written, exactly once. */
+  const briefEvents = (): ChatEvent[] => {
+    if (!brief?.done || brief.sent || !brief.stepId) return [];
+    brief.sent = true;
+    const { view } = brief.done;
+    return [
+      { type: 'brief', brief: view && { publicId: view.publicId, nextStep: view.brief.recommendation.nextStep, level: view.brief.recommendation.level } },
+      { type: 'step', step: { id: brief.stepId, tool: 'generate_recruiter_brief', label: view ? 'Wrote the one-page brief' : 'The one-page brief could not be written', status: 'done' } },
+    ];
+  };
 
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
-  const fitTool = makeFitTool({ receivedAt: options.receivedAt, userMessage, history, context, conversationId });
+  const fitTool = makeFitTool({
+    receivedAt: options.receivedAt,
+    userMessage,
+    history,
+    context,
+    conversationId,
+    onBrief: (job) => {
+      const current: BriefJob = { job };
+      brief = current;
+      void job.then((view) => { current.done = { view }; });
+    },
+  });
   const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
   const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
   // Links the visitor actually shared; the model must not fetch any other.
@@ -288,13 +320,18 @@ export async function* runAgent(
       const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
       const checkArrivals = round === 0 && (voice || context?.hiring || /\b(job|posting|listing|role|fit|brief)\b|https?:\/\//i.test(userMessage));
       const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
+      // A posting pasted or linked in this very message, with a fit or brief question: nothing older
+      // could be meant, so the fit check runs straight away instead of after a check of arrivals.
+      const postingFit = round === 0 && !voice && !justAsked && (/https?:\/\//i.test(userMessage) || looksLikePosting(userMessage)) && (FIT_QUESTION.test(userMessage) || wantsBrief);
       // "Is he a fit for my team?" with nothing to judge against: ask what the role is rather than guess.
       const mustAsk = round === 0 && !wantsBrief && !justAsked && isUnqualifiedFitQuestion(userMessage, history, context);
       const allowTools = round < MAX_TOOL_ROUNDS;
       const model = allowTools
         ? getBaseModel().bindTools(
             tools,
-            checkArrivals
+            postingFit
+              ? { tool_choice: { type: 'function', function: { name: 'assess_job_fit' } } }
+              : checkArrivals
               ? { tool_choice: { type: 'function', function: { name: 'check_chat_updates' } } }
               : wantsBrief
               ? { tool_choice: { type: 'function', function: { name: 'assess_job_fit' } } }
@@ -318,6 +355,7 @@ export async function* runAgent(
           answer += delta;
           yield { type: 'text', delta };
         }
+        for (const event of briefEvents()) yield event;
       }
 
       // Project names are not technologies. Correct this common model routing
@@ -410,13 +448,24 @@ export async function* runAgent(
         stepCounter += 1;
         const id = `step-${stepCounter}`;
         const transcript = [...history, { role: 'user' as const, content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])];
-        const view = briefFor(report.brief?.publicId);
-        const sending = (
-          view
-            ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript })
-            : notifyFitCheck({ report, context, conversationId, transcript })
-        ).catch(() => 'failed' as const);
-        notice = { id, outcome: withTimeout(sending, 15000, 'failed' as const) };
+        const job = brief?.job ?? Promise.resolve(undefined);
+        if (brief) {
+          stepCounter += 1;
+          brief.stepId = `step-${stepCounter}`;
+          yield { type: 'step', step: { id: brief.stepId, tool: 'generate_recruiter_brief', label: 'Writing the one-page brief', status: 'running' } };
+        }
+        // The email carries the brief, so it goes once the brief is written (or without it if that failed).
+        const sending = job.then((view) =>
+          withTimeout(
+            (view
+              ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript })
+              : notifyFitCheck({ report, context, conversationId, transcript })
+            ).catch(() => 'failed' as const),
+            15000,
+            'failed' as const
+          )
+        );
+        notice = { id, outcome: sending };
       }
 
       // A question card ends the turn; the visitor's choice starts the next one.
@@ -454,6 +503,11 @@ export async function* runAgent(
       // After a fit check, one follow-up always offers a way to reach him.
       if (fitShown && items.length > 0) items.splice(Math.min(items.length, 3) - 1, 1, "I'd like Kyle-Anthony to follow up with me.");
       if (items.length > 0) yield { type: 'suggestions', items };
+    }
+
+    if (brief) {
+      await brief.job;
+      for (const event of briefEvents()) yield event;
     }
 
     // Only shown when an email actually goes out; without a Resend key this is silent.
