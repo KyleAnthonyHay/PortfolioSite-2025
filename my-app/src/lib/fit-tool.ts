@@ -175,7 +175,7 @@ export function makeFitTool(options: {
       description:
         "Judge Kyle-Anthony against a job: a posting link or pasted description (in this message or earlier in the chat), or a list of requirements the visitor typed. The tool finds and reads any posting itself and extracts its requirements, so for a posting leave requirements empty. Only when the visitor typed their own list (no posting), pass it as requirements, one short phrase each. Shows a supported match / needs confirmation / confirmed gap report with an overall read and recommended next step. The report is also the shareable recruiter brief (download, copy, share link, email), so use it too when the visitor wants something to send a hiring manager: 'create a recruiter brief', 'a one-pager on him for this role'.",
       schema: z.object({
-        postingId: z.string().optional().describe('Actual posting source ID from check_chat_updates. Required for a historical posting, including a typed URL received during a voice turn. Do not select an older source when the visitor is promising a new posting.'),
+        postingId: z.string().optional().describe('Actual posting source ID from CHAT ARRIVALS or check_chat_updates. Required for a historical posting, including a typed URL received during a voice turn. Do not select an older source when the visitor is promising a new posting.'),
         role: z.string().optional().describe("Role title if the visitor gave one, e.g. 'Senior iOS Engineer'. Never invent one."),
         requirements: z
           .array(z.string())

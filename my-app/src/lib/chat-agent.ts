@@ -21,6 +21,8 @@ import { CAREER_FACTS } from './facts';
 import { createStageModel, stageModel } from './fit-models';
 
 const MAX_TOOL_ROUNDS = 4;
+/** Bookkeeping the visitor doesn't need to watch: the voice agent's check of what arrived. */
+const HIDDEN_STEPS = new Set(['check_chat_updates']);
 const MODEL_NAME = stageModel('chat');
 
 /** What the intake step told us, as a prompt section. The posting is read once and cached. */
@@ -49,7 +51,9 @@ const VOICE_SECTION = `
 ## Voice call
 This question was spoken on a voice call. Your answer is read aloud by a voice model while any cards appear in the chat on screen. Answer in one to three short spoken sentences: no Markdown, lists, headings, links or URLs, and no project page paths. When a card is shown, name it in a few words ("the fit report is on screen") and let it carry the detail. For booking time or leaving a note, say the card is ready for them to check and confirm; never say a meeting was booked or a note was sent. The question was transcribed from speech, so a project name may be misheard ("Ceyl Note" for SelahNote, "Yarn script" for YarnScript); read it as the closest project name rather than saying no such project exists.`;
 
-function systemPrompt(visitor = ''): string {
+function systemPrompt(visitor = '', voice = false): string {
+  // Voice turns read arrivals with check_chat_updates for stability; typed chat has them in CHAT ARRIVALS below.
+  const pickPosting = voice ? 'check_chat_updates first, then select' : 'From the posting sources in CHAT ARRIVALS, select';
   const today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   const projectNames = catalog.map((p) => p.title).join(', ');
 
@@ -69,8 +73,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting to leave him a message, pass something on, or have him get back to them → send_note, with a short draft in their voice from what they told you.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
-- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → assess_job_fit: the fit report is the shareable brief, with download, copy, share-link and email buttons on its card. check_chat_updates first, select the supplied postingId the visitor intends; do not paste a posting into the call. If a fit report for that posting is already on screen, point to its buttons instead of running it again. Never say a brief was made unless this tool ran.
-- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → check_chat_updates first, then assess_job_fit with the intended postingId and no requirements. It reads that selected source, reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
+- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → assess_job_fit: the fit report is the shareable brief, with download, copy, share-link and email buttons on its card. ${pickPosting} the supplied postingId the visitor intends; do not paste a posting into the call. If a fit report for that posting is already on screen, point to its buttons instead of running it again. Never say a brief was made unless this tool ran.
+- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → assess_job_fit with the intended postingId (${voice ? 'check_chat_updates first' : 'from CHAT ARRIVALS'}) and no requirements. It reads that selected source, reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
 - A list of requirements the visitor typed, with no posting → assess_job_fit with that list. ${REQUIREMENT_RULES} Do not call other tools in that turn.
 - "Is he a fit?" with only a role title (from the intake or the chat), when the visitor listed no requirements and shared no posting → never assess_job_fit, and never guess what such a posting usually asks for. Call get_experience with the role as the query, describe his relevant experience in two or three sentences without saying whether he is a fit, and ask them to share the posting link or paste the description so you can judge the real requirements. If their message names any requirements at all (technologies, years, a degree), that is a typed list: use the rule above.
 - To read a posting's contents without judging fit → get_job_posting with the visitor's link.
@@ -263,7 +267,7 @@ export async function* runAgent(
   if (signal?.aborted) return;
   const visitor = await visitorSection(context);
   const messages: BaseMessage[] = [
-    new SystemMessage(systemPrompt(visitor.text) + (voice ? VOICE_SECTION : '') + '\nCHAT ARRIVALS (actual received input):\n' + JSON.stringify(chatArrivalSummary({ userMessage, history, context, receivedAt: options.receivedAt, voice })) + '\nBefore discussing a posting, check these arrivals. If the visitor intends to send a new one but no new source arrived, acknowledge and wait; do not assess an older one as if it just arrived. Select a historical source only when the visitor wants that source. Missing portfolio documentation means Needs confirmation, never a known gap.'),
+    new SystemMessage(systemPrompt(visitor.text, voice) + (voice ? VOICE_SECTION : '') + '\nCHAT ARRIVALS (actual received input):\n' + JSON.stringify(chatArrivalSummary({ userMessage, history, context, receivedAt: options.receivedAt, voice })) + '\nBefore discussing a posting, check these arrivals. If the visitor intends to send a new one but no new source arrived, acknowledge and wait; do not assess an older one as if it just arrived. Select a historical source only when the visitor wants that source. Missing portfolio documentation means Needs confirmation, never a known gap.'),
     ...toLangChain(history.slice(-12)),
     // The reminder rides on the model's copy only; tools still see the visitor's own words.
     new HumanMessage(voice ? `${userMessage}\n\n[Spoken on the call. Reply in at most three short spoken sentences: no lists, no Markdown.]` : userMessage),
@@ -311,14 +315,15 @@ export async function* runAgent(
     },
   });
   const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
-  const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
+  const tools = [...(voice ? [updatesTool] : []), ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
   // Links the visitor actually shared; the model must not fetch any other.
   const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
       const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
-      const checkArrivals = round === 0 && (voice || context?.hiring || /\b(job|posting|listing|role|fit|brief)\b|https?:\/\//i.test(userMessage));
+      // The arrivals check keeps voice handoffs stable; typed chat reads the same arrivals from the system prompt.
+      const checkArrivals = round === 0 && voice;
       const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
       // A posting pasted or linked in this very message, with a fit or brief question: nothing older
       // could be meant, so the fit check runs straight away instead of after a check of arrivals.
@@ -377,7 +382,7 @@ export async function* runAgent(
         return { id: `step-${stepCounter}`, call, labels, chip: stepChip(call.args ?? {}) };
       });
 
-      for (const step of steps) {
+      for (const step of steps.filter((step) => !HIDDEN_STEPS.has(step.call.name))) {
         yield {
           type: 'step',
           step: { id: step.id, tool: step.call.name, label: step.labels.running, status: 'running', chip: step.chip },
@@ -414,10 +419,12 @@ export async function* runAgent(
       const fitInRound = results.some(({ result }) => result.widget?.kind === 'fit_report');
 
       for (const { step, result } of results) {
-        yield {
-          type: 'step',
-          step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done', chip: step.chip, detail: stepDetail(result) },
-        };
+        if (!HIDDEN_STEPS.has(step.call.name)) {
+          yield {
+            type: 'step',
+            step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done', chip: step.chip, detail: stepDetail(result) },
+          };
+        }
         result.citedProjectIds.forEach((id) => cited.add(id));
 
         let content = result.content;
