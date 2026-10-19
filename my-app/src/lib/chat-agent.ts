@@ -69,8 +69,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - Wanting to leave him a message, pass something on, or have him get back to them → send_note, with a short draft in their voice from what they told you.
 - Asking for his résumé or CV (to see, view, or download it) → get_resume. If they also ask how to reach him, call get_background with 'contact' too.
 - Skills overview, education, availability, contact → get_background. Other background questions → search_background.
-- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → assess_job_fit: the fit report is the shareable brief, with download, copy, share-link and email buttons on its card. check_chat_updates first, select the supplied postingId the visitor intends; do not paste a posting into the call. If a fit report for that posting is already on screen, point to its buttons instead of running it again. Never say a brief was made unless this tool ran.
-- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → check_chat_updates first, then assess_job_fit with the intended postingId and no requirements. It reads that selected source, reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
+- Wanting something to send a hiring manager (a recruiter brief, a candidate profile, "summarize him for this role", a one-pager) → assess_job_fit: the fit report is the shareable brief, with download, copy, share-link and email buttons on its card. On a voice call, check_chat_updates first; select the supplied postingId the visitor intends; do not paste a posting into the call. If a fit report for that posting is already on screen, point to its buttons instead of running it again. Never say a brief was made unless this tool ran.
+- "Is he a fit?" with a job posting URL, a pasted job description, or a posting shared earlier → on a voice call, check_chat_updates first; then assess_job_fit with the intended postingId and no requirements. It reads that selected source, reads it and extracts the requirements itself. Never call get_job_posting with a link the visitor didn't give, and never make up a link.
 - A list of requirements the visitor typed, with no posting → assess_job_fit with that list. ${REQUIREMENT_RULES} Do not call other tools in that turn.
 - "Is he a fit?" with only a role title (from the intake or the chat), when the visitor listed no requirements and shared no posting → never assess_job_fit, and never guess what such a posting usually asks for. Call get_experience with the role as the query, describe his relevant experience in two or three sentences without saying whether he is a fit, and ask them to share the posting link or paste the description so you can judge the real requirements. If their message names any requirements at all (technologies, years, a degree), that is a typed list: use the rule above.
 - To read a posting's contents without judging fit → get_job_posting with the visitor's link.
@@ -311,14 +311,15 @@ export async function* runAgent(
     },
   });
   const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
-  const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
+  // The arrivals check keeps the voice agent steady on hand-offs; typed chat reads the summary above.
+  const tools = [...(voice ? [updatesTool] : []), ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
   // Links the visitor actually shared; the model must not fetch any other.
   const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
       const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
-      const checkArrivals = round === 0 && (voice || context?.hiring || /\b(job|posting|listing|role|fit|brief)\b|https?:\/\//i.test(userMessage));
+      const checkArrivals = round === 0 && !!voice;
       const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
       // A posting pasted or linked in this very message, with a fit or brief question: nothing older
       // could be meant, so the fit check runs straight away instead of after a check of arrivals.
@@ -377,7 +378,10 @@ export async function* runAgent(
         return { id: `step-${stepCounter}`, call, labels, chip: stepChip(call.args ?? {}) };
       });
 
+      // The arrivals check is bookkeeping for the voice agent, not something the visitor needs to see.
+      const shown = (name: string) => name !== 'check_chat_updates';
       for (const step of steps) {
+        if (!shown(step.call.name)) continue;
         yield {
           type: 'step',
           step: { id: step.id, tool: step.call.name, label: step.labels.running, status: 'running', chip: step.chip },
@@ -414,7 +418,7 @@ export async function* runAgent(
       const fitInRound = results.some(({ result }) => result.widget?.kind === 'fit_report');
 
       for (const { step, result } of results) {
-        yield {
+        if (shown(step.call.name)) yield {
           type: 'step',
           step: { id: step.id, tool: step.call.name, label: step.labels.done, status: 'done', chip: step.chip, detail: stepDetail(result) },
         };
