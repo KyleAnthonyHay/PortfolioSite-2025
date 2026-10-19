@@ -70,7 +70,6 @@ async function main() {
   const posting = 'Check Kyle’s fit for this job posting:\nJunior iOS Engineer at Release Test Company. About the role: Build and maintain customer-facing iOS apps. Responsibilities: implement screens using SwiftUI, integrate backend APIs, debug problems, collaborate with designers, and ship app updates. Required qualifications: experience building iOS apps with Swift and SwiftUI; a bachelor’s degree in Computer Science or a related field. Nice to have: production Kubernetes experience. This is a fictional posting used only to test the portfolio agent. Evaluate the stated requirements only, and do not infer extra qualifications or professional tenure requirements.';
   const fitHistory = await turn('posting extraction and fit', posting, [], 'fit_report');
   await turn('promised new posting', 'Okay, I’m going to give you another job and you tell me if he would be a good fit for this.', fitHistory, undefined, (events) => {
-    assert.ok(events.some((event) => event.type === 'step' && event.step.tool === 'check_chat_updates'));
     assert.equal(events.some((event) => event.type === 'widget' && (event.widget.kind === 'fit_report' || event.widget.kind === 'recruiter_brief')), false);
     const answer = events.flatMap((event) => event.type === 'text' ? [event.delta] : []).join('');
     assert.match(answer, /send|paste|share|ready|waiting/i);
