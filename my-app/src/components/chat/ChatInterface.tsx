@@ -699,10 +699,18 @@ export default function ChatInterface() {
   const briefId =
     latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : latestBrief?.kind === 'fit_report' ? latestBrief.brief?.publicId : undefined;
   const makeBrief = () => send(BRIEF_PROMPT);
-  // A fit check in progress: its step is running and its card hasn't arrived.
-  const fitRunning = messages.find(
-    (m) => m.role === 'assistant' && m.status === 'streaming' && m.steps.some((step) => step.tool === 'assess_job_fit' && step.status === 'running')
-  )?.id;
+  // A fit check in progress, from the moment it is asked until its brief is written. A posting checked
+  // before reuses its saved result, so the fit step alone can finish in a second while the wait is the brief.
+  // Keyed by the visitor's message, so the card stays put while the request becomes a task.
+  const fitRunning = (() => {
+    const index = messages.findIndex((m) => m.role === 'assistant' && m.status === 'streaming' && !m.voice);
+    if (index < 0) return undefined;
+    const answer = messages[index] as AssistantMessage;
+    const asked = messages.slice(0, index).findLast((m): m is UserMessage => m.role === 'user');
+    const fitStep = answer.steps.some((step) => step.tool === 'assess_job_fit' || step.tool === 'generate_recruiter_brief');
+    const fitAsk = !!asked && (asked.content === BRIEF_PROMPT || /\b(fit|brief|match|qualified)\b/i.test(asked.content));
+    return fitStep || fitAsk ? asked?.id ?? answer.id : undefined;
+  })();
 
   return (
     <div className="flex h-full min-h-0 flex-col">

@@ -5,13 +5,13 @@ import { AnimatePresence, motion } from "motion/react";
 import { Clock, X } from "lucide-react";
 import { useMediaQuery } from "@/lib/use-media-query";
 
-/** Roughly how long a fit check takes before its card shows. */
+/** Roughly how long a fit check takes, brief included. */
 const FIT_MS = 30_000;
 
 /**
  * While a fit check runs, a small card says how long it takes, so a visitor
  * waits for it rather than wondering whether the chat stalled. It leaves when
- * the fit card arrives, or when dismissed. The bar along the bottom fills over
+ * the answer and its brief are done, or when dismissed. The bar along the bottom fills over
  * the expected time.
  */
 export function FitWaitNotice({ runId }: { /** The answer running a fit check, if one is. */ runId?: string }) {
