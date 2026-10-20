@@ -81,11 +81,12 @@ export default function SendBriefDialog({ publicId, open, onClose }: { publicId:
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
             className="relative w-full overflow-hidden rounded-t-[24px] border border-zinc-200/80 bg-white p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_2px_8px_-4px_rgba(0,0,0,0.06),0_24px_48px_-24px_rgba(0,0,0,0.3)] sm:w-[380px] sm:rounded-[20px] sm:pb-5"
           >
+            {/* Above the form, which is positioned and comes later, so it would otherwise take the click. */}
             <button
               type="button"
               onClick={onClose}
               aria-label="Close"
-              className="absolute right-3 top-3 rounded-full p-1.5 any-pointer-coarse:p-2.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
+              className="absolute right-3 top-3 z-10 rounded-full p-1.5 any-pointer-coarse:p-2.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-zinc-900"
             >
               <X className="h-4 w-4" />
             </button>
