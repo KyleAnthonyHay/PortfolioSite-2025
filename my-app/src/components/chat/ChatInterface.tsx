@@ -707,9 +707,9 @@ export default function ChatInterface() {
     if (index < 0) return undefined;
     const answer = messages[index] as AssistantMessage;
     const asked = messages.slice(0, index).findLast((m): m is UserMessage => m.role === 'user');
+    // Only once a fit check has actually started, so a fit question that gets a quick reply never shows it.
     const fitStep = answer.steps.some((step) => step.tool === 'assess_job_fit' || step.tool === 'generate_recruiter_brief');
-    const fitAsk = !!asked && (asked.content === BRIEF_PROMPT || /\b(fit|brief|match|qualified)\b/i.test(asked.content));
-    return fitStep || fitAsk ? asked?.id ?? answer.id : undefined;
+    return fitStep ? asked?.id ?? answer.id : undefined;
   })();
 
   return (
