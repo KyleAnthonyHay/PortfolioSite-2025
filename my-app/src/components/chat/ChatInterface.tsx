@@ -15,6 +15,7 @@ import Markdown from './Markdown';
 import SourcePills from './SourcePills';
 import WidgetRenderer from './widgets';
 import { BRIEF_PROMPT, BriefButton, BriefNudge } from './BriefEntry';
+import { FitWaitNotice } from './FitWaitNotice';
 import ChatSwitcher from './ChatSwitcher';
 import { chatTitle, loadArchive, MAX_CHATS, saveArchive, stampFor, type StoredChat } from './chat-history';
 import CallEndedEntry from './voice/CallEndedEntry';
@@ -194,6 +195,14 @@ function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessa
     }
     case 'widget':
       return { ...message, widgets: [...message.widgets, event.widget] };
+    case 'brief': {
+      // The fit card went up first; its brief arrives once written.
+      const index = message.widgets.findLastIndex((w) => w.kind === 'fit_report');
+      if (index < 0) return message;
+      const widget = message.widgets[index];
+      const filled = widget.kind === 'fit_report' ? { ...widget, brief: event.brief, briefPending: false } : widget;
+      return { ...message, widgets: message.widgets.map((w, i) => (i === index ? filled : w)) };
+    }
     case 'answered':
       return { ...message, answered: true };
     case 'sources':
@@ -690,6 +699,18 @@ export default function ChatInterface() {
   const briefId =
     latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : latestBrief?.kind === 'fit_report' ? latestBrief.brief?.publicId : undefined;
   const makeBrief = () => send(BRIEF_PROMPT);
+  // A fit check in progress, from the moment it is asked until its brief is written. A posting checked
+  // before reuses its saved result, so the fit step alone can finish in a second while the wait is the brief.
+  // Keyed by the visitor's message, so the card stays put while the request becomes a task.
+  const fitRunning = (() => {
+    const index = messages.findIndex((m) => m.role === 'assistant' && m.status === 'streaming' && !m.voice);
+    if (index < 0) return undefined;
+    const answer = messages[index] as AssistantMessage;
+    const asked = messages.slice(0, index).findLast((m): m is UserMessage => m.role === 'user');
+    // Only once a fit check has actually started, so a fit question that gets a quick reply never shows it.
+    const fitStep = answer.steps.some((step) => step.tool === 'assess_job_fit' || step.tool === 'generate_recruiter_brief');
+    return fitStep ? asked?.id ?? answer.id : undefined;
+  })();
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -970,6 +991,7 @@ export default function ChatInterface() {
           </motion.div>
         )}
       </AnimatePresence>
+      <FitWaitNotice runId={fitRunning} />
       <BriefNudge
         engaged={fitShown || userMessages.length >= 3}
         ready={briefReady}
