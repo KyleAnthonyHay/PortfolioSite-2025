@@ -37,6 +37,8 @@ export function chatArrivalSummary(options: ChatArrivalOptions) {
     newMessagesSincePreviousAnswer: snapshot.newMessagesSincePreviousAnswer.map(({ id, receivedAt, channel }) => ({ id, receivedAt, channel })),
     newMessagesSincePreviousVoiceAnswer: snapshot.newMessagesSincePreviousVoiceAnswer.map(({ id, receivedAt, channel }) => ({ id, receivedAt, channel })),
     postingSources: snapshot.postingSources.map(({ id, url, receivedAt, channel }) => ({ id, url, receivedAt, channel })),
-    instruction: 'Call check_chat_updates to read these actual messages before responding to a voice handoff or assessing a posting.',
+    instruction: options.voice
+      ? 'Call check_chat_updates to read these actual messages before responding to a voice handoff or assessing a posting.'
+      : 'These are the actual messages and posting sources received; use their IDs when assessing a posting.',
   };
 }

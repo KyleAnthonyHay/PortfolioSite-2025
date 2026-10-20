@@ -17,7 +17,7 @@ const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{
 const VISIBLE_ROWS = 5;
 
 export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, { kind: 'fit_report' }>; onBrief?: () => void }) {
-  const { role, requirements, summary, brief } = widget;
+  const { role, requirements, summary, brief, briefPending } = widget;
   const listRef = useRef<HTMLUListElement>(null);
   const [maxHeight, setMaxHeight] = useState<number>();
   const [atEnd, setAtEnd] = useState(false);
@@ -112,6 +112,11 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
         <div className="border-t border-zinc-100 px-4 py-3">
           <p className="mb-2 text-[12px] text-zinc-400">This check is also a one-page brief to send the hiring manager.</p>
           <BriefActions publicId={brief.publicId} title={role} showOpen size="sm" />
+        </div>
+      ) : briefPending ? (
+        <div className="flex items-center gap-2 border-t border-zinc-100 px-4 py-3 text-[12px] text-zinc-400" role="status">
+          <span className="h-3 w-3 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-400" aria-hidden />
+          Writing the one-page brief to send the hiring manager…
         </div>
       ) : onBrief && (
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-zinc-100 px-4 py-2.5">

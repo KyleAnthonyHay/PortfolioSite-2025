@@ -174,6 +174,8 @@ export type Widget =
       summary: { match: number; related: number; gap: number };
       /** The saved brief this fit check was written up as, for its download and share link. */
       brief?: { publicId: string; nextStep: string; level: RecommendationLevel };
+      /** The brief is still being written; a `brief` event fills it in (or clears this when it failed). */
+      briefPending?: boolean;
     };
 
 export interface SourceRef {
@@ -199,6 +201,8 @@ export interface ActivityStep {
 export type ChatEvent =
   | { type: 'step'; step: ActivityStep }
   | { type: 'widget'; widget: Widget }
+  /** The brief for the fit report shown earlier in this answer; none when it could not be written. */
+  | { type: 'brief'; brief?: { publicId: string; nextStep: string; level: RecommendationLevel } }
   | { type: 'text'; delta: string }
   /** The answer's text is complete; sources and follow-ups may still come. */
   | { type: 'answered' }
