@@ -139,7 +139,14 @@ export type Widget =
   | { kind: 'recommendations'; query: string; items: Recommendation[] }
   | { kind: 'journey'; nodes: JourneyNode[] }
   | { kind: 'resources'; project: ProjectCardData; resources: ProjectResource[] }
-  | { kind: 'book_time'; url?: string; email: string; contactPage: string }
+  | {
+      kind: 'book_time';
+      url?: string;
+      email: string;
+      contactPage: string;
+      /** The visitor asked to book or just said yes to an offer, so a call opens the scheduler without a click. */
+      requested?: boolean;
+    }
   | {
       kind: 'demo';
       project: ProjectCardData;

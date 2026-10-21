@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { motion } from 'motion/react';
 import { Check, Mail, Send } from 'lucide-react';
 import { profile } from '@/lib/profile';
+import { rememberVisitorDetails } from '@/lib/scheduling';
 import type { ConversationMessage, VisitorContext, Widget } from '@/lib/chat-events';
 import { ArcSpinner } from '../ActivitySteps';
 
@@ -65,6 +66,7 @@ export function NoteWidget({ widget, chat }: { widget: Extract<Widget, { kind: '
       });
       if (response.ok) {
         setState('sent');
+        rememberVisitorDetails({ name, email });
         return;
       }
       const body = (await response.json().catch(() => ({}))) as { error?: string };
