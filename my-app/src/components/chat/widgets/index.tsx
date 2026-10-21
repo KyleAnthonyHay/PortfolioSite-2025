@@ -27,9 +27,12 @@ interface WidgetRendererProps {
   chat?: ChatHandle;
   /** Turns a fit report into a recruiter brief. */
   onBrief?: () => void;
+  /** For the booking card: opens the scheduler beside the chat, and whether a call is booked. */
+  onSchedule?: () => void;
+  booked?: boolean;
 }
 
-export default function WidgetRenderer({ widget, active = false, answer, onAnswer, chat, onBrief }: WidgetRendererProps) {
+export default function WidgetRenderer({ widget, active = false, answer, onAnswer, chat, onBrief, onSchedule, booked }: WidgetRendererProps) {
   switch (widget.kind) {
     case 'projects':
       return <ProjectsWidget widget={widget} />;
@@ -54,7 +57,7 @@ export default function WidgetRenderer({ widget, active = false, answer, onAnswe
     case 'resources':
       return <ResourcesWidget widget={widget} />;
     case 'book_time':
-      return <BookTimeWidget widget={widget} />;
+      return <BookTimeWidget widget={widget} onSchedule={onSchedule} booked={booked} />;
     case 'resume':
       return <ResumeWidget widget={widget} />;
     case 'demo':
