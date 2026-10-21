@@ -1441,21 +1441,27 @@ export const getJourney = tool(
 );
 
 export const bookTime = tool(
-  async () => {
+  async ({ requested }) => {
     const url = process.env.NEXT_PUBLIC_CALENDLY_URL || undefined;
     return pack({
       content: url
-        ? 'A booking card with Kyle-Anthony\'s calendar is shown. Keep the reply to one short sentence.'
+        ? requested
+          ? "A booking card is shown whose button opens Kyle-Anthony's scheduler beside the chat (on a voice call it opens by itself). In one short sentence, invite them to pick a time there. Never say anything is booked; the chat confirms a booking itself."
+          : "A booking card inviting the visitor to pick a time with Kyle-Anthony is shown. After your answer, add one short, low-key sentence offering it."
         : `A card is shown with his email (${profile.email}) and contact page for scheduling. Keep the reply to one short sentence.`,
       citedProjectIds: [],
-      widget: { kind: 'book_time', url, email: profile.email, contactPage: profile.contactPage },
+      widget: { kind: 'book_time', url, email: profile.email, contactPage: profile.contactPage, ...(requested && { requested: true }) },
     });
   },
   {
     name: 'book_time',
     description:
-      "Use when the visitor wants to talk to Kyle-Anthony directly: book a call, schedule an interview or intro chat, meet, or 'how do I get in touch to set something up?'. Shows a booking card.",
-    schema: z.object({}),
+      "Use when the visitor wants to talk to Kyle-Anthony directly: book a call, schedule an interview or intro chat, meet, 'how do I get in touch to set something up?', or says yes to your offer to book. Also use, at most once per chat, to offer a conversation when the visitor shows real interest in him ('he looks like a strong fit', 'how do we move forward?', 'I'd love to chat with him'). Shows a booking card that opens his Calendly beside the chat.",
+    schema: z.object({
+      requested: z
+        .boolean()
+        .describe('True when the visitor asked to book or just agreed to an offer to book; false when you are offering it unprompted.'),
+    }),
   }
 );
 

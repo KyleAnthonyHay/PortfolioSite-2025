@@ -23,6 +23,10 @@ import CallCard from './voice/CallCard';
 import { useVoiceCall, type Delegation } from './voice/useVoiceCall';
 import type { CallEndReason } from './voice/types';
 import type { AgentTask, TaskSnapshot } from '@/lib/tasks/types';
+import SchedulerPanel from './SchedulerPanel';
+import { BookTimeWidget } from './widgets/BookTime';
+import { profile } from '@/lib/profile';
+import { loadVisitorDetails, type VisitorDetails } from '@/lib/scheduling';
 
 interface UserMessage {
   id: string;
@@ -54,6 +58,8 @@ interface AssistantMessage {
   endedAt?: number;
   /** Came from a call: the agent's answer to a spoken question, or the voice's own small talk. */
   voice?: boolean;
+  /** The chat's note that Calendly reported a booking. */
+  booking?: boolean;
 }
 
 /** The "Call ended" line a call leaves in the chat. Never sent to the agent. */
@@ -72,6 +78,7 @@ const CONTEXT_KEY = 'portfolio-chat-context';
 const CONVERSATION_KEY = 'portfolio-chat-id';
 const MAX_STORED = 40;
 const spring = { type: 'spring' as const, stiffness: 120, damping: 20 };
+const CALENDLY_URL = process.env.NEXT_PUBLIC_CALENDLY_URL || undefined;
 
 function newId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
@@ -163,10 +170,16 @@ function toTranscript(messages: ChatMessage[]): ConversationMessage[] {
 
 /** The chat as the agent's history. A turn that only asked a question has no prose; it sends the question so the agent knows what the next message answers. */
 function toHistory(messages: ChatMessage[]): ConversationMessage[] {
+  const offerAt = fitOfferIndex(messages);
   return messages
-    .filter((m): m is UserMessage | AssistantMessage => m.role !== 'call' && (m.role !== 'assistant' || (m.status === 'done' && m.taskStatus !== 'canceled' && m.taskStatus !== 'failed')))
-    .map((m) => {
+    .map((m, index) => ({ m, index }))
+    .filter((entry): entry is { m: UserMessage | AssistantMessage; index: number } => entry.m.role !== 'call' && (entry.m.role !== 'assistant' || (entry.m.status === 'done' && entry.m.taskStatus !== 'canceled' && entry.m.taskStatus !== 'failed')))
+    .map(({ m, index }) => {
       const arrival = { id: m.id, receivedAt: m.role === 'user' ? m.at : m.endedAt ?? m.startedAt, channel: m.voice ? 'voice' as const : 'typed' as const };
+      if (m.role === 'assistant' && m.booking) return { ...arrival, role: m.role, content: `[Booked a call with Kyle-Anthony through Calendly] ${m.content}` };
+      if (m.role === 'assistant' && (m.widgets.some((w) => w.kind === 'book_time') || index === offerAt)) {
+        return { ...arrival, role: m.role, content: [m.content.trim(), '[Booking card shown]'].filter(Boolean).join('\n\n') };
+      }
       if (m.role === 'assistant' && !m.content.trim()) {
         const asked = m.widgets.find((w) => w.kind === 'question');
         if (asked && asked.kind === 'question') return { ...arrival, role: m.role, content: `[Asked the visitor: ${asked.question}]` };
@@ -178,6 +191,22 @@ function toHistory(messages: ChatMessage[]): ConversationMessage[] {
       return { ...arrival, role: m.role, content: m.content };
     })
     .filter((m) => m.content.trim().length > 0);
+}
+
+/**
+ * The fit report that gets an invitation to book under it: the first one with
+ * a read better than a decline, unless a booking card was already shown
+ * before it. Once per chat, so the offer never follows every answer.
+ */
+function fitOfferIndex(messages: ChatMessage[]): number {
+  if (!CALENDLY_URL) return -1;
+  for (let index = 0; index < messages.length; index++) {
+    const m = messages[index];
+    if (m.role !== 'assistant') continue;
+    if (m.booking || m.widgets.some((w) => w.kind === 'book_time')) return -1;
+    if (m.status === 'done' && m.widgets.some((w) => w.kind === 'fit_report' && w.brief && w.brief.level !== 'decline')) return index;
+  }
+  return -1;
 }
 
 function applyEvent(message: AssistantMessage, event: ChatEvent): AssistantMessage {
@@ -270,6 +299,8 @@ export default function ChatInterface() {
   /** The live call's session id, for telling the voice about typed turns. */
   const callSessionRef = useRef<(() => string | null) | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  /** Kyle-Anthony's Calendly beside the chat, with the details it was prefilled with. */
+  const [scheduler, setScheduler] = useState<{ url: string; details: VisitorDetails; minimized: boolean } | null>(null);
 
   const isStreaming = messages.some((m) => m.role === 'assistant' && m.status === 'streaming');
 
@@ -531,6 +562,32 @@ export default function ChatInterface() {
     onNotice: setNotice,
   });
   useEffect(() => { callSessionRef.current = call.sessionId; }, [call.sessionId]);
+
+  const booked = messages.some((m) => m.role === 'assistant' && m.booking);
+  const openScheduler = useCallback((url: string) => {
+    setScheduler((current) => (current?.url === url ? { ...current, minimized: false } : { url, details: loadVisitorDetails(), minimized: false }));
+  }, []);
+  /** Calendly said the invitee booked: the chat notes it, and a live call hears about it. */
+  const onScheduled = useCallback(() => {
+    if (messagesRef.current.some((m) => m.role === 'assistant' && m.booking)) return;
+    const now = Date.now();
+    const note: AssistantMessage = {
+      id: `booked-${newId()}`,
+      role: 'assistant',
+      booking: true,
+      content: "You're booked with Kyle-Anthony. Calendly is emailing you the details.",
+      steps: [], widgets: [], sources: [], suggestions: [],
+      status: 'done', startedAt: now, endedAt: now,
+    };
+    const next = [...messagesRef.current, note];
+    messagesRef.current = next;
+    stickToBottomRef.current = true;
+    setMessages(next);
+    const sessionId = callSessionRef.current?.();
+    if (sessionId) void fetch('/api/voice', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'context', phase: 'booked', sessionId }) }).catch(() => {});
+  }, []);
+  /** Voice tasks whose "yes, book it" already opened the scheduler. */
+  const autoOpenedRef = useRef(new Set<string>());
   const callStateRef = useRef({ active: call.active, phase: call.phase });
   useEffect(() => { callStateRef.current = { active: call.active, phase: call.phase }; }, [call.active, call.phase]);
   useEffect(() => {
@@ -569,6 +626,17 @@ export default function ChatInterface() {
           messagesRef.current = next;
           return next;
         });
+        // On a call, a spoken yes to booking opens the scheduler without another click.
+        const liveSession = callStateRef.current.active ? callSessionRef.current?.() : null;
+        if (liveSession) {
+          for (const task of snapshot.tasks) {
+            if (task.input.sessionId !== liveSession || autoOpenedRef.current.has(task.id)) continue;
+            const widget = task.events.flatMap((e) => (e.type === 'widget' && e.widget.kind === 'book_time' && e.widget.requested ? [e.widget] : []))[0];
+            if (!widget?.url) continue;
+            autoOpenedRef.current.add(task.id);
+            openScheduler(widget.url);
+          }
+        }
         const delivery = deliveryRef.current;
         const currentCall = callStateRef.current;
         if (delivery && ((!currentCall.active) || (delivery.heardSpeech && currentCall.phase === 'listening') || Date.now() - delivery.startedAt > 85_000)) settleDelivery(!currentCall.active || !delivery.heardSpeech);
@@ -598,7 +666,7 @@ export default function ChatInterface() {
     };
     void poll();
     return () => { stopped = true; clearTimeout(timer); };
-  }, [isHydrated, settleDelivery]);
+  }, [isHydrated, settleDelivery, openScheduler]);
 
   // Only the most recent call's log is kept, so only its row offers to copy it.
   const lastCallId = messages.reduce<string | null>((id, m) => (m.role === 'call' ? m.id : id), null);
@@ -639,6 +707,7 @@ export default function ChatInterface() {
 
   const handleNewChat = (options?: { discard?: boolean }) => {
     if (call.active) call.hangUp();
+    setScheduler(null);
     if (!options?.discard) stashCurrent();
     setMessages([]);
     updateVisitor(null);
@@ -658,6 +727,7 @@ export default function ChatInterface() {
     const chat = archiveRef.current.find((item) => item.id === id);
     if (!chat || id === conversationRef.current) return;
     if (call.active) call.hangUp();
+    setScheduler(null);
     stashCurrent();
     updateArchive(archiveRef.current.filter((item) => item.id !== id));
     conversationRef.current = chat.id;
@@ -685,6 +755,7 @@ export default function ChatInterface() {
   };
 
   const lastAssistantIndex = messages.map((m) => m.role).lastIndexOf('assistant');
+  const offerAt = fitOfferIndex(messages);
 
   // The brief needs something to judge against: a role, a posting, or a fit check.
   const userMessages = messages.filter((m) => m.role === 'user');
@@ -713,7 +784,7 @@ export default function ChatInterface() {
   })();
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className={`relative flex h-full min-h-0 flex-col transition-[margin] duration-300 ${scheduler ? 'lg:mr-[420px]' : ''}`}>
       {/* Like a Messages thread: the agent's avatar and name centred, controls either side. */}
       <header className="sticky top-0 z-30 shrink-0 border-b border-zinc-200/70 bg-paper/85 backdrop-blur-md">
         <div className="relative mx-auto flex h-[92px] w-full max-w-3xl items-center justify-between px-4">
@@ -877,6 +948,8 @@ export default function ChatInterface() {
                                 onAnswer={(text) => send(text)}
                                 onBrief={isStreaming ? undefined : makeBrief}
                                 chat={{ transcript: () => toTranscript(messagesRef.current), context: visitor }}
+                                onSchedule={widget.kind === 'book_time' && widget.url ? () => openScheduler(widget.url!) : undefined}
+                                booked={booked}
                               />
                             </motion.div>
                           );
@@ -884,9 +957,24 @@ export default function ChatInterface() {
                       </div>
                     )}
 
+                    {index === offerAt && CALENDLY_URL && (
+                      <motion.div
+                        className="mt-3"
+                        initial={{ opacity: 0, y: 14, filter: 'blur(6px)' }}
+                        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1], delay: 0.3 }}
+                      >
+                        <BookTimeWidget
+                          widget={{ kind: 'book_time', url: CALENDLY_URL, email: profile.email, contactPage: profile.contactPage }}
+                          onSchedule={() => openScheduler(CALENDLY_URL)}
+                          booked={booked}
+                        />
+                      </motion.div>
+                    )}
+
                     <SourcePills sources={message.sources} />
 
-                    {message.status !== 'streaming' && message.content && (
+                    {message.status !== 'streaming' && message.content && !message.booking && (
                       <div className="mt-2 flex items-center gap-0.5 opacity-60 transition-opacity group-hover/message:opacity-100 focus-within:opacity-100">
                         <CopyButton text={message.content} />
                         {index === lastAssistantIndex && (
@@ -1000,6 +1088,20 @@ export default function ChatInterface() {
         activity={messages.length}
         onMake={makeBrief}
       />
+      <AnimatePresence>
+        {scheduler && (
+          <SchedulerPanel
+            key="scheduler"
+            url={scheduler.url}
+            details={scheduler.details}
+            booked={booked}
+            minimized={scheduler.minimized}
+            onMinimize={(minimized) => setScheduler((current) => (current ? { ...current, minimized } : current))}
+            onClose={() => setScheduler(null)}
+            onScheduled={onScheduled}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { X } from 'lucide-react';
 import { celebrate } from '@/lib/celebrate';
+import { rememberVisitorDetails } from '@/lib/scheduling';
 import SuccessCheck from '@/components/ui/SuccessCheck';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/;
@@ -50,6 +51,7 @@ export default function SendBriefDialog({ publicId, open, onClose }: { publicId:
       const result = (await response.json().catch(() => ({}))) as { ok?: boolean; error?: string };
       if (!response.ok || !result.ok) throw new Error(result.error || 'Something went wrong. Try again.');
       setState('sent');
+      rememberVisitorDetails({ email: value });
       window.requestAnimationFrame(() => celebrate(checkRef.current));
       window.setTimeout(onClose, 2200);
     } catch (caught) {
