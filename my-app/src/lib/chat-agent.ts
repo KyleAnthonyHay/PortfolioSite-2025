@@ -81,6 +81,8 @@ Never answer from memory about Kyle-Anthony. Call a tool first, then answer from
 - To read a posting's contents without judging fit → get_job_posting with the visitor's link.
 - When the request is ambiguous in a way that changes the answer (a fit question with no role or job description, "what should I look at?" with no context), call ask_visitor with 2-4 short options instead of guessing. Use it at most once in a row, and never when the question is already clear.
 - When the visitor's message answers a question you asked (the history shows "[Asked the visitor: …]"), answer right away with what you have; do not ask for more detail in prose either. For a role type with no posting, call get_experience for that role, describe his relevant experience briefly without a fit verdict, and ask for the posting link or pasted description; never assess fit against requirements they did not give. For an area of interest, search or list the relevant projects.
+- Never ask the visitor to choose a format, length or style ("a concise overview or a conversational intro?"); pick the most useful one and answer. A vague or frustrated message ("this is too much work", "just tell me about him") gets a short overview straight away: get_background for the skills overview and list_projects, then who he is, his strongest projects and his current role in a few sentences.
+- A short reply ("yes", "sure", "ok") to a question you ended your last answer with means do what you offered; for a yes to an either-or, do the first option. Never repeat a question you already asked.
 - "Has he worked at big tech / FAANG / a startup?" → get_background with 'experience', then name the employers on his résumé and stop. No yes or no, and no judgment of what kind of company an employer is.
 - Questions about SelahNote's users, paying subscribers, App Store rating or reviews → get_project for SelahNote with the question as query, not the links tool.
 If a tool comes back empty, say so plainly rather than guessing. If a tool does not state something (relocation, visas, salary, start dates, an employer's details, big-tech experience, weaknesses), say it is not stated and suggest asking him; never infer it from nearby facts, and never state a negative you can't source either.
@@ -302,7 +304,10 @@ export async function* runAgent(
 
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
+  // A question asked in prose ("an overview or an intro?") counts too, so a bare "yes" is read as its answer.
+  const askedInProse = !!lastAssistant?.content.trim().endsWith('?') && userMessage.trim().split(/\s+/).length <= 6;
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
+  const answering = justAsked || askedInProse;
   const fitTool = makeFitTool({
     receivedAt: options.receivedAt,
     userMessage,
@@ -316,13 +321,13 @@ export async function* runAgent(
     },
   });
   const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
-  const tools = [...(voice ? [updatesTool] : []), ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
+  const tools = [...(voice ? [updatesTool] : []), ...(answering ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
   // Links the visitor actually shared; the model must not fetch any other.
   const sharedText = [userMessage, ...history.filter((m) => m.role === 'user').map((m) => m.content), context?.jobUrl ?? ''].join(' ');
 
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS + 1; round += 1) {
-      const forceTool = round === 0 && (justAsked || !isSmallTalk(userMessage));
+      const forceTool = round === 0 && (answering || !isSmallTalk(userMessage));
       // The arrivals check keeps voice handoffs stable; typed chat reads the same arrivals from the system prompt.
       const checkArrivals = round === 0 && voice;
       const wantsBrief = round === 0 && BRIEF_REQUEST.test(userMessage);
@@ -330,7 +335,7 @@ export async function* runAgent(
       // could be meant, so the fit check runs straight away instead of after a check of arrivals.
       const postingFit = round === 0 && !voice && !justAsked && (/https?:\/\//i.test(userMessage) || looksLikePosting(userMessage)) && (FIT_QUESTION.test(userMessage) || wantsBrief);
       // "Is he a fit for my team?" with nothing to judge against: ask what the role is rather than guess.
-      const mustAsk = round === 0 && !wantsBrief && !justAsked && isUnqualifiedFitQuestion(userMessage, history, context);
+      const mustAsk = round === 0 && !wantsBrief && !answering && isUnqualifiedFitQuestion(userMessage, history, context);
       const allowTools = round < MAX_TOOL_ROUNDS;
       const model = allowTools
         ? getBaseModel().bindTools(
