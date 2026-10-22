@@ -13,6 +13,12 @@ The portfolio agent reads this file for facts Kyle has stated himself that are n
 - Mostly runs the QA test cases and makes small adjustments to them, working in Snowflake, Informatica, AutoSys and DBeaver.
 - Helps his team lead organize the QA work, and is being trained to help team leads coordinate operations with the offshore team while working alongside them. He does not lead the team.
 
+- Designed the synthetic-data testbed and built an MVP; operational adoption is pending.
+- Fine-tuned DistilBERT for sentiment analysis in a Cognizant training project. It was not a production deployment, and no measured accuracy improvement is confirmed.
+
+## Professional tenure
+- Confirmed on October 9, 2026: fewer than five years of professional industry experience. Cognizant (November 2025-present) and The Difference (July-September 2023) are his complete employed professional history, apart from independent products.
+
 ## Informal mentoring
 - Mentored a friend with no technical background in using AI to code and to learn while building, so he understands the systems he builds. The friend is now the operations manager for a $1 million small business and built its sales, database, website and CRM systems, with Kyle mentoring him throughout.
 

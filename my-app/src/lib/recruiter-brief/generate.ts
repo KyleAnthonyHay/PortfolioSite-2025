@@ -9,6 +9,7 @@ import { assessRequirements, judgeFailures, type FitAssessment } from '../tools'
 import { getKnowledgeSections, searchKnowledge, type KnowledgeHit } from '../knowledge';
 import { catalog, findProjectByName, projectById } from '../project-catalog';
 import { profile, skillGroups } from '../profile';
+import { professionalTenureEvidence, CAREER_PERIODS, EMPLOYMENT_HISTORY_COMPLETE, TENURE_CONFIRMATION } from '../professional-tenure';
 import type { FitStatus } from '../chat-events';
 import {
   BRIEF_VERSION,
@@ -37,8 +38,7 @@ export const REQUIREMENT_RULES =
 
 /**
  * Facts not yet confirmed by Kyle-Anthony. Any sentence naming them is kept
- * out of the evidence and out of the brief. The Cognizant role is listed on
- * the site but unconfirmed as of October 2026.
+ * out of the evidence and out of the brief. Confirmed career facts live in facts.ts.
  */
 const UNCONFIRMED: RegExp[] = [];
 const DRAFT_MARKER = /\[NEEDS KYLE/i;
@@ -181,7 +181,7 @@ function profileFacts(): EvidenceReference[] {
       id: 'P2',
       kind: 'profile',
       section: 'Experience to date',
-      excerpt: `Building software since 2022 (about ${year - 2022} years), mostly through personal and team projects. ${WORK_EVIDENCE.map((item) => `${item.where}${item.source === 'his account' ? ', in his own words' : ''}: ${item.text}`).join(' ')} Revature AI Engineering training program in January 2026, where OnTract and Sentio+ were built as team projects. Professional tenure is about one year.`,
+      excerpt: `Building software since 2022 (about ${year - 2022} years), mostly through personal and team projects. ${WORK_EVIDENCE.map((item) => `${item.where}${item.source === 'his account' ? ', in his own words' : ''}: ${item.text}`).join(' ')} Revature AI Engineering training program in January 2026, where OnTract and Sentio+ were built as team projects. ${professionalTenureEvidence()}`,
     },
     { id: 'P3', kind: 'profile', section: 'Location and availability', excerpt: `Based in ${profile.location}. ${profile.availability.join('. ')}.` },
     { id: 'P4', kind: 'profile', section: 'Listed skills with start years', excerpt: skills },
@@ -311,7 +311,7 @@ function ceilingFromRead(fit: FitAssessment, matches: RoleMatch[]): Recommendati
     case 'needs review: verification incomplete':
       return 'conditional';
     case 'strong fit':
-      return 'advance';
+      return hardGap ? 'conditional' : 'advance';
     case 'good fit with some gaps':
       return hardGap ? 'conditional' : 'advance';
     case 'partial fit: real gaps to weigh':
@@ -328,9 +328,14 @@ const NEXT_STEP: Record<RecommendationLevel, RegExp> = {
   decline: /^not a fit for this role/i,
 };
 
-function defaultRecommendation(level: RecommendationLevel, matches: RoleMatch[]): { nextStep: string; rationale: string } {
-  if (level !== 'decline' && matches.some((match) => match.assessment === 'relevant' || match.verificationStatus === 'unknown')) return { nextStep: 'Phone screen only if the open requirements can be confirmed', rationale: 'Some requirements need confirmation with Kyle-Anthony. The available portfolio may be incomplete; unconfirmed experience is not a known shortfall.' };
+export function defaultRecommendation(level: RecommendationLevel, matches: RoleMatch[]): { nextStep: string; rationale: string } {
   const gaps = matches.filter((m) => m.required && m.assessment === 'gap' && m.verificationStatus !== 'unknown').map((m) => m.requirement);
+  const unresolved = matches.some((match) => match.assessment === 'relevant' || match.verificationStatus === 'unknown');
+  if (level !== 'decline' && gaps.some(gap => HARD_REQUIREMENT.test(gap))) {
+    const requirement = gaps.find(gap => HARD_REQUIREMENT.test(gap))!;
+    return { nextStep: `Phone screen only if the employer can relax ${requirement}`, rationale: `His confirmed background does not meet ${requirement}.${unresolved ? ' Other requirements also need confirmation.' : ''}` };
+  }
+  if (level !== 'decline' && unresolved && gaps.length === 0) return { nextStep: 'Phone screen only if the open requirements can be confirmed', rationale: 'Some requirements need confirmation with Kyle-Anthony. The available portfolio may be incomplete; unconfirmed experience is not a known shortfall.' };
   const list = gaps.slice(0, 2).map((g) => `"${g}"`).join(' and ');
   switch (level) {
     case 'decline':
@@ -373,7 +378,7 @@ function writerPrompt(ceiling: RecommendationLevel, hasPosting: boolean): string
   return `You write a recruiter brief about a software engineer, Kyle-Anthony Hay, for a recruiter to forward to a hiring manager. You are an evaluator, not his advocate: a single overstated claim makes the whole brief worthless to them.
 
 Rules:
-- The available portfolio may be incomplete. Labels are Supported match (strong), Needs confirmation (relevant), and Confirmed gap (gap). Missing documentation never proves missing experience. Do not assume he has never used a framework or fulfilled a requirement merely because the evidence does not mention it. Ask to confirm unrecorded experience. OR alternatives require only one suitable alternative.
+- The available portfolio may be incomplete. Labels are Supported match (strong), Needs confirmation (relevant), and Confirmed gap (gap). Missing documentation never proves missing experience. Do not assume he has never used a framework or fulfilled a requirement merely because the evidence does not mention it. Ask to confirm genuinely unrecorded experience. Explicit candidate confirmations and shortfalls established from his confirmed complete employment history are known gaps; never ask him to reconfirm them. OR alternatives require only one suitable alternative.
 - Use only the EVIDENCE items. Every candidateSummary, reason, project line and standout signal cites the ids of the items that directly support it in "evidenceIds". If nothing supports a point, leave it out.
 - Never upgrade: a training-program project is not a job, a team project is not solo work, a personal-use app is not a shipped product, a planned feature is not a built one. Use numbers (users, counts, dates) only when an item states them. No percentages, scores or ratings.
 - ${hasPosting ? 'Role Match is already decided by the fit check (the F items); you cannot change it. Never present a requirement marked gap as a strength, and do not call a "relevant" row a match.' : 'There is no job posting, so this is a general brief shaped by the recruiter context.'}
@@ -385,7 +390,7 @@ Write:
 - reasonsToConsider: up to 3 conclusions (title under 7 words, explanation 1-2 sentences), each tied to the role. Fewer is fine when the evidence is thin.
 - projects: up to 3 projects most relevant to the role by what they show, not by size. projectId is the number from PROJECTS. relevance: one sentence on why it matters for this role. evidence: 2-3 short concrete lines (technologies, architecture, responsibilities, outcomes).
 - standoutSignal: the single most compelling differentiator for this role (title under 7 words, explanation 1-2 sentences), or null if nothing stands out honestly.
-- validationAreas: 2-5 things to validate in an interview, phrased neutrally ("Depth of ...", "Professional tenure relative to ..."). Cover every required gap and every required requirement that is only relevant.
+- validationAreas: 2-5 things to validate in an interview, phrased neutrally ("Depth of ...", "Professional tenure relative to ..."). Cover every required gap and every required requirement that is only relevant. For a confirmed gap, ask whether the employer can relax the requirement; do not ask the candidate to confirm a shortfall he already confirmed.
 - interviewQuestions: 3 questions, each with a one-sentence rationale. At least one leads into his strongest evidence; at least one probes the biggest gap or open question.
 - recommendation: "level" is one of ${allowed.map((l) => `"${l}"`).join(', ')} (no higher). nextStep wording by level: advance = "Technical screen"; screen = "Recruiter phone screen"; conditional = "Phone screen only if <specific condition>"; decline = "Not a fit for this role". rationale: 1-2 sentences grounded in the evidence. ${ceiling === 'decline' ? 'Name the documented shortfall that prevents this recommendation. Never describe missing documentation as a known lack of experience.' : 'If the required gaps are in years, domain, degree or the job function itself, choose conditional or decline.'}
 
@@ -408,16 +413,46 @@ interface Claim {
   apply: (verdict: ClaimVerdict, fixed?: string) => void;
 }
 
-/** A second model reads each claim beside only the items it cites. */
+/**
+ * A second model reads each claim beside only the items it cites. Each claim
+ * is checked in its own call, all at once, so the slowest claim sets the pace
+ * rather than one call reading every claim's evidence. A call that fails
+ * leaves its claim unknown (withheld); if every call fails, this throws.
+ */
 export async function verifyClaims(claims: Claim[], items: EvidenceReference[]): Promise<{ rewritten: number; removed: number; unknown: number }> {
   if (claims.length === 0) return { rewritten: 0, removed: 0, unknown: 0 };
   const byId = new Map(items.map((item) => [item.id, item]));
-  const blocks = claims.map((claim, i) => {
+  const failures: unknown[] = [];
+  const verdicts = await Promise.all(claims.map(async (claim) => {
     const cited = claim.evidenceIds.map((id) => byId.get(id)).filter((item): item is EvidenceReference => Boolean(item));
-    return `CLAIM ${i}: ${claim.text}\n${cited.map((item) => `  [${item.id}] ${item.projectName ? `${item.projectName} / ` : ''}${item.section ?? ''}: ${item.excerpt}`).join('\n') || '  (no evidence cited)'}`;
-  });
+    const block = `CLAIM 0: ${claim.text}\n${cited.map((item) => `  [${item.id}] ${item.projectName ? `${item.projectName} / ` : ''}${item.section ?? ''}: ${item.excerpt}`).join('\n') || '  (no evidence cited)'}`;
+    try {
+      return claimVerdict((await checkClaims(block)).items, 0);
+    } catch (error) {
+      failures.push(error);
+      return { verdict: 'unknown' as const, fixed: undefined };
+    }
+  }));
+  if (failures.length === claims.length) throw failures[0];
+  if (failures.length) console.error(`recruiter brief: ${failures.length} of ${claims.length} claim checks failed`, failures[0]);
 
-  const parsed = await askJson<{ items?: { index?: number; verdict?: string; fixed?: string }[] }>(
+  let rewritten = 0;
+  let removed = 0;
+  let unknown = 0;
+  claims.forEach((claim, i) => {
+    const { verdict, fixed } = verdicts[i];
+    if (verdict === 'unknown') unknown += 1;
+    if (verdict !== 'supported') {
+      if (fixed) rewritten += 1;
+      else removed += 1;
+    }
+    claim.apply(verdict, fixed);
+  });
+  return { rewritten, removed, unknown };
+}
+
+function checkClaims(blocks: string): Promise<{ items?: { index?: number; verdict?: string; fixed?: string }[] }> {
+  return askJson<{ items?: { index?: number; verdict?: string; fixed?: string }[] }>(
     `You fact-check a recruiter brief about Kyle-Anthony Hay. For each CLAIM, read only the evidence printed under it, plus these facts:
 ${FACTS}
 Verdicts:
@@ -429,23 +464,9 @@ On OnTract and Sentio+ (team projects) a technology or feature counts as his onl
 Role match lines: judge the whole requirement, not the "Basis" alone. "Fully met" needs evidence for every part of it (a line showing SQL and Python but not dbt or a warehouse is overstated; years of use is not the same as doing that work). Working on a developer team is not partnering with finance, product or GTM leadership; building a tool for a business user is not answering executives' questions. Each named project must show it as his work.
 Interview questions are claims only in what they presuppose about his work. Recommendations and validation notes may state gaps; judge only what they say he has done. Be strict.
 JSON: {"items":[{"index":0,"verdict":"supported|overstated|unsupported","fixed":"..."}]}`,
-    blocks.join('\n\n'),
+    blocks,
     0, 'verification'
   );
-
-  let rewritten = 0;
-  let removed = 0;
-  let unknown = 0;
-  claims.forEach((claim, i) => {
-    const { verdict, fixed } = claimVerdict(parsed.items, i);
-    if (verdict === 'unknown') unknown += 1;
-    if (verdict !== 'supported') {
-      if (fixed) rewritten += 1;
-      else removed += 1;
-    }
-    claim.apply(verdict, fixed);
-  });
-  return { rewritten, removed, unknown };
 }
 
 const BANNED = /\d+(?:\.\d+)?\s*%|\bpercent\b/i;
@@ -463,8 +484,8 @@ function clean(text: string | undefined): string {
 /* Role match audit                                                          */
 /* ------------------------------------------------------------------------ */
 
-function readFor(matches: RoleMatch[]): FitAssessment['read'] {
-  if (matches.some((match) => match.verificationStatus === 'unknown') || matches.some((match) => match.assessment === 'relevant') && !matches.some((match) => match.assessment === 'gap')) return 'potential fit: pending confirmation';
+export function readFor(matches: RoleMatch[]): FitAssessment['read'] {
+  if (!matches.some((match) => match.assessment === 'gap' && match.verificationStatus !== 'unknown') && matches.some((match) => match.verificationStatus === 'unknown' || match.assessment === 'relevant')) return 'potential fit: pending confirmation';
   const strong = matches.filter((m) => m.assessment === 'strong').length;
   const relevant = matches.filter((m) => m.assessment === 'relevant').length;
   const gap = matches.length - strong - relevant;
@@ -476,38 +497,41 @@ function readFor(matches: RoleMatch[]): FitAssessment['read'] {
  * The fit check names every project a keyword appears in, team work
  * included, and counts years of using a language as doing the work. A second
  * read against the write-ups (with who-did-what) settles each row. Rows can
- * only stay or move down.
+ * only stay or move down. Each row is read in its own call, all at once, so
+ * the slowest row sets the pace; a call that fails leaves its row needing
+ * review, and if every call fails this throws.
  */
 export async function auditRoleMatches(matches: RoleMatch[], items: EvidenceReference[]): Promise<void> {
   // Rows about years of using a named technology are settled by his start year, which the excerpts can't show.
   const yearsOfTech = (requirement: string) => /\d+\s*\+?\s*(?:(?:-|–|—|to)\s*\d+\s*)?(?:years?|yrs?)/i.test(requirement) && !/\b(professional|industry|as an?)\b/i.test(requirement);
-  const rows = matches.map((match, i) => ({ match, i })).filter(({ match }) => match.assessment !== 'gap' && !yearsOfTech(match.requirement));
+  // Rows already unknown (an unsettled date window, a failed judge) can't move, and a reread
+  // could only swap their careful evidence for a confident one, so they keep it.
+  const rows = matches.map((match, i) => ({ match, i })).filter(({ match }) => match.assessment !== 'gap' && match.verificationStatus !== 'unknown' && !yearsOfTech(match.requirement));
   if (rows.length === 0) return;
   const background = items.filter((item) => item.id.startsWith('B') || item.kind === 'profile');
-  const blocks = rows.map(({ match }, k) => {
+  const backgroundBlock = `BACKGROUND:\n${background.map((item) => `[${item.id}] ${item.section}: ${item.excerpt}`).join('\n')}`;
+  const failures: unknown[] = [];
+  const verdicts = await Promise.all(rows.map(async ({ match }) => {
     const sections = items
       .filter((item) => item.projectId && match.projectIds.includes(item.projectId) && item.kind === 'section')
       .sort((a, b) => Number(/role|who built/i.test(b.section ?? '')) - Number(/role|who built/i.test(a.section ?? '')))
       .slice(0, 8);
-    return `ROW ${k}: "${match.requirement}"\nFit check said: ${match.assessment === 'strong' ? 'met' : 'partly met'} — ${match.evidence}\nProjects named: ${match.projectIds.map((id) => projectById(id)?.title).join(', ') || 'none'}\n${sections.map((item) => `  [${item.id}] ${item.projectName} / ${item.section}: ${item.excerpt}`).join('\n')}`;
-  });
-  const parsed = await askJson<{ rows?: { index?: number; met?: string; projects?: string[]; basis?: string }[] }>(
-    `You audit a job-fit check for Kyle-Anthony Hay using a potentially incomplete portfolio. Missing evidence cannot establish missing experience. For each ROW decide from its excerpts and the BACKGROUND only:
-- "met": "full" when the excerpts show him doing every required part of the requirement; OR alternatives and lists introduced by "such as" or "e.g." require one suitable alternative, not all examples. AND requires all parts. "partial" when they show some of it or adjacent work; "none" when they show nothing he did.
-- "projects": the named projects that show it as HIS work. On team projects (OnTract, Sentio+) count only what the excerpts attribute to him or to his solo rebuild; a tech-stack or skills list, or what teammates built, does not count.
-- "basis": under 22 words, a positive statement of what he did that supports the row (no notes about missing evidence; empty if "none").
-Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects. A requirement naming specific tools (Redshift, Snowflake, dbt, Looker, Kubernetes) is fully met only when those tools, or ones the posting calls equivalent, are shown; general SQL in app migrations is partial for a data-warehouse SQL requirement. Analytics engineering means building analytics data models and pipelines, not keeping an app codebase tested. Partnering with finance teams means working with a finance function; building a payout tool for his own app is partial at most. Schema work or migrations are not assessing database reliability or troubleshooting production databases. Business terms keep their business meaning: a payout ledger or subscription tracking is not revenue or growth analytics, owning his own app is not running an executive review, embeddings are not a metrics layer. Personal traits and ways of working (curiosity, juggling work streams, thriving in ambiguity) are "partial" at most unless an excerpt describes exactly that.
-${FACTS}
-Unknown or partially shown work needs confirmation with the candidate; it is not a confirmed gap.
-JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"..."}]}`,
-    `BACKGROUND:\n${background.map((item) => `[${item.id}] ${item.section}: ${item.excerpt}`).join('\n')}\n\n${blocks.join('\n\n')}`,
-    0, 'verification'
-  );
+    const block = `ROW 0: "${match.requirement}"\nFit check said: ${match.assessment === 'strong' ? 'met' : 'partly met'} — ${match.evidence}\nProjects named: ${match.projectIds.map((id) => projectById(id)?.title).join(', ') || 'none'}\n${sections.map((item) => `  [${item.id}] ${item.projectName} / ${item.section}: ${item.excerpt}`).join('\n')}`;
+    try {
+      const parsed = await auditRows(`${backgroundBlock}\n\n${block}`);
+      const found = Array.isArray(parsed.rows) ? parsed.rows.filter((candidate) => candidate?.index === 0) : [];
+      return found.length === 1 ? found[0] : undefined;
+    } catch (error) {
+      failures.push(error);
+      return undefined;
+    }
+  }));
+  if (failures.length === rows.length) throw failures[0];
+  if (failures.length) console.error(`recruiter brief: ${failures.length} of ${rows.length} role match audits failed`, failures[0]);
   const cap: Record<string, MatchLevel> = { full: 'strong', partial: 'relevant', none: 'relevant' };
   const order: MatchLevel[] = ['gap', 'relevant', 'strong'];
   rows.forEach(({ match }, k) => {
-    const verdicts = Array.isArray(parsed.rows) ? parsed.rows.filter((candidate) => candidate?.index === k) : [];
-    const row = verdicts.length === 1 ? verdicts[0] : undefined;
+    const row = verdicts[k];
     if (!row || !['full', 'partial', 'none'].includes(row.met ?? '')) { markNeedsReview(match); return; }
     const level = cap[row.met!];
     if (order.indexOf(level) < order.indexOf(match.assessment)) match.assessment = level;
@@ -521,6 +545,21 @@ JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"
       match.evidence = basis;
     }
   });
+}
+
+function auditRows(rows: string): Promise<{ rows?: { index?: number; met?: string; projects?: string[]; basis?: string }[] }> {
+  return askJson<{ rows?: { index?: number; met?: string; projects?: string[]; basis?: string }[] }>(
+    `You audit a job-fit check for Kyle-Anthony Hay using a potentially incomplete portfolio. Missing evidence cannot establish missing experience. For each ROW decide from its excerpts and the BACKGROUND only:
+- "met": "full" when the excerpts show him doing every required part of the requirement; OR alternatives and lists introduced by "such as" or "e.g." require one suitable alternative, not all examples. AND requires all parts. "partial" when they show some of it or adjacent work; "none" when they show nothing he did.
+- "projects": the named projects that show it as HIS work. On team projects (OnTract, Sentio+) count only what the excerpts attribute to him or to his solo rebuild; a tech-stack or skills list, or what teammates built, does not count.
+- "basis": under 22 words, a positive statement of what he did that supports the row (no notes about missing evidence; empty if "none").
+Strictness: years since he started using a language are not experience doing the job; working on a developer team is not partnering with business leadership; building a tool for business users is not doing their analysis; a requirement with several parts (e.g. "SQL, Python, dbt and a cloud warehouse", "data visualization and BI tooling") is "full" only if every part is shown, and custom charts in a web app are not BI tooling; a requirement naming a product domain or quality ("AI-powered financial products") is "full" only if one project has all of it, not pieces spread across projects. A requirement naming specific tools (Redshift, Snowflake, dbt, Looker, Kubernetes) is fully met only when those tools, or ones the posting calls equivalent, are shown; general SQL in app migrations is partial for a data-warehouse SQL requirement. Analytics engineering means building analytics data models and pipelines, not keeping an app codebase tested. Partnering with finance teams means working with a finance function; building a payout tool for his own app is partial at most. Schema work or migrations are not assessing database reliability or troubleshooting production databases. Business terms keep their business meaning: a payout ledger or subscription tracking is not revenue or growth analytics, owning his own app is not running an executive review, embeddings are not a metrics layer. Personal traits and ways of working (curiosity, juggling work streams, thriving in ambiguity) are "partial" at most unless an excerpt describes exactly that.
+${FACTS}
+Unknown or partially shown work needs confirmation with the candidate; it is not a confirmed gap.
+JSON: {"rows":[{"index":0,"met":"full|partial|none","projects":["..."],"basis":"..."}]}`,
+    rows,
+    0, 'verification'
+  );
 }
 
 /* ------------------------------------------------------------------------ */
@@ -584,7 +623,7 @@ export function evaluateFit(input: FitInput): Promise<FitEvaluation> {
  * Bump when the matching rules change in a way that should re-judge saved
  * postings; changes to the facts, skills or write-ups re-judge on their own.
  */
-const FIT_RULES_VERSION = 5;
+const FIT_RULES_VERSION = 6;
 
 let knowledgeHash: Promise<string> | null = null;
 
@@ -594,7 +633,7 @@ function judgedAgainst(): Promise<string> {
     .catch(() => [])
     .then((sections) =>
       createHash('sha256')
-        .update(JSON.stringify([FIT_RULES_VERSION, CAREER_FACTS, WORK_EVIDENCE, skillGroups, profile, sections]))
+        .update(JSON.stringify([FIT_RULES_VERSION, CAREER_FACTS, WORK_EVIDENCE, CAREER_PERIODS, EMPLOYMENT_HISTORY_COMPLETE, TENURE_CONFIRMATION, skillGroups, profile, sections]))
         .digest('hex')
         .slice(0, 16)
     );
@@ -616,7 +655,7 @@ async function savedEvaluation(inputKey: string, input: FitInput): Promise<FitEv
   const fallbacksBefore = fitFallbacks;
   const evaluation = await evaluateFitOnce(input);
   if (fitFallbacks !== fallbacksBefore) evaluation.usedFallback = true;
-  // A failed search reads as a gap; don't keep a verdict made during an outage.
+  // Do not cache an incomplete verdict made during an outage.
   if (evaluation.needsReview || judgeFailures !== failuresBefore || fitFallbacks !== fallbacksBefore) return evaluation;
   await saveEvaluation({
     evaluationKey,
@@ -883,6 +922,9 @@ export async function generateRecruiterBrief(input: BriefInput): Promise<StoredB
     brief.candidateSummary = '';
     brief.recommendation = { level: brief.recommendation.level, ...defaultRecommendation(brief.recommendation.level, roleMatches) };
   }
+
+  // The writer and claim verifier cannot turn established shortfalls back into uncertainty.
+  if (hasConfirmedGap) brief.recommendation = { level, ...defaultRecommendation(level, roleMatches) };
 
   if (verification.unknown || evaluation.needsReview) brief.validationAreas.unshift('Needs review: some claims or fit rows could not be verified; unknown claims were withheld.');
   brief.reasonsToConsider = brief.reasonsToConsider.filter((r) => r.title && r.explanation);

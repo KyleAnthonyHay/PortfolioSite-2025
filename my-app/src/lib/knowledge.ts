@@ -1,6 +1,7 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { Pinecone } from '@pinecone-database/pinecone';
+import { getPersonalInfoDocument } from './content-store';
 import { findProjectByName, type CatalogProject } from './project-catalog';
 
 /**
@@ -134,7 +135,7 @@ export async function searchKnowledge(
     fields: ['text', 'record_type', 'project_name', 'project_id', 'section', 'category', 'technologies'],
   });
 
-  return response.result.hits
+  const hits: KnowledgeHit[] = response.result.hits
     .map((hit) => {
       const fields = hit.fields as HitFields;
       const text = fields.text ?? '';
@@ -151,6 +152,22 @@ export async function searchKnowledge(
       };
     })
     .filter((hit) => hit.score >= minScore);
+
+  if (!hits.some(hit => hit.recordType === 'personal_info')) return hits;
+  // Search ranks sections, but current local source owns their facts. This prevents
+  // outdated embeddings from reviving corrected career claims in chat or briefs.
+  const personal = await getPersonalInfoDocument().catch(() => null);
+  return currentBackgroundHits(hits, personal?.chunks.map(chunk => chunk.content) ?? []);
+}
+
+export function currentBackgroundHits(hits: KnowledgeHit[], sections: string[]): KnowledgeHit[] {
+  const current = new Map(sections.map(text => [/^([A-Z][A-Z &/()'-]+):/.exec(text)?.[1] ?? 'Background', text]));
+  return hits.flatMap(hit => {
+    if (hit.recordType !== 'personal_info') return [hit];
+    const text = current.get(hit.section);
+    // An absent/deleted source section cannot safely support the old search text.
+    return text ? [{ ...hit, text }] : [];
+  });
 }
 
 export interface RawResource {
