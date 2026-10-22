@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import * as mutations from '../convex/tasks';
-import { validateTaskPlan, planTasks } from '../src/lib/tasks/planner';
+import { validateTaskPlan, planTasks, answerInsteadOfReasking } from '../src/lib/tasks/planner';
 import { addTaskEvent, type TaskSnapshot, type AgentTask } from '../src/lib/tasks/types';
 
 process.env.BRIEF_WRITE_KEY = 'task-test-secret';
@@ -233,4 +233,16 @@ test('clarification updates preserve actual original sources and archive earlier
   assert.ok(updated.input.history.some(message => message.content.includes('https://example.com/job')));
   assert.equal(updated.previousResult?.answer, 'What role is this?');
   assert.equal(updated.revision, 2);
+});
+
+test('a yes to the agent\'s own question runs a task instead of asking again', () => {
+  const question = 'Would you prefer a concise overview of his background and strengths, or a more conversational introduction?';
+  const input = { requestId: 'req-yes', message: 'yes', history: [{ role: 'user' as const, content: 'This takes work to learn about him' }, { role: 'assistant' as const, content: question }] };
+  const plan = answerInsteadOfReasking({ actions: [], reply: question }, input);
+  assert.equal(plan.reply, undefined);
+  assert.equal(plan.actions[0].kind, 'start');
+  assert.match(plan.actions[0].instruction!, /first option/);
+  // A status reply, or a question with nothing asked before it, is left alone.
+  assert.deepEqual(answerInsteadOfReasking({ actions: [], reply: 'Stopped the fit check.' }, input), { actions: [], reply: 'Stopped the fit check.' });
+  assert.deepEqual(answerInsteadOfReasking({ actions: [], reply: 'Could you paste the posting?' }, { ...input, history: [] }), { actions: [], reply: 'Could you paste the posting?' });
 });
