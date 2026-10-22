@@ -1,9 +1,10 @@
 import { ChatOpenAI } from '@langchain/openai';
+import { assessmentDay } from './professional-tenure';
 
 export const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
 export type ModelStage = 'fit' | 'extraction' | 'brief' | 'verification' | 'chat' | 'evidence' | 'technology';
 // Bump the relevant version whenever that stage's prompt or interpretation changes.
-export const PROMPT_VERSIONS = { fit: 5, extraction: 3, brief: 2, verification: 3 } as const;
+export const PROMPT_VERSIONS = { fit: 6, extraction: 3, brief: 3, verification: 4 } as const;
 
 export function stageModel(stage: ModelStage): string {
   const fit = process.env.OPENAI_FIT_MODEL ?? process.env.OPENAI_FIT_JUDGE_MODEL ?? DEFAULT_AI_MODEL;
@@ -23,6 +24,32 @@ export function fitFallbackModel(): string {
   return process.env.OPENAI_FIT_FALLBACK_MODEL ?? '';
 }
 
+const DROPPED = new Set(['UND_ERR_SOCKET', 'UND_ERR_CLOSED', 'ECONNRESET', 'EPIPE']);
+
+/**
+ * The connection dropped before a response came back, most often a pooled
+ * connection the server had already closed ("other side closed"). A fit check
+ * opens many calls at once, so idle pooled connections are common.
+ */
+export function droppedConnection(error: unknown): boolean {
+  const code = (error as { cause?: { code?: string } } | undefined)?.cause?.code;
+  return error instanceof TypeError && typeof code === 'string' && DROPPED.has(code);
+}
+
+/**
+ * Models run with no retries, so a dropped connection would end the stage.
+ * A completion changes nothing on OpenAI's side, so the request is sent once
+ * more; timeouts, aborts and HTTP errors are left to the caller.
+ */
+async function sendOnce(input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> {
+  try {
+    return await globalThis.fetch(input, init);
+  } catch (error) {
+    if (!droppedConnection(error) || init?.signal?.aborted) throw error;
+    return globalThis.fetch(input, init);
+  }
+}
+
 export function createStageModel(name: string, temperature = 0, options: { streaming?: boolean; maxTokens?: number; reasoningEffort?: 'none' | 'low' } = {}): ChatOpenAI {
   const luna = name === 'gpt-5.6-luna';
   return new ChatOpenAI({
@@ -32,7 +59,7 @@ export function createStageModel(name: string, temperature = 0, options: { strea
     maxRetries: 0,
     streaming: options.streaming,
     maxTokens: luna ? undefined : options.maxTokens,
-    configuration: { fetch: (input, init) => globalThis.fetch(input, init) },
+    configuration: { fetch: sendOnce },
     // This installed LangChain version adds temperature even when omitted.
     // Override it at serialization for Luna; seed is for the GPT-4.1 stages only.
     modelKwargs: luna ? { temperature: undefined, reasoning_effort: options.reasoningEffort ?? 'low', max_tokens: undefined, max_completion_tokens: options.maxTokens } : { seed: 7 },
@@ -58,11 +85,11 @@ export function extractionIdentity(): string {
   return JSON.stringify([stageModel('extraction'), PROMPT_VERSIONS.extraction, fitFallbackModel()]);
 }
 
-export function evaluationIdentity(): string {
+export function evaluationIdentity(now = new Date()): string {
   return JSON.stringify([
     stageModel('fit'), PROMPT_VERSIONS.fit, stageModel('fit') === 'gpt-5.6-luna' ? 'low' : null,
     extractionIdentity(), stageModel('verification'), PROMPT_VERSIONS.verification, fitFallbackModel(),
-    // Date-dependent tenure must not reuse yesterday's persisted result across a year boundary.
-    new Date().getFullYear(),
+    // Tenure changes within a year; expire evaluations at the candidate's local date boundary.
+    assessmentDay(now),
   ]);
 }
