@@ -1,7 +1,8 @@
 'use client';
 
-import { useCallback, useState } from 'react';
-import { FiArrowUpRight, FiCheck, FiCopy, FiDownload, FiMail, FiShare } from 'react-icons/fi';
+import { useCallback, useState, type MouseEvent } from 'react';
+import { FiArrowUpRight, FiCheck, FiCopy, FiDownload, FiLoader, FiMail, FiShare } from 'react-icons/fi';
+import { downloadBriefPdf } from './download-pdf';
 import SendBriefDialog from './SendBriefDialog';
 
 /**
@@ -24,7 +25,8 @@ export default function BriefActions({
   showOpen?: boolean;
   size?: 'sm' | 'md';
 }) {
-  const [flash, setFlash] = useState<'copied' | 'linked' | null>(null);
+  const [flash, setFlash] = useState<'copied' | 'linked' | 'saved' | null>(null);
+  const [saving, setSaving] = useState(false);
   const [sending, setSending] = useState(false);
   // A fresh dialog each time it opens, so a past send or error never shows.
   const [sendKey, setSendKey] = useState(0);
@@ -33,7 +35,7 @@ export default function BriefActions({
   const button = `px-3.5 inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-xl font-medium transition-all duration-200 active:scale-[0.98] ${height}`;
   const secondary = `${button.replace('px-3.5', 'px-2 sm:px-3.5')} border border-zinc-200 bg-white text-zinc-700 hover:bg-zinc-50`;
 
-  const show = (what: 'copied' | 'linked') => {
+  const show = (what: 'copied' | 'linked' | 'saved') => {
     setFlash(what);
     window.setTimeout(() => setFlash((current) => (current === what ? null : current)), 2000);
   };
@@ -50,6 +52,15 @@ export default function BriefActions({
     } catch {
       window.open(`${path}/text`, '_blank', 'noopener');
     }
+  };
+
+  const download = async (event: MouseEvent) => {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true);
+    await downloadBriefPdf(publicId);
+    setSaving(false);
+    show('saved');
   };
 
   const share = async () => {
@@ -81,8 +92,9 @@ export default function BriefActions({
           Open brief <FiArrowUpRight className="h-3.5 w-3.5" />
         </a>
       )}
-      <a href={`${path}/pdf`} download className={secondary}>
-        <FiDownload className="h-3.5 w-3.5" /> Download
+      <a href={`${path}/pdf`} download onClick={download} aria-busy={saving} className={secondary}>
+        {saving ? <FiLoader className="h-3.5 w-3.5 animate-spin" /> : flash === 'saved' ? <FiCheck className="h-3.5 w-3.5 text-accent-blue" /> : <FiDownload className="h-3.5 w-3.5" />}
+        {saving ? 'Preparing' : flash === 'saved' ? 'Saved' : 'Download'}
       </a>
       <button type="button" onClick={copy} className={secondary}>
         {flash === 'copied' ? <FiCheck className="h-3.5 w-3.5 text-accent-blue" /> : <FiCopy className="h-3.5 w-3.5" />}

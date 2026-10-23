@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { FileText, X } from "lucide-react";
 import { useMediaQuery } from "@/lib/use-media-query";
 import { celebrate as burst } from "@/lib/celebrate";
 import SuccessCheck from "@/components/ui/SuccessCheck";
+import { downloadBriefPdf } from "@/components/brief/download-pdf";
 
 export const BRIEF_PROMPT =
   "Make a recruiter brief I can send to the hiring manager.";
@@ -152,6 +153,12 @@ export function BriefNudge({
     window.setTimeout(() => setOpen(false), DONE_MS);
   };
 
+  const save = (event: ReactMouseEvent) => {
+    event.preventDefault();
+    celebrate();
+    if (briefId) void downloadBriefPdf(briefId);
+  };
+
   useEffect(() => {
     if (!eligible || readFlag(NUDGED_KEY)) return;
     const show = () => {
@@ -272,7 +279,7 @@ export function BriefNudge({
                 <a
                   href={`/brief/${briefId}/pdf`}
                   download
-                  onClick={celebrate}
+                  onClick={save}
                   className="inline-flex h-7 shrink-0 items-center rounded-full bg-accent-blue px-3 text-[12px] font-medium text-white"
                 >
                   Download
@@ -370,7 +377,7 @@ export function BriefNudge({
                       <a
                         href={`/brief/${briefId}/pdf`}
                         download
-                        onClick={celebrate}
+                        onClick={save}
                         className={primary}
                       >
                         Download
