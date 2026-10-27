@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
     const input: TaskInput = {
       requestId, message: body.voice ? correctProjectNames(message) : message, history: sanitizeHistory(body.history), context: sanitizeContext(body.context),
-      receivedAt: sanitizeReceivedAt(body.receivedAt), voice: !!body.voice,
+      receivedAt: sanitizeReceivedAt(body.receivedAt), acceptedAt: Date.now(), voice: !!body.voice,
       ...(sessionId ? { sessionId } : {}), ...(delegationId ? { delegationId } : {}),
     };
     await taskStore.receive(scope, input);

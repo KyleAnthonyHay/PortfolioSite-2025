@@ -8,6 +8,8 @@ export interface TaskInput {
   history: ConversationMessage[];
   context?: VisitorContext;
   receivedAt?: number;
+  /** When the server accepted the message, for the wait-time metric. */
+  acceptedAt?: number;
   voice?: boolean;
   sessionId?: string;
   delegationId?: string;

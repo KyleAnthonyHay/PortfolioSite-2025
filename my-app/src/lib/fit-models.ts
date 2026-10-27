@@ -1,5 +1,6 @@
 import { ChatOpenAI } from '@langchain/openai';
 import { assessmentDay } from './professional-tenure';
+import { meterResponse } from './metrics';
 
 export const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
 export type ModelStage = 'fit' | 'extraction' | 'brief' | 'verification' | 'chat' | 'evidence' | 'technology';
@@ -42,12 +43,15 @@ export function droppedConnection(error: unknown): boolean {
  * more; timeouts, aborts and HTTP errors are left to the caller.
  */
 async function sendOnce(input: Parameters<typeof fetch>[0], init?: Parameters<typeof fetch>[1]): Promise<Response> {
+  let response: Response;
   try {
-    return await globalThis.fetch(input, init);
+    response = await globalThis.fetch(input, init);
   } catch (error) {
     if (!droppedConnection(error) || init?.signal?.aborted) throw error;
-    return globalThis.fetch(input, init);
+    response = await globalThis.fetch(input, init);
   }
+  meterResponse(response);
+  return response;
 }
 
 export function createStageModel(name: string, temperature = 0, options: { streaming?: boolean; maxTokens?: number; reasoningEffort?: 'none' | 'low' } = {}): ChatOpenAI {

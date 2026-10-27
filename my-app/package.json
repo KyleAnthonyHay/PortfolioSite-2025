@@ -9,6 +9,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "postings:forget": "node --env-file=.env.local scripts/forget-posting.mjs",
+    "metrics:export": "node --env-file=.env.local scripts/metrics-export.mjs",
     "test:fit": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-fit.ts",
     "test:chat": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-chat.ts",
     "test:voice": "node --import ../backend/node_modules/tsx/dist/loader.mjs --test scripts/test-voice.ts",

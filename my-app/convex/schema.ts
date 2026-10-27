@@ -33,6 +33,22 @@ export default defineSchema({
     taskId: v.id('agentTasks'), revision: v.number(), instruction: v.string(), input: v.string(),
     status: v.string(), events: v.string(), answer: v.string(),
   }).index('by_task_revision', ['taskId', 'revision']),
+  /** Speed and usage per answer for Kyle-Anthony's metrics dashboard; no visitor text. Kept 90 days. */
+  agentMetrics: defineTable({
+    at: v.number(),
+    kind: v.union(v.literal('answer'), v.literal('plan')),
+    channel: v.union(v.literal('typed'), v.literal('voice')),
+    status: v.string(),
+    /** Message accepted by the server until the first words of the answer. */
+    waitMs: v.optional(v.number()),
+    firstTextMs: v.optional(v.number()),
+    totalMs: v.number(),
+    tools: v.array(v.object({ name: v.string(), ms: v.number() })),
+    fitCheck: v.boolean(),
+    modelCalls: v.number(),
+    inputTokens: v.number(),
+    outputTokens: v.number(),
+  }).index('by_at', ['at']),
   recruiterBriefs: defineTable({
     publicId: v.string(),
     createdAt: v.number(),
