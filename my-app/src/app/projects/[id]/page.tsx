@@ -200,6 +200,24 @@ const projects: Project[] = [
     },
     hasDetailedView: true
   },
+  {
+    id: 12,
+    title: 'Playback Support Agent',
+    image: '/products/playback/landing.jpg',
+    description: 'An inbound AI voice agent that helps worship teams fix song-loading and audio-output problems in MultiTracks Playback, grounded in the official docs.',
+    link: 'https://playback-support.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/Inbound-Customer-Service-Playback',
+    landscape: true,
+    category: 'Web',
+    overview: "Playback Support Agent is an inbound AI voice agent for MultiTracks Playback, the app worship teams use to run click, guides and backing tracks. A caller opens a browser call (or dials in) and talks to it like a support line: it identifies itself as an AI, asks what is wrong, looks up the church's account, checks the official docs, and walks them through song-loading and audio-output fixes before rehearsal or service. Everything the agent does appears live in an activity panel beside the call.",
+    purpose: "Tests whether a voice agent can resolve the calls a real support team gets before a service starts, without guessing. Every answer comes from a tool: the help center and the Playback User Guide (embedded in Pinecone), Apple's live App Store record for the current version, the church's Planning Center service plan, and the organization's subscription and song library. When it cannot fix the problem it hands off to a person or books a callback at the exact time the caller asked for. Built solo in five days as a take-home for Regal's AI Product Specialist role. It is not affiliated with MultiTracks, and its accounts, transfers and callbacks are simulated.",
+    techStack: {
+      frontend: ['Next.js 16 (App Router)', 'React 19', 'TypeScript', 'Tailwind CSS 4', 'Motion', 'Vapi Web SDK', 'Web Audio API'],
+      backend: ['Vapi voice agent', 'OpenAI GPT-Live', 'Convex (HTTP actions, database, live queries)', 'Pinecone (llama-text-embed-v2)', 'Apple iTunes Lookup API', 'Planning Center Services API'],
+      infrastructure: ['Vercel', 'Convex cloud (separate dev and prod)', 'Vapi assistants synced from code', 'tsx test suite', 'Scripted voice and text test harnesses']
+    },
+    hasDetailedView: true
+  },
 ];
 
 export function generateStaticParams() {

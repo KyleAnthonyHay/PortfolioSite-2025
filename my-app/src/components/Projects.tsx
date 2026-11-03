@@ -9,19 +9,21 @@ const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
 /**
  * ProdBot leads beside SelahNote's phone, OnTract and Sentio+ share the next
- * row, and the smaller tools close out in thirds. Every landscape well keeps
+ * row, the Playback agent leads the third beside the Creator Dashboard, and
+ * SoundSnag and YarnScript close out in halves. Every landscape well keeps
  * the recording's own proportions, so the whole app window is always in view.
- * On a tablet (md to lg) thirds are too narrow for a card's footer, so ProdBot
- * takes the full row and the rest pair up in halves.
+ * On a tablet (md to lg) ProdBot and the Playback agent take full rows and the
+ * rest pair up in halves.
  */
 const spans = [
   'md:col-span-12 lg:col-span-8',
   'md:col-span-6 lg:col-span-4',
   'md:col-span-6',
   'md:col-span-6',
+  'md:col-span-12 lg:col-span-8',
   'md:col-span-6 lg:col-span-4',
-  'md:col-span-6 lg:col-span-4',
-  'md:col-span-6 lg:col-span-4',
+  'md:col-span-6',
+  'md:col-span-6',
 ];
 
 const Projects = () => {

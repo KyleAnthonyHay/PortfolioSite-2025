@@ -37,6 +37,7 @@ import {
   Link2,
   Network,
   PanelTop,
+  PhoneForwarded,
 } from 'lucide-react';
 
 const ontractFeatures = [
@@ -140,6 +141,17 @@ const prodBotFeatures = [
   { icon: <Upload className="w-4 h-4" />, title: 'Import & Export', description: 'Approved docs export as a ZIP of YAML and markdown and re-import atomically as drafts.' },
 ];
 
+const playbackAgentFeatures = [
+  { icon: <Mic className="w-4 h-4" />, title: 'Real-Time Voice Agent', description: 'Vapi runs the call on OpenAI GPT-Live, in the browser or on a phone line, from one assistant definition kept in code.' },
+  { icon: <BookOpen className="w-4 h-4" />, title: 'Grounded in the Docs', description: 'One search tool returns the help-center snapshot and the Playback User Guide, chunked by heading and embedded in Pinecone, tagged so out-of-scope sections are never used as fixes.' },
+  { icon: <Globe className="w-4 h-4" />, title: 'Live Version Check', description: 'Reads the current Playback version from Apple\'s App Store record and the documented changes since the caller\'s version, so update advice is never guessed.' },
+  { icon: <Building2 className="w-4 h-4" />, title: 'Account-Aware Answers', description: 'Looks up the church by its six-digit organization ID and checks the subscription, song library and team permissions before giving download steps.' },
+  { icon: <Calendar className="w-4 h-4" />, title: 'Exact-Time Callbacks', description: 'Callback times are resolved on the server in the caller\'s time zone; the agent says why a time is unavailable before offering alternatives.' },
+  { icon: <PhoneForwarded className="w-4 h-4" />, title: 'Honest Handoffs', description: 'Asking for a person goes straight to the handoff flow, with a transfer tone in the browser, and the call only closes after the goodbye has been spoken.' },
+  { icon: <Gauge className="w-4 h-4" />, title: 'Live Agent Activity', description: 'A side panel streams the transcript and every tool call with its arguments and result, labelled Live API, Docs or Simulated.' },
+  { icon: <BarChart3 className="w-4 h-4" />, title: 'Call History & Metrics', description: 'Past calls keep the transcript, tool trail and per-call intent, outcome and timing, with archive, restore and confirmed delete.' },
+];
+
 const featuresByProject: Record<number, typeof ontractFeatures> = {
   1: selahNoteFeatures,
   4: countryViewerFeatures,
@@ -150,6 +162,7 @@ const featuresByProject: Record<number, typeof ontractFeatures> = {
   9: soundSnagFeatures,
   10: selahNoteDashboardFeatures,
   11: prodBotFeatures,
+  12: playbackAgentFeatures,
 };
 
 interface ProjectFeaturesProps {

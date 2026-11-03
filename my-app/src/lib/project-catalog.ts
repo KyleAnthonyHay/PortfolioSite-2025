@@ -180,6 +180,21 @@ const details: Record<number, CatalogDetails> = {
       infrastructure: ['Vercel', 'Convex cloud', 'Bun', 'GitHub Actions CI', 'convex-test'],
     },
   },
+  12: {
+    evidence: 'deployed',
+    aliases: ['Playback Support Agent', 'Playback Support', 'Playback Agent', 'Multi-Track Agent', 'MultiTrack Agent', 'MultiTracks Agent', 'Multitracks Playback Agent', 'Regal take-home'],
+    corpusNames: ['Playback Support Agent'],
+    image: '/products/playback/landing.jpg',
+    unframed: true,
+    highlights: ['Vapi', 'GPT-Live', 'Convex', 'Pinecone'],
+    overview:
+      'Inbound AI voice support agent for MultiTracks Playback, built solo in five days as a take-home for Regal. Callers talk to it in the browser or on a phone line; it runs on Vapi with OpenAI GPT-Live and calls Convex tools to search the help center and the Playback User Guide in Pinecone, check the live App Store version, read the church\'s Planning Center service, look up a simulated organization\'s subscription and songs, and book callbacks or hand off. Every tool call shows live in an activity panel.',
+    techStack: {
+      frontend: ['Next.js 16 (App Router)', 'React 19', 'TypeScript', 'Tailwind CSS 4', 'Motion', 'Vapi Web SDK', 'Web Audio API'],
+      backend: ['Vapi voice agent', 'OpenAI GPT-Live', 'Convex (HTTP actions, database, live queries)', 'Pinecone (llama-text-embed-v2)', 'Apple iTunes Lookup API', 'Planning Center Services API'],
+      infrastructure: ['Vercel', 'Convex cloud (separate dev and prod)', 'Vapi assistants synced from code', 'tsx test suite', 'Scripted voice and text test harnesses'],
+    },
+  },
 };
 
 

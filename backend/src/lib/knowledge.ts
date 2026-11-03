@@ -17,6 +17,7 @@ export const PROJECT_IDS: Record<string, number> = {
   soundsnag: 9,
   "selahnote-creator-dashboard": 10,
   "v1-prodbot": 11,
+  "playback-support-agent": 12,
 };
 
 export interface KnowledgeChunk {

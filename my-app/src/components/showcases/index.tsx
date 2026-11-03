@@ -249,6 +249,36 @@ const prodBot: Showcase = {
   ],
 };
 
+/**
+ * Screenshots for now. VIDEO SLOT: when the walkthrough is ready, save it as
+ * public/products/playback/tour.mp4 with tour-poster.jpg and add this as the
+ * first item; the page then leads with it and the screenshots move underneath.
+ *   { label: 'Walkthrough', icon: <Play className={ic} />, title: 'A narrated tour of the Playback agent.',
+ *     description: '...', media: { kind: 'walkthrough', src: '/products/playback/tour.mp4', poster: '/products/playback/tour-poster.jpg' } },
+ */
+const playbackAgent: Showcase = {
+  heading: 'A support line that answers before the service starts.',
+  orientation: 'landscape',
+  items: [
+    {
+      label: 'Call',
+      icon: <Mic className={ic} />,
+      title: 'Talk to it like a support line.',
+      description:
+        'Start a browser call and describe the problem. The agent says up front that it is an AI, asks what is wrong, and works through song-loading or audio-output fixes from the official Playback docs.',
+      media: { kind: 'browser', src: '/products/playback/landing.jpg', alt: 'The Playback Support Agent landing page with the Start a browser call button', url: 'playback-support.vercel.app', ratio: 16 / 10 },
+    },
+    {
+      label: 'Agent activity',
+      icon: <Gauge className={ic} />,
+      title: 'Every step the agent takes, in view.',
+      description:
+        'The call runs on an iPhone-style screen while a side panel streams the transcript and each tool call, labelled Live API, Docs or Simulated. Expand any row to see the exact arguments and the JSON that came back.',
+      media: { kind: 'browser', src: '/products/playback/call.jpg', alt: 'The call screen beside the Agent activity panel', url: 'playback-support.vercel.app/call', ratio: 16 / 10 },
+    },
+  ],
+};
+
 const showcases: Record<number, Showcase> = {
   1: selahNote,
   4: countryApp,
@@ -259,6 +289,7 @@ const showcases: Record<number, Showcase> = {
   9: soundSnag,
   10: selahNoteDashboard,
   11: prodBot,
+  12: playbackAgent,
 };
 
 export default function ProjectShowcase({ projectId }: { projectId: number }) {

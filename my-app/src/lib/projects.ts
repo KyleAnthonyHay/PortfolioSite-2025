@@ -102,6 +102,22 @@ export const projects: ProjectCardData[] = [
     live: true,
   },
   {
+    id: 12,
+    title: 'Playback Support Agent',
+    tagline: 'AI voice support agent for MultiTracks Playback',
+    description:
+      'Inbound AI voice agent that helps worship teams fix song-loading and audio-output problems in MultiTracks Playback, grounded in the official docs, with every tool call shown live beside the call.',
+    // Screenshot for now. When the walkthrough is recorded, add a `video`
+    // here like the others: { src: '/products/playback/loop.mp4', poster: '/products/playback/poster.jpg', ratio: 16 / 9, bare: true }.
+    image: '/products/playback/landing.jpg',
+    link: 'https://playback-support.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/Inbound-Customer-Service-Playback',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+    live: true,
+  },
+  {
     id: 10,
     title: 'SelahNote Creator Dashboard',
     tagline: 'UGC creator referrals and payouts',

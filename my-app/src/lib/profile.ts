@@ -143,6 +143,14 @@ export const journey: JourneyNode[] = [
       { id: 5, title: 'OnTract', href: '/projects/5' },
     ],
   },
+  {
+    id: 'playback-agent',
+    kind: 'project',
+    period: 'Nov 2026',
+    title: 'Voice AI support agent',
+    caption: 'Inbound voice agent for MultiTracks Playback, grounded in the docs and a Pinecone-embedded user guide.',
+    projects: [{ id: 12, title: 'Playback Support Agent', href: '/projects/12' }],
+  },
 ];
 
 export const contactLinks: ContactLink[] = [
