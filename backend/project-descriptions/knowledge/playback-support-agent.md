@@ -14,7 +14,7 @@ The Playback Support Agent (Kyle-Anthony sometimes calls it his "multi-track age
 
 Every answer is backed by a tool. The agent searches the official help-center articles and the Playback User Guide (embedded in Pinecone), checks Apple's live App Store record for the current Playback version, reads the church's service plan from the Planning Center Services API, looks up a simulated organization's subscription, song library and team permissions, and can book a callback or hand the caller to a person. A side panel shows the live transcript and every tool call as it happens.
 
-It was built from October 30 to November 3, 2026 as a take-home project for Regal's AI Product Specialist role. It is a demo: it is not affiliated with or used by MultiTracks, customer accounts, transfers and callbacks are simulated, and it has no real callers. The public demo is at playback-support.vercel.app and the code is on GitHub at KyleAnthonyHay/Inbound-Customer-Service-Playback.
+Kyle-Anthony built it solo from October 30 to November 3, 2026. It is a demo: it is not affiliated with or used by MultiTracks, customer accounts, transfers and callbacks are simulated, and it has no real callers. The public demo is at playback-support.vercel.app and the code is on GitHub at KyleAnthonyHay/Inbound-Customer-Service-Playback.
 
 ## Problem and users
 <!-- meta: {"type":"project","project":"Playback Support Agent","category":"problem","technologies":[]} -->
@@ -100,7 +100,7 @@ The Playback Support Agent is live as a public demo at playback-support.vercel.a
 
 Open items in the project notes: claim and route the phone number, fill in the scenario matrix results, and finish the remaining manual voice checks.
 
-[NEEDS KYLE: hardest part in your words, and how the Regal take-home went]
+[NEEDS KYLE: hardest part in your words]
 
 ## Skills demonstrated
 <!-- meta: {"type":"project","project":"Playback Support Agent","category":"skills","technologies":["Vapi","OpenAI GPT-Live","Voice AI","Conversational AI","Pinecone","RAG","Convex","Next.js","React","TypeScript","Tailwind CSS","Vercel","Planning Center Services API","Web Audio API"]} -->
@@ -110,4 +110,4 @@ AI engineering: voice AI agents, conversational AI, real-time speech-to-speech m
 
 Full-stack engineering: Next.js 16, React 19, TypeScript, Tailwind CSS, Convex (HTTP actions, live queries, schema, seed data, environment variables), webhooks with shared secrets, third-party API integration (Vapi, Apple iTunes Lookup, Planning Center Services), time-zone-correct scheduling, Web Audio API sound design, separate development and production environments, and a one-command release.
 
-Product and customer-facing skills: Kyle-Anthony built it solo as a take-home for an AI Product Specialist role, translating a real support workflow (volunteers under time pressure, entitlement problems that look like bugs, honest handoffs) into agent policy, a demo a reviewer can watch step by step, and clear documentation of what is real and what is simulated.
+Product and customer-facing skills: Kyle-Anthony built it solo, translating a real support workflow (volunteers under time pressure, entitlement problems that look like bugs, honest handoffs) into agent policy, a demo a reviewer can watch step by step, and clear documentation of what is real and what is simulated.
