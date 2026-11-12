@@ -1,12 +1,26 @@
 import { randomUUID } from 'crypto';
 import { runAgent } from '../chat-agent';
+import { prefetchFitCheck } from '../fit-tool';
 import { addTaskEvent, type AgentTask } from './types';
 import { planTasks } from './planner';
 import { taskStore, type TaskScope } from './store';
 import type { ChatEvent } from '../chat-events';
 
-/** Server work is independent of an individual browser request's AbortSignal. */
-export async function executeTask(scope: TaskScope, task: AgentTask, deadline = Date.now() + 240_000): Promise<void> {
+/**
+ * Server work is independent of an individual browser request's AbortSignal.
+ * Work that outlives the task (a fit check's brief and email) goes into
+ * `background`; without one, the task waits for it after it completes.
+ */
+export async function executeTask(scope: TaskScope, task: AgentTask, deadline = Date.now() + 240_000, background?: Promise<unknown>[]): Promise<void> {
+  const work = background ?? [];
+  try {
+    await runTask(scope, task, deadline, work);
+  } finally {
+    if (!background) await Promise.allSettled(work);
+  }
+}
+
+async function runTask(scope: TaskScope, task: AgentTask, deadline: number, background: Promise<unknown>[]): Promise<void> {
   const lease = randomUUID();
   if (!await taskStore.claim(scope, task.id, task.revision, lease)) return;
   const controller = new AbortController();
@@ -34,6 +48,7 @@ export async function executeTask(scope: TaskScope, task: AgentTask, deadline = 
     for await (const event of runAgent(task.input.message, task.input.history, {
       signal: controller.signal, context: task.input.context, receivedAt: task.input.receivedAt,
       conversationId: scope.conversationId, voice: task.input.voice, taskGoal: task.instruction, priorTaskResult: task.previousResult ?? undefined,
+      background: (work) => void background.push(work),
     })) {
       if (controller.signal.aborted) break;
       events = addTaskEvent(events, event);
@@ -70,6 +85,8 @@ export async function coordinateTasks(scope: TaskScope, deadline = Date.now() + 
     if (!turn) return;
     const token = randomUUID();
     if (!await taskStore.claimPlanning(scope, turn.id, token)) return;
+    // A posting in the message starts its fit check now, alongside planning.
+    prefetchFitCheck(turn.input);
     try {
       const plan = await planTasks(turn.input, snapshot.tasks);
       await taskStore.apply(scope, turn.id, snapshot.version, token, plan);
@@ -84,13 +101,19 @@ export async function coordinateTasks(scope: TaskScope, deadline = Date.now() + 
 
 export async function runQueuedTasks(scope: TaskScope, deadline = Date.now() + 260_000): Promise<void> {
   // Claims in Convex cap concurrent execution across browser tabs/server invocations.
-  for (let round = 0; round < 4 && Date.now() < deadline - 1000; round++) {
-    const snapshot = await taskStore.snapshot(scope);
-    const queued = snapshot.tasks.filter(task => task.status === 'queued').slice(0, 3);
-    if (!queued.length) return;
-    await Promise.all(queued.map(task => executeTask(scope, task, deadline)));
-    const remaining = await taskStore.snapshot(scope);
-    if (remaining.tasks.filter(task => task.status === 'running').length >= 3) return;
+  // Finished tasks' briefs keep going in the background while later tasks run.
+  const background: Promise<unknown>[] = [];
+  try {
+    for (let round = 0; round < 4 && Date.now() < deadline - 1000; round++) {
+      const snapshot = await taskStore.snapshot(scope);
+      const queued = snapshot.tasks.filter(task => task.status === 'queued').slice(0, 3);
+      if (!queued.length) return;
+      await Promise.all(queued.map(task => executeTask(scope, task, deadline, background)));
+      const remaining = await taskStore.snapshot(scope);
+      if (remaining.tasks.filter(task => task.status === 'running').length >= 3) return;
+    }
+  } finally {
+    await Promise.allSettled(background);
   }
 }
 export async function processTasks(scope: TaskScope): Promise<void> {

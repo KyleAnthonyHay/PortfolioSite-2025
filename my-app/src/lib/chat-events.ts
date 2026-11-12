@@ -172,8 +172,13 @@ export type Widget =
       jobUrl?: string;
       requirements: FitRequirement[];
       summary: { match: number; related: number; gap: number };
-      /** The saved brief this fit check was written up as, for its download and share link. */
-      brief?: { publicId: string; nextStep: string; level: RecommendationLevel };
+      /**
+       * The brief this fit check is written up as, for its download and share
+       * link. While `pending`, it is still being written: nextStep and level
+       * are the fit check's own, and the card checks /brief/<id>/status until
+       * the brief is saved.
+       */
+      brief?: { publicId: string; nextStep: string; level: RecommendationLevel; pending?: boolean };
     };
 
 export interface SourceRef {

@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { profile } from './profile';
+import { professionalTenureEvidence, TENURE_CONFIRMATION } from './professional-tenure';
 
 /**
  * Facts Kyle has stated himself, from backend/project-descriptions/kyle-profile.md:
@@ -53,10 +54,10 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
 - SelahNote has over 400 users (about 40 paying subscribers) and a 5.0 App Store rating across 16 ratings. These are his largest real numbers; nothing he built runs at large scale, so never call any of it large-scale.
 - V1 ProdBot was requested by V1 Church's head global audio engineer, the one real outside stakeholder; a rollout across campuses is planned, not done.
 - YarnScript was a four-hour take-home challenge for the startup Yarn (March 2026), not client work; Yarn did not hire him.
-- Professional experience, from his résumé: AI Engineer at Cognizant since November 2025, and a Software Engineering internship at The Difference (July to September 2023). His Cognizant work, in the résumé's words: an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules; fine-tuning DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points; ETL regression testing across millions of records. ${cognizantOwn.length ? `In his own words (not yet on his résumé): ${cognizantOwn.join(' ')}` : ''} Describe Cognizant only with these words; none of his portfolio projects were built there.
-- Professional tenure is about one year (Cognizant since November 2025, plus the three-month internship). Never count side projects or training programs as professional years.
+- Professional experience: AI Engineer at Cognizant since November 2025, and a Software Engineering internship at The Difference (July to September 2023). At Cognizant he designed a synthetic-data testbed using column metadata and business rules and built an MVP; operational adoption is pending. He fine-tuned DistilBERT for sentiment analysis as a Cognizant training project, not a production deployment. No measured accuracy improvement is confirmed. ${cognizantOwn.length ? `In his own words: ${cognizantOwn.join(' ')}` : ''} None of his portfolio projects were built there.
+- Professional tenure: ${professionalTenureEvidence()} On ${TENURE_CONFIRMATION.asOf}, Kyle-Anthony explicitly confirmed fewer than ${TENURE_CONFIRMATION.fewerThanYears} years of professional industry experience. Treat explicit confirmations and established shortfalls as evidence, not as missing documentation.
 - Client and real-user work: V1 ProdBot is the one project built at an outside stakeholder's request. SelahNote has real users and paying subscribers. The Creator Dashboard is an internal tool for SelahNote's staff and creators. YarnScript, Sentio+, OnTract and SoundSnag have no stated users.
-- Never classify an employer (big tech, FAANG, startup, enterprise) or answer yes or no to whether he has worked at one: list the employers his résumé names (Cognizant, The Difference) and let the visitor judge. Never state what he has not done unless a tool says so. Never speculate about weaknesses.
+- Never classify an employer (big tech, FAANG, startup, enterprise) or answer yes or no to whether he has worked at one: list the employers his résumé names (Cognizant, The Difference) and let the visitor judge. State a shortfall only when he explicitly confirmed it or authoritative dated evidence establishes it; missing documentation alone is not a shortfall. Never speculate about weaknesses.
 - Also from his résumé: first place at the Headstarter Hackathon (MunchMap, February 2024, three-person team); top 5% of applicants in the Yarn challenge.
 - Work arrangement, in his own words: ${arrangement.join(' ') || 'not stated.'} He is based in ${profile.location}.${HIRING_DETAILS.length ? ` Hiring details, in his own words: ${HIRING_DETAILS.join(' ')}` : ''} Anything not listed here (for example notice details or a salary figure) is not stated.
 - His background notes are his own account. A claim found only there (for example that he has led small teams) is "he says", not a verified fact, and no project shows him leading a team.`;
@@ -69,9 +70,9 @@ export const CAREER_FACTS = `Fixed facts (never contradict, never go beyond):
  * it, so "has he fine-tuned DistilBERT?" and "QA test cases" agree everywhere.
  */
 export const WORK_EVIDENCE: { where: string; text: string; source: 'résumé' | 'his account' }[] = [
-  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Designed an AI-assisted synthetic-data testbed for the global data warehouse using column metadata and business rules to reduce manual test-data preparation.', source: 'résumé' },
-  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Fine-tuned DistilBERT, increasing sentiment-analysis accuracy by 25 percentage points.', source: 'résumé' },
-  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Executed ETL regression testing across millions of records to surface pre-production data defects.', source: 'résumé' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Designed an AI-assisted synthetic-data testbed for data-warehouse testing using column metadata and business rules and built an MVP; operational adoption is pending.', source: 'his account' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Fine-tuned DistilBERT for sentiment analysis in a Cognizant training project; this was not a production deployment, and no measured accuracy improvement is confirmed.', source: 'his account' },
+  { where: 'AI Engineer at Cognizant (Nov 2025 to present)', text: 'Execute and adjust QA test cases for regression testing and functional and technical data reconciliation using Snowflake, Informatica, AutoSys and DBeaver.', source: 'his account' },
   { where: 'Software Engineering Intern at The Difference (Jul to Sep 2023)', text: 'Built a web version of a fitness app from Figma designs using WordPress, HTML, and CSS.', source: 'résumé' },
   { where: 'MunchMap, 1st place at the Headstarter Hackathon (Feb 2024)', text: 'Built a role-based React food-donation workflow with a three-person team.', source: 'résumé' },
   // His jobs and other work from kyle-profile.md; where he works, hiring details and education are answered elsewhere.

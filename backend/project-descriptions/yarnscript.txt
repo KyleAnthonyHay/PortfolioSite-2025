@@ -1,0 +1,82 @@
+================================================================================
+                               PROJECT DESCRIPTION
+================================================================================
+
+PROJECT OVERVIEW
+----------------
+YarnScript is an AI-powered teleprompter that follows your voice instead of
+scrolling at a fixed speed. It combines live speech transcription with semantic
+matching to track where the speaker is in a script, even when they skip words,
+ad-lib, rephrase a section, or jump ahead. The user pastes a script or uploads a
+text file, allows microphone access, and begins reading: spoken text is
+highlighted in real time while the active line stays centered on screen.
+
+Live site: https://yarn-script.vercel.app
+Source: https://github.com/KyleAnthonyHay/yarn-script
+
+PURPOSE & CONTEXT
+-----------------
+Traditional teleprompters force the speaker to match an arbitrary scrolling
+speed. YarnScript flips that relationship: the script responds to the speaker.
+This reduces the mental effort of keeping pace, recovering after a mistake, and
+finding the correct line, so the reader can focus on delivery.
+
+The project was designed, built, and polished as a four-hour product sprint,
+with particular attention to latency, speech alignment, and recovery when the
+speaker departs from the written script.
+
+TECH STACK
+----------
+Frontend:
+- Next.js 16 (App Router) with React 19 and TypeScript
+- CSS Modules for styling
+- Web Audio API for microphone capture and audio chunking
+- WebSockets for streaming audio to the transcription service
+
+Backend:
+- Next.js API Routes
+- AssemblyAI Streaming Speech-to-Text for low-latency live transcription
+- OpenAI text-embedding-3-small for embedding script segments and spoken phrases
+- Convex database with vector search for matching speech against the script
+- Server-side script preparation: splitting scripts into lines and segments,
+  embedding them, and storing them for lookup
+- Temporary AssemblyAI auth tokens minted server-side so the API key never
+  reaches the browser
+
+Infrastructure:
+- Deployed on Vercel
+- Convex cloud infrastructure for data and vector search
+- Vitest for unit tests, ESLint for linting
+
+HOW IT WORKS
+------------
+1. Script preparation: when a script is loaded, the server splits it into lines
+   and overlapping segments, embeds each segment with OpenAI embeddings, and
+   stores the vectors in Convex.
+2. Live transcription: the browser captures microphone audio with the Web Audio
+   API and streams it over a WebSocket to AssemblyAI, which returns partial and
+   final transcripts within a few hundred milliseconds.
+3. Semantic alignment: each transcript window is embedded and matched against
+   the script segments with Convex vector search. Matching is semantic rather
+   than exact, so paraphrases and skipped words still resolve to the right line.
+4. Position tracking: a small state machine combines the vector match with the
+   previous known position to avoid jumping backwards on repeated phrases and to
+   recover gracefully when the speaker jumps ahead.
+5. Display: the matched line is centered, already-spoken text is highlighted,
+   and the view scrolls smoothly as the speaker progresses.
+
+KEY ENGINEERING DECISIONS
+-------------------------
+- Semantic matching over string matching: exact matching breaks the moment a
+  speaker ad-libs; embeddings tolerate rephrasing.
+- Streaming everything: audio is streamed rather than uploaded in batches so
+  highlighting keeps up with natural speech.
+- Server-minted temporary tokens keep third-party API keys out of client code.
+- Scope discipline: the four-hour sprint prioritised the core loop (speak,
+  match, scroll) over settings and account features.
+
+SKILLS DEMONSTRATED
+-------------------
+Real-time audio processing, streaming speech-to-text integration, embeddings
+and vector search, Next.js full-stack development, WebSocket handling, product
+scoping under a tight time budget, and latency-focused UX.

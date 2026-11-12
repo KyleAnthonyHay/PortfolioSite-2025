@@ -13,7 +13,8 @@ import { allTools, describeToolCall, parseToolResult, type ToolResult } from './
 import { catalog, projectById } from './project-catalog';
 import type { ChatEvent, ConversationMessage, SourceRef, VisitorContext, Widget } from './chat-events';
 import { notifyFitCheck, notifyRecruiterBrief } from './notify';
-import { briefFor, makeFitTool } from './fit-tool';
+import { makeFitTool } from './fit-tool';
+import type { BriefView } from './recruiter-brief/view';
 import { looksLikePosting } from './recruiter-brief/tool';
 import { REQUIREMENT_RULES } from './recruiter-brief/generate';
 import { CAREER_FACTS } from './facts';
@@ -242,15 +243,35 @@ function withTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T
   return Promise.race([promise, new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))]);
 }
 
+type AgentOptions = {
+  receivedAt?: number;
+  signal?: AbortSignal;
+  context?: VisitorContext;
+  conversationId?: string;
+  voice?: boolean;
+  taskGoal?: string;
+  priorTaskResult?: { goal: string; status: string; answer: string };
+  /** Takes work that outlives the turn's events: a fit check's brief and the email to Kyle-Anthony. */
+  background?: (work: Promise<unknown>) => void;
+};
+
 /**
  * Runs one turn of the agent and yields UI events as they happen: tool
  * activity, widgets, streamed text, then sources and follow-up suggestions.
+ * A fit check's brief is still being written after the last event; it goes
+ * to `background` when given, otherwise the turn waits for it before ending.
  */
-export async function* runAgent(
-  userMessage: string,
-  history: ConversationMessage[],
-  options: { receivedAt?: number; signal?: AbortSignal; context?: VisitorContext; conversationId?: string; voice?: boolean; taskGoal?: string; priorTaskResult?: { goal: string; status: string; answer: string } } = {}
-): AsyncGenerator<ChatEvent> {
+export async function* runAgent(userMessage: string, history: ConversationMessage[], options: AgentOptions = {}): AsyncGenerator<ChatEvent> {
+  const work: Promise<unknown>[] = [];
+  const background = options.background ?? ((item: Promise<unknown>) => void work.push(item));
+  try {
+    yield* runTurn(userMessage, history, { ...options, background });
+  } finally {
+    await Promise.allSettled(work);
+  }
+}
+
+async function* runTurn(userMessage: string, history: ConversationMessage[], options: AgentOptions & { background: (work: Promise<unknown>) => void }): AsyncGenerator<ChatEvent> {
   const { signal, context, conversationId, voice } = options;
   if (signal?.aborted) return;
   const visitor = await visitorSection(context);
@@ -275,7 +296,19 @@ export async function* runAgent(
   // Never ask twice in a row: if the last turn was a question, this message is the answer.
   const lastAssistant = [...history].reverse().find((m) => m.role === 'assistant');
   const justAsked = lastAssistant?.content.startsWith('[Asked the visitor') ?? false;
-  const fitTool = makeFitTool({ receivedAt: options.receivedAt, userMessage, history, context, conversationId });
+  // The brief for this turn's fit check, while it is written after the card goes out.
+  let briefing: Promise<BriefView | undefined> | undefined;
+  const fitTool = makeFitTool({
+    receivedAt: options.receivedAt,
+    userMessage,
+    history,
+    context,
+    conversationId,
+    onBrief: (brief) => {
+      briefing = brief;
+      options.background(brief);
+    },
+  });
   const updatesTool = makeChatUpdatesTool({ userMessage, history, context, receivedAt: options.receivedAt, voice });
   const tools = [updatesTool, ...(justAsked ? allTools.filter((t) => t.name !== 'ask_visitor') : allTools), fitTool];
   // Links the visitor actually shared; the model must not fetch any other.
@@ -400,24 +433,25 @@ export async function* runAgent(
     }
 
     // notify_kyle: a fit check is the moment a recruiter is serious, so Kyle-Anthony hears about it,
-    // with the brief it was written up as when there is one.
+    // with the brief it was written up as. The brief is still being written when the card goes out,
+    // so the email waits for it in the background (and carries the finished answer) rather than
+    // holding up the answer; the fit check alone goes if the brief can't be written.
     const report = results.find(({ result }) => result.widget?.kind === 'fit_report')?.result.widget;
     if (report?.kind === 'fit_report' && !fitShown) {
       fitShown = true;
-      stepCounter += 1;
-      const id = `step-${stepCounter}`;
-      const transcript = [...history, { role: 'user' as const, content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])];
-      const view = briefFor(report.brief?.publicId);
-      const notice = (
-        view
-          ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript })
-          : notifyFitCheck({ report, context, conversationId, transcript })
-      ).catch(() => 'failed' as const);
-      // Only shown when an email actually goes out; without a Resend key this is silent.
-      const outcome = await withTimeout(notice, 15000, 'failed' as const);
-      if (outcome === 'sent') {
-        yield { type: 'step', step: { id, tool: 'notify_kyle', label: 'Let Kyle-Anthony know about this fit check', status: 'done', detail: ['He gets the brief by email so he can follow up today'] } };
-      }
+      const transcript = () => [...history, { role: 'user' as const, content: userMessage }, ...(answer.trim() ? [{ role: 'assistant' as const, content: answer }] : [])];
+      const notice = (briefing ?? Promise.resolve(undefined))
+        .then((view) =>
+          withTimeout(
+            view
+              ? notifyRecruiterBrief({ view, jobUrl: report.jobUrl, context, conversationId, transcript: transcript() })
+              : notifyFitCheck({ report, context, conversationId, transcript: transcript() }),
+            15000,
+            'failed' as const
+          )
+        )
+        .catch(() => 'failed' as const);
+      options.background(notice);
     }
 
     // A question card ends the turn; the visitor's choice starts the next one.

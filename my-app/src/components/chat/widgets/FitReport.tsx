@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { CircleCheck, CircleDot, CircleMinus, FileText } from 'lucide-react';
 import type { FitStatus, Widget } from '@/lib/chat-events';
 import BriefActions from '@/components/brief/BriefActions';
+import { useSavedBrief } from '@/lib/use-saved-brief';
 
 const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{ className?: string }>; color: string; chip: string }> = {
   match: { label: 'Supported match', icon: CircleCheck, color: 'text-emerald-600', chip: 'bg-emerald-50 text-emerald-700' },
@@ -17,7 +18,10 @@ const statusMeta: Record<FitStatus, { label: string; icon: React.ComponentType<{
 const VISIBLE_ROWS = 5;
 
 export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, { kind: 'fit_report' }>; onBrief?: () => void }) {
-  const { role, requirements, summary, brief } = widget;
+  const { role, requirements, summary } = widget;
+  // The card goes out while its brief is still being written; the buttons come once it is saved.
+  const { brief, writing } = useSavedBrief(widget.brief);
+  const nextStep = (brief ?? widget.brief)?.nextStep;
   const listRef = useRef<HTMLUListElement>(null);
   const [maxHeight, setMaxHeight] = useState<number>();
   const [atEnd, setAtEnd] = useState(false);
@@ -58,9 +62,9 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
           ))}
         </div>
       </div>
-      {brief && (
+      {nextStep && (
         <p className="border-b border-zinc-100 px-4 py-2.5 text-[13px] text-zinc-900">
-          <span className="font-medium">Recommendation:</span> {brief.nextStep.replace(/\.\s*$/, '')}
+          <span className="font-medium">Recommendation:</span> {nextStep.replace(/\.\s*$/, '')}
         </p>
       )}
       <p className="px-4 py-2 text-xs text-zinc-500">Based on documented evidence. Confirm unrecorded experience with Kyle-Anthony.</p>
@@ -112,6 +116,11 @@ export function FitReportWidget({ widget, onBrief }: { widget: Extract<Widget, {
         <div className="border-t border-zinc-100 px-4 py-3">
           <p className="mb-2 text-[12px] text-zinc-400">This check is also a one-page brief to send the hiring manager.</p>
           <BriefActions publicId={brief.publicId} title={role} showOpen size="sm" />
+        </div>
+      ) : writing ? (
+        <div role="status" className="flex items-center gap-2 border-t border-zinc-100 px-4 py-3 text-[12px] text-zinc-400">
+          <span className="h-3.5 w-3.5 shrink-0 animate-spin rounded-full border-2 border-zinc-200 border-t-zinc-500" aria-hidden />
+          Writing this up as a one-page brief to send the hiring manager…
         </div>
       ) : onBrief && (
         <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-zinc-100 px-4 py-2.5">

@@ -1,0 +1,130 @@
+{
+  "at": "2026-10-09T18:52:52.274Z",
+  "model": "gpt-5.6-luna",
+  "scope": "Live local evaluation of the 13 user-supplied requirement rows; no deployment, email, or database writes.",
+  "summary": {
+    "supported": 1,
+    "needsConfirmation": 11,
+    "confirmedGaps": 1
+  },
+  "read": "partial fit: real gaps to weigh",
+  "recommendation": "Phone screen only if the employer can relax 5+ years of professional industry experience",
+  "needsReview": false,
+  "rows": [
+    {
+      "requirement": "Senior- or staff+-scope experience as a software engineer building agentic systems",
+      "assessment": "relevant",
+      "evidence": "Built agentic systems and a solo deployed rebuild, but the evidence does not establish senior- or staff-level scope.",
+      "required": true,
+      "projectIds": [
+        6
+      ]
+    },
+    {
+      "requirement": "5+ years of professional industry experience",
+      "assessment": "gap",
+      "evidence": "Cognizant since November 2025, plus The Difference internship (July-September 2023). He confirmed this is his complete employed history on 2026-10-09. Recorded dates support approximately 11-15 months as of 2026-10-09; exact start/end days are not recorded. Independent products and training are separate from employed tenure. Even the upper bound of his complete employed history does not meet the 5-year requirement.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Designing and developing ML systems or agentic pipelines in production",
+      "assessment": "relevant",
+      "evidence": "Designed and deployed a grounded AI chat agent with tool use, streaming, safeguards, and a production Convex backend.",
+      "required": true,
+      "projectIds": [
+        11
+      ]
+    },
+    {
+      "requirement": "Building and shipping end-to-end agentic systems for creative workflows, balancing quality, performance, and reliability",
+      "assessment": "relevant",
+      "evidence": "Built a creative teleprompter workflow end-to-end under a four-hour deadline, balancing latency, accuracy, cost, and reliability.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Deep experience with context engineering, including RAG systems, token optimization, and context management at scale",
+      "assessment": "relevant",
+      "evidence": "Implemented RAG, embeddings, token budgeting, context limits, retrieval strategies, and cost controls, but not at demonstrated scale.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Building evaluation systems and agentic infrastructure for context gathering, tool selection, and multi-step planning",
+      "assessment": "relevant",
+      "evidence": "Built agent tools, retrieval and context workflows, multi-step planning, tracing, and evaluation harnesses for agent behavior.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Integrating state-of-the-art models using internal research and external capabilities",
+      "assessment": "relevant",
+      "evidence": "Integrated Claude, OpenAI, Bedrock, Pinecone, AssemblyAI, and other external capabilities into AI products.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Measuring and improving agent quality in production through experimentation, evaluation frameworks, and real-world feedback",
+      "assessment": "relevant",
+      "evidence": "Used evaluation harnesses, release gates, tracing, threshold tuning, cost telemetry, and real user feedback on a live product.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Exceptional problem-solving fundamentals and ability to learn quickly in a rapidly evolving space",
+      "assessment": "relevant",
+      "evidence": "Solved latency, grounding, recovery, and reliability problems through rapid independent implementation and documented engineering tradeoffs.",
+      "required": true,
+      "projectIds": []
+    },
+    {
+      "requirement": "Ability to operate effectively in an extremely fast-paced environment and scope and deliver projects end-to-end",
+      "assessment": "strong",
+      "evidence": "Built and deployed YarnScript alone in approximately four hours, covering requirements, architecture, implementation, testing, and operations.",
+      "required": true,
+      "projectIds": [
+        8
+      ]
+    },
+    {
+      "requirement": "Experience with multi-agent architectures; fine-tuning LLMs for specific use cases; and generative media and agentic AI technology",
+      "assessment": "relevant",
+      "evidence": "Built multi-tool agentic workflows and fine-tuned RoBERTa and DistilBERT, but generative media experience is not shown.",
+      "required": true,
+      "projectIds": [
+        1
+      ]
+    },
+    {
+      "requirement": "Grounded, collaborative, willing to do whatever it takes to help the team win; startup founder or early engineer experience",
+      "assessment": "relevant",
+      "evidence": "Collaborated on Sentio+ and independently delivered YarnScript, but no startup founder or early-employee role is established.",
+      "required": true,
+      "projectIds": [
+        6,
+        8
+      ]
+    },
+    {
+      "requirement": "In-person at Mirage's NYC HQ in Union Square",
+      "assessment": "relevant",
+      "evidence": "Willing to work in person five days weekly anywhere in the New York City metropolitan area.",
+      "required": true,
+      "projectIds": []
+    }
+  ],
+  "validation": {
+    "fitTests": {
+      "passed": 19,
+      "failed": 0
+    },
+    "chatTests": {
+      "passed": 2,
+      "failed": 0
+    },
+    "typecheck": "passed",
+    "productionBuild": "passed",
+    "notes": "Live model judgments are not deterministic. This run verifies the tenure correction and preserved seniority uncertainty; other rows are not a certified ground truth."
+  }
+}

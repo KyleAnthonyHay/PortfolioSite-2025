@@ -33,6 +33,7 @@ import {
   type SkillMatch,
 } from './profile';
 import type { EvidenceProject, FitRequirement, FitStatus, ProjectResource, Recommendation, Widget } from './chat-events';
+import { assessmentDay, professionalTenureEvidence, professionalTenureVerdict } from './professional-tenure';
 
 /**
  * Every tool returns this shape, serialised. `content` is what the model
@@ -265,7 +266,7 @@ export let judgeFailures = 0;
 const FIT_RUBRIC = `
 These ITEMs are requirements from a job posting. Judge only the supplied evidence; the portfolio is not a complete history of the candidate.
 - An OR list is alternatives: "React, Angular, or Vue" is met by documented React use alone. "Such as" and "e.g." introduce examples, not a demand for every framework. AND requires every part. Keep stated years and proficiency separate from the alternative itself.
-- No evidence means unconfirmed, never proof he has not done it.
+- No evidence means unconfirmed, never proof he has not done it. Explicit candidate confirmations and known date-based shortfalls are different: they establish a gap, not missing documentation. Training or an MVP must not be described as production deployment.
 Judge them the way a hiring manager would:
 - "direct" only when an excerpt shows Kyle-Anthony doing that exact kind of work.
 - Building software for a domain is not experience as a practitioner in it: a billing ledger or payout tool is not finance or accounting experience; a dashboard is not data science or analytics experience.
@@ -325,8 +326,9 @@ async function judgeEvidence(
   alsoFetch: (RegExp[] | null)[] = []
 ): Promise<JudgedItem[]> {
   // A long batch makes the judge skip items, and a skipped item would read as
-  // a gap, so rows are judged three at a time.
-  const size = 3;
+  // a gap, so rows are judged three at a time. A fit check judges each row in
+  // its own call, all at once, so the slowest row sets the pace.
+  const size = mode === 'fit' ? 1 : 3;
   const chunks: number[][] = [];
   for (let start = 0; start < questions.length; start += size) chunks.push(questions.slice(start, start + size).map((_, k) => start + k));
   const judged = await Promise.all(
@@ -700,7 +702,7 @@ export const getBackground = tool(
           .map((item) => `${item.period}: ${item.title} at ${item.org}${item.detail ? ` — ${item.detail}` : ''}`)
           .join('\n');
         return pack({
-          content: `${content}\n\n${PROFESSIONAL_TENURE} Describe the Cognizant work only with the timeline's words; none of his portfolio projects were built there.`,
+          content: `${content}\n\n${professionalTenureEvidence()} Describe the Cognizant work only with the timeline's words; none of his portfolio projects were built there.`,
           citedProjectIds: [],
           widget: { kind: 'timeline', items: timeline },
         });
@@ -782,11 +784,7 @@ export const searchBackground = tool(
   }
 );
 
-const YEARS_PATTERN = /(\d+)\s*\+?\s*(?:(?:-|–|—|to)\s*\d+\s*)?(?:years?|yrs?)/i;
-
-/** His only confirmed professional role, for tenure questions. Side projects are not professional years. */
-const PROFESSIONAL_TENURE =
-  'About one year of professional experience: AI Engineer at Cognizant since November 2025, plus a three-month internship in 2023. His other years are personal and training-program work.';
+const YEARS_PATTERN = /(\d+(?:\.\d+)?)\s*\+?\s*(?:(?:-|–|—|to)\s*\d+(?:\.\d+)?\s*)?(?:years?|yrs?)/i;
 
 type Shortcut = FitRequirement | { judge: true; requirement: string; requiredYears: number | null };
 
@@ -795,11 +793,37 @@ type Shortcut = FitRequirement | { judge: true; requirement: string; requiredYea
  * professional tenure, and where he can work. Everything else goes to the
  * judge, which needs an excerpt showing his own use.
  */
-function shortcut(requirement: string): Shortcut {
+function shortcut(requirement: string, day: string): Shortcut {
   const text = requirement.trim();
   const lower = text.toLowerCase();
   const yearsMatch = YEARS_PATTERN.exec(text);
-  const requiredYears = yearsMatch ? parseInt(yearsMatch[1], 10) : null;
+  const requiredYears = yearsMatch ? parseFloat(yearsMatch[1]) : null;
+
+  // A tenure shortfall cannot reject an alternative such as a degree or equivalent experience.
+  if (requiredYears !== null && /\bor\b|equivalent|in lieu|instead of|up to|at most|no more than/i.test(text)) return { judge: true, requirement: text, requiredYears: null };
+
+  // Years of experience in general, in industry, or in a job function: tenure, not a technology.
+  if (requiredYears !== null && /\b(experience|employment|working|worked)\b|\bas an?\b/i.test(text)) {
+    const skills = findSkillsInText(text).filter((match) => termPattern(match.skill.name).test(text));
+    const professional = /\b(professional|industry|industrial|full[- ]time|commercial)\b|\bas an? [a-z]/i.test(lower);
+    if (skills.length === 0 || professional) {
+      // These forms may explicitly count independent work, so employed tenure cannot settle them.
+      if (/founder|self.employed|freelance|including.*(?:projects|training)|total.*coding/i.test(text)) return { judge: true, requirement: text, requiredYears };
+      const includeInternships = !/excluding internships|non[- ]internship|post[- ]graduation/i.test(text);
+      const fullTime = /full[- ]time/i.test(text);
+      let status = professionalTenureVerdict(requiredYears, day, includeInternships);
+      // The internship's hours are unrecorded: it can rule out an impossible
+      // minimum in the upper bound, but cannot prove a full-time minimum.
+      if (fullTime && includeInternships && status === 'match' && professionalTenureVerdict(requiredYears, day, false) !== 'match') status = 'related';
+      const generic = text.replace(YEARS_PATTERN, '').replace(/\b(at least|minimum|of|professional|industry|industrial|full[- ]time|commercial|software|engineering|development|work|hands-on|experience|employment|required|preferred)\b/gi, '').replace(/[\s:,.()-]/g, '') === '';
+      // Total tenure can disprove a longer specialized requirement, but cannot prove its domain or seniority.
+      if (status === 'match' && !generic) return { judge: true, requirement: text, requiredYears };
+      const evidence = professionalTenureEvidence(day, includeInternships);
+      return { requirement: text, status, evidence: status === 'gap'
+        ? `${evidence} Even the upper bound of his complete employed history does not meet the ${requiredYears}-year requirement.`
+        : status === 'related' ? `${evidence} The precise qualifying tenure needs confirmation: exact start/end days${fullTime && includeInternships ? ' and whether the internship qualifies as full-time' : ''} are not recorded.` : evidence, projects: [] };
+    }
+  }
 
   if (/\b(graduat(?:e[sd]?|ing|ion)|class of|currently enrolled|current student)\b/i.test(lower) &&
       /\b(recent|within|between|after|before|by|20\d{2}|current|enrolled|student)\b/i.test(lower)) {
@@ -840,15 +864,6 @@ function shortcut(requirement: string): Shortcut {
     return { requirement: text, status: arrangement.met ? 'match' : 'related', evidence: arrangement.evidence, projects: [] };
   }
 
-  // Years of experience in general, in industry, or in a job function: tenure, not a technology.
-  if (requiredYears !== null) {
-    const skills = findSkillsInText(text).filter((match) => termPattern(match.skill.name).test(text));
-    const professional = /\b(professional|industry|industrial|full[- ]time|commercial)\b|\bas an? [a-z]/i.test(lower);
-    if (skills.length === 0 || professional) {
-      return { requirement: text, status: requiredYears <= 1 ? 'match' : 'related', evidence: `${PROFESSIONAL_TENURE} ${requiredYears > 1 ? 'Confirm whether additional professional experience meets the required tenure; this portfolio may be incomplete.' : ''}`, projects: [] };
-    }
-  }
-
   return { judge: true, requirement: text, requiredYears };
 }
 
@@ -878,13 +893,13 @@ const DISPOSITION = /\b(mindset|adaptab\w*|ambigu\w*|thrive\w*|resilien\w*|growt
  * skill aliases ("apis", "real-time", "next") no longer count on their own,
  * and a technology a write-up says he chose against is evidence against it.
  */
-export async function assessRequirements(requirements: string[]): Promise<FitAssessment> {
+export async function assessRequirements(requirements: string[], day = assessmentDay()): Promise<FitAssessment> {
   const trimmed = requirements.map((r) => r.trim()).filter(Boolean).slice(0, MAX_REQUIREMENTS);
   const results: FitRequirement[] = new Array(trimmed.length);
   const toJudge: { index: number; requirement: string; requiredYears: number | null }[] = [];
 
   trimmed.forEach((requirement, index) => {
-    const quick = shortcut(requirement);
+    const quick = shortcut(requirement, day);
     if ('judge' in quick) toJudge.push({ index, requirement: quick.requirement, requiredYears: quick.requiredYears });
     else results[index] = quick;
   });
@@ -954,7 +969,7 @@ export async function assessRequirements(requirements: string[]): Promise<FitAss
   };
 
   const score = (summary.match + summary.related * 0.5) / Math.max(1, results.length);
-  const read: FitRead = results.some((row) => row.verificationStatus === 'unknown')
+  const read: FitRead = summary.gap === 0 && results.some((row) => row.verificationStatus === 'unknown')
     ? 'potential fit: pending confirmation'
     : summary.related > 0 && summary.gap === 0 ? 'potential fit: pending confirmation'
     : score >= 0.85 && summary.gap === 0

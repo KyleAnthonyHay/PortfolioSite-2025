@@ -22,6 +22,7 @@ import CallCard from './voice/CallCard';
 import { useVoiceCall, type Delegation } from './voice/useVoiceCall';
 import type { CallEndReason } from './voice/types';
 import type { AgentTask, TaskSnapshot } from '@/lib/tasks/types';
+import { useSavedBrief } from '@/lib/use-saved-brief';
 
 interface UserMessage {
   id: string;
@@ -687,8 +688,9 @@ export default function ChatInterface() {
     .flatMap((m) => (m.role === 'assistant' ? [...m.widgets].reverse() : []))
     .find((w) => w.kind === 'recruiter_brief' || (w.kind === 'fit_report' && w.brief));
   // A fit check is the brief; chats saved before they were merged may hold a separate brief card.
-  const briefId =
-    latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : latestBrief?.kind === 'fit_report' ? latestBrief.brief?.publicId : undefined;
+  // A fit check's brief is linked once it is saved; while it is written, making another waits.
+  const fitBrief = useSavedBrief(latestBrief?.kind === 'fit_report' ? latestBrief.brief : undefined);
+  const briefId = latestBrief?.kind === 'recruiter_brief' ? latestBrief.view.publicId : fitBrief.brief?.publicId;
   const makeBrief = () => send(BRIEF_PROMPT);
 
   return (
@@ -712,7 +714,7 @@ export default function ChatInterface() {
           </div>
 
           <div className="flex items-center gap-2">
-            {isHydrated && <BriefButton ready={briefReady} busy={isStreaming} briefId={briefId} onMake={makeBrief} />}
+            {isHydrated && <BriefButton ready={briefReady} busy={isStreaming || fitBrief.writing} briefId={briefId} onMake={makeBrief} />}
             {isHydrated && (messages.length > 0 || archive.length > 0) && (
               <ChatSwitcher
                 current={
@@ -973,7 +975,7 @@ export default function ChatInterface() {
       <BriefNudge
         engaged={fitShown || userMessages.length >= 3}
         ready={briefReady}
-        busy={isStreaming}
+        busy={isStreaming || fitBrief.writing}
         briefId={briefId}
         activity={messages.length}
         onMake={makeBrief}

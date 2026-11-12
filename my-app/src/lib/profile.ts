@@ -37,7 +37,7 @@ export const timeline: TimelineItem[] = [
     title: 'AI Engineer',
     org: 'Cognizant',
     period: 'Nov 2025 – Present',
-    detail: 'AI-assisted synthetic-data testbed for a global data warehouse, a DistilBERT sentiment fine-tune, and ETL regression testing across millions of records.',
+    detail: 'Synthetic-data testbed design and MVP, DistilBERT sentiment-analysis training project, and data QA and regression testing.',
   },
   {
     kind: 'education',
@@ -99,7 +99,7 @@ export const journey: JourneyNode[] = [
     kind: 'work',
     period: 'Nov 2025',
     title: 'AI Engineer, Cognizant',
-    caption: 'Synthetic-data testbed for a global data warehouse, a DistilBERT fine-tune, ETL regression testing.',
+    caption: 'Synthetic-data testbed MVP, DistilBERT training project, and data QA.',
   },
   {
     id: 'revature',
