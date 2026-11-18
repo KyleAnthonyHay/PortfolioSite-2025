@@ -47,6 +47,25 @@ interface Project {
 
 const projects: Project[] = [
   {
+    id: 12,
+    title: 'Playback Support Agent',
+    image: '/products/playback/landing.jpg',
+    description: 'Inbound AI voice support for MultiTracks Playback, built for the Regal AI Product Specialist take-home.',
+    link: 'https://playback-support.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/Inbound-Customer-Service-Playback',
+    landscape: true,
+    category: 'Web',
+    overview: 'An inbound voice support demo that helps musicians and church production teams troubleshoot MultiTracks Playback before rehearsal or a service. Call from the browser or the demo phone number, describe a song-loading or audio-output problem, and the agent works through documentation and account-aware tools while the interface shows the conversation and tool activity. Built for the Regal AI Product Specialist take-home; not affiliated with MultiTracks.com.',
+    purpose: 'Demonstrates the full support experience: understand the caller, distinguish an account or permission problem from a device issue, give short documented steps, and offer specialist review when the request goes beyond scope. Vapi and GPT-Live handle the voice conversation, Convex runs the tools and activity log, and a Pinecone retrieval pipeline adds the official Playback User Guide. Customer records, transfers, team availability, and callbacks are simulated. Apple app-version lookup is live; the Planning Center integration uses a separate fictional demo organization, with development verification documented in the repository.',
+    techStack: {
+      frontend: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind CSS 4', 'Vapi Web SDK', 'Web Audio API'],
+      backend: ['Vapi', 'OpenAI GPT-Live', 'Convex HTTP actions', 'Pinecone integrated embeddings', 'Apple iTunes Lookup API', 'Planning Center Services API'],
+      infrastructure: ['Vercel', 'Convex cloud', 'Pinecone', 'Node.js test runner', 'Text conversation harness'],
+    },
+    hasDetailedView: true,
+  },
+
+  {
     id: 1,
     title: 'SelahNote',
     image: '/projects/selah-note.png',

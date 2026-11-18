@@ -59,6 +59,22 @@ interface CatalogDetails {
 }
 
 const details: Record<number, CatalogDetails> = {
+  12: {
+    evidence: 'deployed',
+    aliases: ['Playback Support Agent', 'Playback Support', 'Regal Playback Agent', 'Regal', 'Playback'],
+    corpusNames: ['Playback Support Agent'],
+    image: '/products/playback/landing.jpg',
+    unframed: true,
+    highlights: ['Vapi', 'GPT-Live', 'Convex', 'Pinecone'],
+    overview:
+      'Inbound AI voice support demo for MultiTracks Playback, built for the Regal AI Product Specialist take-home. A browser or phone caller gets help with song loading and audio output, grounded in official documentation and server-side tools. The interface exposes the conversation and tool activity, with live APIs and simulated account, transfer, and callback flows clearly labeled.',
+    techStack: {
+      frontend: ['Next.js 16', 'React 19', 'TypeScript', 'Tailwind CSS 4', 'Vapi Web SDK', 'Web Audio API'],
+      backend: ['Vapi', 'OpenAI GPT-Live', 'Convex HTTP actions', 'Pinecone integrated embeddings', 'Apple iTunes Lookup API', 'Planning Center Services API (demo integration)'],
+      infrastructure: ['Vercel', 'Convex cloud', 'Pinecone', 'Node.js test runner', 'Text conversation harness'],
+    },
+  },
+
   1: {
     evidence: 'production',
     aliases: ['SelahNote', 'Selahnote', 'Selah Note', 'Lectra'],

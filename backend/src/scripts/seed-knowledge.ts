@@ -16,20 +16,40 @@ const NAMESPACE = process.env.PINECONE_KNOWLEDGE_NAMESPACE || "knowledge";
 const BATCH_SIZE = 90;
 
 async function main() {
+  const args = process.argv.slice(2);
+  let project: string | undefined;
+  let dryRun = false;
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === "--dry-run") dryRun = true;
+    else if (args[i] === "--project") {
+      project = args[++i];
+      if (!project || project.startsWith("--")) {
+        throw new Error("--project requires a knowledge file slug");
+      }
+    } else throw new Error(`Unknown argument: ${args[i]}`);
+  }
+  const chunks = (await loadKnowledgeChunks(DESCRIPTIONS_DIR))
+    .filter((chunk) => !project || chunk.slug === project);
+  if (!chunks.length) throw new Error(`No knowledge chunks for ${project}`);
+  console.log(`Loaded ${chunks.length} chunks${project ? ` for ${project}` : ""}`);
+  if (dryRun) {
+    console.log(`Dry run: would upsert into namespace "${NAMESPACE}"${project ? " without clearing other projects" : " after replacing its contents"}`);
+    return;
+  }
+
   const apiKey = process.env.PINECONE_API_KEY;
   const indexName = process.env.PINECONE_INDEX_NAME;
   if (!apiKey || !indexName) throw new Error("Missing Pinecone environment variables");
 
-  const chunks = await loadKnowledgeChunks(DESCRIPTIONS_DIR);
-  console.log(`Loaded ${chunks.length} chunks`);
-
   const pinecone = new Pinecone({ apiKey });
   const base = pinecone.index(indexName);
-  try {
-    await base.deleteNamespace(NAMESPACE);
-    console.log(`Cleared namespace "${NAMESPACE}"`);
-  } catch {
-    // First run: nothing to clear.
+  if (!project) {
+    try {
+      await base.deleteNamespace(NAMESPACE);
+      console.log(`Cleared namespace "${NAMESPACE}"`);
+    } catch {
+      // First run: nothing to clear.
+    }
   }
   const index = base.namespace(NAMESPACE);
 

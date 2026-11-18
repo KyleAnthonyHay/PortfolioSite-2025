@@ -140,6 +140,15 @@ const prodBotFeatures = [
   { icon: <Upload className="w-4 h-4" />, title: 'Import & Export', description: 'Approved docs export as a ZIP of YAML and markdown and re-import atomically as drafts.' },
 ];
 
+const playbackFeatures = [
+  { icon: <Mic className="w-4 h-4" />, title: 'Browser & Phone Support', description: 'An inbound voice experience powered by Vapi and GPT-Live, with a phone-style browser interface and clear AI disclosure.' },
+  { icon: <BookOpen className="w-4 h-4" />, title: 'Documentation Grounding', description: 'A help-center snapshot and a Pinecone retrieval pipeline for the official Playback User Guide, with source links and support-scope metadata.' },
+  { icon: <Users className="w-4 h-4" />, title: 'Account-Aware Diagnosis', description: 'Synthetic organizations, subscriptions, permissions, and song libraries distinguish entitlement problems from download or audio issues.' },
+  { icon: <LayoutGrid className="w-4 h-4" />, title: 'Visible Agent Activity', description: 'The call screen shows conversation and tool activity, labeling live APIs, documentation lookups, and simulated actions.' },
+  { icon: <Calendar className="w-4 h-4" />, title: 'Specialist Handoff', description: 'Direct requests for a person and issues beyond support scope lead to simulated transfers or callbacks stored only in the demo.' },
+  { icon: <Gauge className="w-4 h-4" />, title: 'Conversation Evaluation', description: 'A shared-definition text harness checks reasoning and tool use. Voice behavior is evaluated separately, with per-call intent and outcome measurements.' },
+];
+
 const featuresByProject: Record<number, typeof ontractFeatures> = {
   1: selahNoteFeatures,
   4: countryViewerFeatures,
@@ -150,6 +159,7 @@ const featuresByProject: Record<number, typeof ontractFeatures> = {
   9: soundSnagFeatures,
   10: selahNoteDashboardFeatures,
   11: prodBotFeatures,
+  12: playbackFeatures,
 };
 
 interface ProjectFeaturesProps {

@@ -73,6 +73,19 @@ export const projects: ProjectCardData[] = [
     live: true,
   },
   {
+    id: 12,
+    title: 'Playback Support Agent',
+    tagline: 'Voice AI support before the service starts',
+    description:
+      'Inbound voice support demo built for the Regal AI Product Specialist take-home. Troubleshoots MultiTracks Playback with grounded documentation, account-aware tools, and a live activity panel.',
+    image: '/products/playback/landing.jpg',
+    link: 'https://playback-support.vercel.app',
+    github: 'https://github.com/KyleAnthonyHay/Inbound-Customer-Service-Playback',
+    landscape: true,
+    category: 'Web Apps',
+    featured: true,
+  },
+  {
     id: 5,
     title: 'OnTract',
     tagline: 'Contract management, read for you',

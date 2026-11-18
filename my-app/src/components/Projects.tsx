@@ -8,20 +8,19 @@ import { featuredProjects } from '@/lib/projects';
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
 /**
- * ProdBot leads beside SelahNote's phone, OnTract and Sentio+ share the next
- * row, and the smaller tools close out in thirds. Every landscape well keeps
- * the recording's own proportions, so the whole app window is always in view.
- * On a tablet (md to lg) thirds are too narrow for a card's footer, so ProdBot
- * takes the full row and the rest pair up in halves.
+ * ProdBot leads beside SelahNote's phone; the remaining web and Mac projects
+ * pair up in halves. On a tablet ProdBot takes the full row. Landscape media
+ * keeps its proportions so the whole app window stays in view.
  */
 const spans = [
   'md:col-span-12 lg:col-span-8',
   'md:col-span-6 lg:col-span-4',
   'md:col-span-6',
   'md:col-span-6',
-  'md:col-span-6 lg:col-span-4',
-  'md:col-span-6 lg:col-span-4',
-  'md:col-span-6 lg:col-span-4',
+  'md:col-span-6',
+  'md:col-span-6',
+  'md:col-span-6',
+  'md:col-span-6',
 ];
 
 const Projects = () => {
