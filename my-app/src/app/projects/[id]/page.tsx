@@ -51,7 +51,7 @@ const projects: Project[] = [
     title: 'Playback Support Agent',
     image: '/products/playback/landing.jpg',
     description: 'Inbound AI voice support for MultiTracks Playback, built for the Regal AI Product Specialist take-home.',
-    link: 'https://playback-support.vercel.app',
+    link: 'https://playback.kyleanthonyhay.com',
     github: 'https://github.com/KyleAnthonyHay/Inbound-Customer-Service-Playback',
     landscape: true,
     category: 'Web',

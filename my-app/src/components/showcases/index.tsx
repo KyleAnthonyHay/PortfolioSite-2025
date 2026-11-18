@@ -258,14 +258,14 @@ const playback: Showcase = {
       icon: <Mic className={ic} />,
       title: 'Call from the browser or your phone.',
       description: 'A focused entry point for song-loading and audio-output support. Built as a Regal take-home demo, with AI disclosure and simulation boundaries visible before the call.',
-      media: { kind: 'browser', src: '/products/playback/landing.jpg', alt: 'Playback Support Agent landing page with browser-call entry and Playback artwork', url: 'playback-support.vercel.app', ratio: 16 / 10 },
+      media: { kind: 'browser', src: '/products/playback/landing.jpg', alt: 'Playback Support Agent landing page with browser-call entry and Playback artwork', url: 'playback.kyleanthonyhay.com', ratio: 16 / 10 },
     },
     {
       label: 'Call screen',
       icon: <MessageSquare className={ic} />,
       title: 'Hear the answer. See the work behind it.',
       description: 'The phone-style call screen sits beside the agent activity panel. During a call, the conversation and tool results appear here, with live API reads, documentation, and simulated account actions labeled separately.',
-      media: { kind: 'browser', src: '/products/playback/call.jpg', alt: 'Playback browser call screen beside the empty agent activity panel before a call', url: 'playback-support.vercel.app/call', ratio: 16 / 10 },
+      media: { kind: 'browser', src: '/products/playback/call.jpg', alt: 'Playback browser call screen beside the empty agent activity panel before a call', url: 'playback.kyleanthonyhay.com/call', ratio: 16 / 10 },
     },
   ],
 };

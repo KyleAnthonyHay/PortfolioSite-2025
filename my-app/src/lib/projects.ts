@@ -79,7 +79,7 @@ export const projects: ProjectCardData[] = [
     description:
       'Inbound voice support demo built for the Regal AI Product Specialist take-home. Troubleshoots MultiTracks Playback with grounded documentation, account-aware tools, and a live activity panel.',
     image: '/products/playback/landing.jpg',
-    link: 'https://playback-support.vercel.app',
+    link: 'https://playback.kyleanthonyhay.com',
     github: 'https://github.com/KyleAnthonyHay/Inbound-Customer-Service-Playback',
     landscape: true,
     category: 'Web Apps',
