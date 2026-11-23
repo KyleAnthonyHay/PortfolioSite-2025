@@ -1,0 +1,72 @@
+<!doctype html>
+<!--
+  Template for the link-preview card (app/opengraph-image.png and
+  app/twitter-image.png). It mirrors the home hero: paper background, the
+  two-tone headline, the name chip and the rounded portrait card.
+  Regenerate with: npm run og:render  (scripts/og/render.sh)
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { width: 1200px; height: 630px; overflow: hidden; }
+  body {
+    background: #f9fafb;
+    font-family: "Helvetica Neue", "SF Pro Display", -apple-system, Helvetica, Arial, sans-serif;
+    color: #18181b;
+    -webkit-font-smoothing: antialiased;
+  }
+  .frame {
+    position: relative;
+    width: 1200px; height: 630px;
+    display: grid;
+    grid-template-columns: 1fr 420px;
+    gap: 48px;
+    align-items: center;
+    padding: 0 60px 0 76px;
+  }
+  .chip { display: flex; align-items: center; gap: 16px; margin-bottom: 44px; }
+  .avatar {
+    width: 64px; height: 64px; border-radius: 50%;
+    background: url("../../public/profile.jpg") center/cover;
+    box-shadow: 0 0 0 3px #f9fafb, 0 0 0 6px rgba(228, 228, 231, 0.8);
+  }
+  .name { font-size: 24px; font-weight: 500; color: #18181b; letter-spacing: -0.01em; }
+  .role { font-size: 19px; color: #a1a1aa; margin-top: 4px; }
+  h1 {
+    font-weight: 400;
+    font-size: 70px;
+    line-height: 1;
+    letter-spacing: -0.05em;
+  }
+  h1 span { display: block; }
+  h1 .muted { color: #a1a1aa; }
+  .photo {
+    width: 420px; height: 510px;
+    border-radius: 32px;
+    overflow: hidden;
+    background: url("../../public/profile.jpg") 50% 30%/cover;
+    box-shadow: 0 24px 48px -20px rgba(0, 0, 0, 0.25);
+  }
+</style>
+</head>
+<body>
+  <div class="frame">
+    <div>
+      <div class="chip">
+        <div class="avatar"></div>
+        <div>
+          <p class="name">Kyle-Anthony Hay</p>
+          <p class="role">AI Engineer &amp; Entrepreneur</p>
+        </div>
+      </div>
+      <h1>
+        <span>Building intelligent</span>
+        <span class="muted">software that ships.</span>
+      </h1>
+    </div>
+    <div class="photo"></div>
+  </div>
+</body>
+</html>
