@@ -4,7 +4,7 @@ import { assessmentDay } from './professional-tenure';
 export const DEFAULT_AI_MODEL = 'gpt-5.6-luna';
 export type ModelStage = 'fit' | 'extraction' | 'brief' | 'verification' | 'chat' | 'evidence' | 'technology';
 // Bump the relevant version whenever that stage's prompt or interpretation changes.
-export const PROMPT_VERSIONS = { fit: 6, extraction: 3, brief: 3, verification: 4 } as const;
+export const PROMPT_VERSIONS = { fit: 8, extraction: 3, brief: 3, verification: 4 } as const;
 
 export function stageModel(stage: ModelStage): string {
   const fit = process.env.OPENAI_FIT_MODEL ?? process.env.OPENAI_FIT_JUDGE_MODEL ?? DEFAULT_AI_MODEL;
