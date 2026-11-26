@@ -24,10 +24,10 @@ const ease = [0.16, 1, 0.3, 1] as const;
  * underneath. On a tablet (md to lg) a third of the row leaves the screens too
  * small to read, so each feature takes its own row with the story beside it.
  */
-export default function FeatureGallery({ heading, features }: { heading: string; features: Feature[] }) {
+export default function FeatureGallery({ heading, features, eyebrow = 'How it works' }: { heading: string; features: Feature[]; eyebrow?: string }) {
   return (
     <section>
-      <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">How it works</p>
+      {eyebrow && <p className="text-[11px] uppercase tracking-widest text-zinc-400 font-medium mb-4">{eyebrow}</p>}
       <h2 className="text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance max-w-[40rem] mb-10">
         {heading}
       </h2>

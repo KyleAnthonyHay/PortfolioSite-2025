@@ -9,9 +9,16 @@ import { motion } from 'motion/react';
 
 type Filter = 'All' | ProjectCategory;
 
-const categories: Filter[] = ['All', 'iOS Apps', 'macOS Apps', 'Web Apps'];
+const categories: Filter[] = ['All', 'iOS Apps', 'macOS Apps', 'Web Apps', 'Games'];
 
 const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
+
+/**
+ * The game's card closes the list on its own row, centred at half width, as on
+ * the home grid. Beside a portrait phone card its landscape video was
+ * stretched to the phone's height and floated in a tall, empty well.
+ */
+const gameSpan = 'md:col-span-6 md:col-start-4';
 
 /**
  * Explicit 7/5 pairs so every row fills the 12-column grid — the old
@@ -94,7 +101,7 @@ export default function ProjectsPage() {
                 project={project}
                 show={mounted}
                 delay={0.15 + index * 0.07}
-                className={spans[index % spans.length]}
+                className={project.category === 'Games' ? gameSpan : spans[index % spans.length]}
                 detailed
               />
             ))}

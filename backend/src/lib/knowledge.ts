@@ -18,6 +18,7 @@ export const PROJECT_IDS: Record<string, number> = {
   "selahnote-creator-dashboard": 10,
   "v1-prodbot": 11,
   "playback-support": 12,
+  "sovereign-realms": 13,
 };
 
 export interface KnowledgeChunk {

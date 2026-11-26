@@ -25,7 +25,7 @@ export type ShowcaseMedia =
   /** A screen recording that already includes its own window chrome, shown bare. */
   | { kind: 'recording'; src: string; webm?: string; poster?: string; ratio?: number }
   /** A narrated walkthrough with sound: native controls, nothing loads until play. */
-  | { kind: 'walkthrough'; src: string; poster: string };
+  | { kind: 'walkthrough'; src: string; poster: string; silent?: boolean };
 
 export interface ShowcaseItem {
   /** Pill label. Only rendered when a showcase has more than one item. */

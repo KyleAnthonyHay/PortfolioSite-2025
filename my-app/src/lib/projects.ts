@@ -1,6 +1,6 @@
 import type { ScreenSource } from '@/components/PhoneFrame';
 
-export type ProjectCategory = 'iOS Apps' | 'macOS Apps' | 'Web Apps';
+export type ProjectCategory = 'iOS Apps' | 'macOS Apps' | 'Web Apps' | 'Games';
 
 export interface ProjectCardData {
   /** Detail page id — the card links to /projects/{id}. */
@@ -179,6 +179,24 @@ export const projects: ProjectCardData[] = [
     image: '/demos/country-viewer/device.png',
     github: 'https://github.com/KyleAnthonyHay/Countries-App',
     category: 'iOS Apps',
+  },
+  {
+    id: 13,
+    title: 'Sovereign Realms',
+    tagline: 'Voxel fantasy RTS in Unreal Engine 5',
+    description:
+      'A fantasy real-time strategy game in a voxel world: raise a kingdom, train an army and beat an AI commander, from above or on foot as the king. C++ in Unreal Engine 5.8, every model generated in Blender.',
+    image: '/products/sovereign-realms/poster.jpg',
+    video: {
+      src: '/products/sovereign-realms/loop.mp4',
+      webm: '/products/sovereign-realms/loop.webm',
+      poster: '/products/sovereign-realms/loop-poster.jpg',
+      ratio: 16 / 9,
+      bare: true,
+    },
+    landscape: true,
+    category: 'Games',
+    featured: true,
   },
 ];
 

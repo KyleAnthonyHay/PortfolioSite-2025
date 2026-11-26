@@ -8,7 +8,7 @@
 import type { BriefView } from './recruiter-brief/view';
 import type { RecommendationLevel } from './recruiter-brief/types';
 
-export type ProjectCategory = 'iOS Apps' | 'macOS Apps' | 'Web Apps';
+export type ProjectCategory = 'iOS Apps' | 'macOS Apps' | 'Web Apps' | 'Games';
 
 export interface ProjectCardData {
   id: number;

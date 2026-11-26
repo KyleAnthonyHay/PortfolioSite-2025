@@ -9,7 +9,8 @@ const spring = { type: 'spring' as const, stiffness: 100, damping: 20 };
 
 /**
  * ProdBot leads beside SelahNote's phone; the remaining web and Mac projects
- * pair up in halves. On a tablet ProdBot takes the full row. Landscape media
+ * pair up in halves, and the game closes the grid alone, centred. On a tablet
+ * ProdBot takes the full row. Landscape media
  * keeps its proportions so the whole app window stays in view.
  */
 const spans = [
@@ -21,6 +22,8 @@ const spans = [
   'md:col-span-6',
   'md:col-span-6',
   'md:col-span-6',
+  // Sovereign Realms closes the grid on its own row, centred at half width.
+  'md:col-span-6 md:col-start-4',
 ];
 
 const Projects = () => {

@@ -49,7 +49,7 @@ function CompactCard({ project }: { project: ProjectCardData }) {
         <div className="flex items-center justify-between gap-2">
           <p className="truncate text-sm font-medium text-zinc-900">{project.title}</p>
           <span className="shrink-0 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-            {project.category === 'iOS Apps' ? 'iOS' : project.category === 'macOS Apps' ? 'Mac' : 'Web'}
+            {project.category === 'iOS Apps' ? 'iOS' : project.category === 'macOS Apps' ? 'Mac' : project.category === 'Games' ? 'Game' : 'Web'}
           </span>
         </div>
         <p className="truncate text-xs text-zinc-400">{project.tagline}</p>
@@ -147,7 +147,7 @@ const secondaryButton =
 export function ProjectDetailWidget({ widget }: { widget: Extract<Widget, { kind: 'project' }> }) {
   const { project, overview, techStack } = widget;
   const portrait = project.orientation === 'portrait';
-  const kind = project.category === 'iOS Apps' ? 'iOS app' : project.category === 'macOS Apps' ? 'macOS app' : 'Web app';
+  const kind = project.category === 'iOS Apps' ? 'iOS app' : project.category === 'macOS Apps' ? 'macOS app' : project.category === 'Games' ? 'Game' : 'Web app';
 
   return (
     <div className="overflow-hidden agent-card">

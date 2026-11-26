@@ -5,7 +5,7 @@ import type { Feature } from '@/components/FeatureGallery';
  * capture and, where it holds up offline, an HTML snapshot the gallery
  * renders live with the named element ringed.
  */
-export const featureGalleries: Record<number, { heading: string; features: Feature[] }> = {
+export const featureGalleries: Record<number, { heading: string; eyebrow?: string; features: Feature[] }> = {
   5: {
     heading: 'Contracts, read and remembered for you.',
     features: [
@@ -106,6 +106,84 @@ export const featureGalleries: Record<number, { heading: string; features: Featu
         html: '/products/prodbot/feature-3.html',
         highlight: '[data-gallery-highlight]',
         alt: 'The documentation review queue with a drafted update awaiting approval',
+      },
+    ],
+  },
+  13: {
+    heading: 'Gallery',
+    eyebrow: '',
+    features: [
+      {
+        eyebrow: 'Scale',
+        title: "Expansive maps",
+        description:
+          "The largest battle map: a 184 m mountain in the middle, rivers and roads winding round it, five gold mines and the sea on every side. Every block of it can be fought over.",
+        image: '/products/sovereign-realms/island-mountain.jpg',
+        alt: "Sovereign Realms: the Realm v2 island, with its mountain at the centre",
+      },
+      {
+        eyebrow: 'Open world',
+        title: "A world to cross, not just a board",
+        description:
+          "Forests, ridges, rivers and coastline between the two kingdoms. Armies march by road, cut through the woods or sail around the coast, and every part of the land can matter in a fight.",
+        image: '/products/sovereign-realms/forest-canopy.jpg',
+        alt: "Sovereign Realms: a world to cross, not just a board",
+      },
+      {
+        eyebrow: 'Kingdom',
+        title: "Build your own village",
+        description:
+          "Lay out farms, houses, mines, barracks and watch towers, then upgrade the castle to unlock more. This kingdom is built all the way up.",
+        image: '/products/sovereign-realms/kingdom-full.jpg',
+        alt: "Sovereign Realms: build your own village",
+      },
+      {
+        eyebrow: 'Heroes',
+        title: "Lead with a hero",
+        description:
+          "King David and Jonathan, the archer prince, are heroes you can play. They fight on the front line, lead their own guard and rise again at the castle after they fall.",
+        image: '/products/sovereign-realms/king-david-castle.jpg',
+        alt: "Sovereign Realms: lead with a hero",
+      },
+      {
+        eyebrow: 'Battle',
+        title: "Troops battle in real time",
+        description:
+          "Swordsmen and archers clash in formation, with every arrow in flight and every hit landing in the same simulation the player commands.",
+        image: '/products/sovereign-realms/battle-clash.jpg',
+        alt: "Sovereign Realms: troops battle in real time",
+      },
+      {
+        eyebrow: 'Multi-terrain battle',
+        title: "Fight on land and sea",
+        description:
+          "Load troops onto the troop ship, sail them around the coast and land them behind the enemy's lines.",
+        image: '/products/sovereign-realms/troop-ship-sailing.jpg',
+        alt: "Sovereign Realms: fight on land and sea",
+      },
+      {
+        eyebrow: 'Construction',
+        title: "Place it, then build it",
+        description:
+          "Choose a building, set it on the ground and Builders walk over and raise it piece by piece, with its progress shown over the site.",
+        image: '/products/sovereign-realms/ui-place-farm.jpg',
+        alt: "Sovereign Realms: place it, then build it",
+      },
+      {
+        eyebrow: 'FPV',
+        title: "First-person view and player control",
+        description:
+          "Take direct control of a hero or any soldier and fight from the ground, while still giving orders to the rest of the army.",
+        image: '/products/sovereign-realms/ui-hero-king-david.jpg',
+        alt: "Sovereign Realms: first-person view and player control",
+      },
+      {
+        eyebrow: 'Fog of war',
+        title: "See only what your troops see",
+        description:
+          "The enemy stays hidden until your units get close. Here 123 troops push across the basin into the unknown.",
+        image: '/products/sovereign-realms/ui-overview-army-orders.jpg',
+        alt: "Sovereign Realms: see only what your troops see",
       },
     ],
   },

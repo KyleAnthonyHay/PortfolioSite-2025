@@ -674,7 +674,7 @@ export const listProjects = tool(
     description:
       "List Kyle-Anthony's projects, optionally filtered to iOS or web apps. Shows them as a card carousel, so keep the accompanying text short.",
     schema: z.object({
-      category: z.enum(['all', 'iOS Apps', 'macOS Apps', 'Web Apps']).default('all').describe('Filter by platform'),
+      category: z.enum(['all', 'iOS Apps', 'macOS Apps', 'Web Apps', 'Games']).default('all').describe('Filter by platform'),
     }),
   }
 );
@@ -1420,7 +1420,7 @@ export const showDemo = tool(
     return pack({
       content: `A demo card is shown for ${project.title} with ${parts.join(' and ')}, opening on the ${initial === 'video' ? 'video' : native ? 'website' : 'live app'}${
         parts.length > 1 ? '; the visitor can switch between them' : ''
-      }. ${view === 'live' && native ? `${project.title} is a native ${project.category === 'iOS Apps' ? 'iOS' : 'Mac'} app, so it cannot run in the browser; say so in a clause. ` : ''}${
+      }. ${view === 'live' && native ? (project.category === 'Games' ? `${project.title} is a game for macOS and Windows, not a web app, so it cannot run in the browser; say so in a clause. ` : `${project.title} is a native ${project.category === 'iOS Apps' ? 'iOS' : 'Mac'} app, so it cannot run in the browser; say so in a clause. `) : ''}${
         !native && liveUrl ? 'The live app may ask them to sign in or use a demo account. ' : ''
       }Keep the reply to one or two sentences and do not paste the links.`,
       citedProjectIds: [project.id],

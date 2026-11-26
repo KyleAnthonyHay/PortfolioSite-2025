@@ -9,6 +9,8 @@ interface WalkthroughPlayerProps {
   className?: string;
   /** Fill the parent instead of drawing the rounded frame; the parent sets the size. */
   frameless?: boolean;
+  /** The video has no sound track, so the sound button is left out. */
+  silent?: boolean;
 }
 
 /**
@@ -19,7 +21,7 @@ interface WalkthroughPlayerProps {
  * Touch screens have no hover, so on an iPad or phone the controls stay up,
  * at finger size, with a taller strip to grab the scrub bar by.
  */
-export default function WalkthroughPlayer({ src, poster, className = '', frameless = false }: WalkthroughPlayerProps) {
+export default function WalkthroughPlayer({ src, poster, className = '', frameless = false, silent = false }: WalkthroughPlayerProps) {
   const ref = useRef<HTMLVideoElement>(null);
   // Whether the visitor wants it playing. Off-screen pauses must not count as
   // a choice, or a card that mounts below the fold would never start.
@@ -190,9 +192,9 @@ export default function WalkthroughPlayer({ src, poster, className = '', framele
         </div>
       </div>
       <div className="pointer-events-none absolute bottom-5 right-4 any-pointer-coarse:bottom-9 any-pointer-coarse:right-3 flex items-center gap-2 opacity-0 transition-opacity duration-300 group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100 any-pointer-coarse:pointer-events-auto any-pointer-coarse:opacity-100">
-        <button type="button" onClick={toggleMute} aria-label={muted ? 'Turn sound on' : 'Turn sound off'} className={button}>
+        {!silent && <button type="button" onClick={toggleMute} aria-label={muted ? 'Turn sound on' : 'Turn sound off'} className={button}>
           {muted ? <VolumeX className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />}
-        </button>
+        </button>}
         <button type="button" onClick={togglePlay} aria-label={playing ? 'Pause' : 'Play'} className={button}>
           {playing ? <Pause className="h-4 w-4 fill-current" /> : <Play className="ml-0.5 h-4 w-4 fill-current" />}
         </button>

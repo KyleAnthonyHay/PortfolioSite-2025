@@ -270,6 +270,20 @@ const playback: Showcase = {
   ],
 };
 
+const sovereignRealms: Showcase = {
+  heading: 'Real-time strategy game.',
+  orientation: 'landscape',
+  items: [
+    {
+      label: 'Showreel',
+      icon: <Play className={ic} />,
+      title: 'Sovereign Realms in thirty seconds.',
+      description: 'Captured from the real game with the interface hidden.',
+      media: { kind: 'walkthrough', src: '/products/sovereign-realms/showreel.mp4', poster: '/products/sovereign-realms/poster.jpg', silent: true },
+    },
+  ],
+};
+
 const showcases: Record<number, Showcase> = {
   1: selahNote,
   4: countryApp,
@@ -281,6 +295,7 @@ const showcases: Record<number, Showcase> = {
   10: selahNoteDashboard,
   11: prodBot,
   12: playback,
+  13: sovereignRealms,
 };
 
 export default function ProjectShowcase({ projectId }: { projectId: number }) {
@@ -299,7 +314,7 @@ export default function ProjectShowcase({ projectId }: { projectId: number }) {
             <h2 className="max-w-[46rem] text-3xl md:text-[2.75rem] font-semibold tracking-tighter leading-[1.05] text-zinc-900 text-balance">
               {showcase.heading}
             </h2>
-            <WalkthroughPlayer src={walkthrough.media.src} poster={walkthrough.media.poster} className="mt-12" />
+            <WalkthroughPlayer src={walkthrough.media.src} poster={walkthrough.media.poster} silent={walkthrough.media.silent} className="mt-12" />
           </div>
         </div>
         {rest.length > 0 && (
