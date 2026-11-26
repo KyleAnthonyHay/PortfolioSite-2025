@@ -16,6 +16,7 @@ const categoryLabel: Record<ProjectCardData['category'], string> = {
   'iOS Apps': 'iOS',
   'macOS Apps': 'macOS',
   'Web Apps': 'Web',
+  Games: 'Game',
 };
 
 
@@ -115,7 +116,7 @@ export default function ProjectCard({
           ) : (
             <div
               className={`relative transform transition-transform duration-700 ease-out group-hover:scale-[1.03] ${
-                portrait ? 'h-[82%] w-auto aspect-[1060/2160]' : 'w-[85%] aspect-[16/9]'
+                portrait ? 'h-[82%] w-auto aspect-[1060/2160]' : 'w-[90%] aspect-[16/9] overflow-hidden rounded-[1.25rem] border border-slate-200/70 shadow-[0_12px_40px_-18px_rgba(0,0,0,0.18)]'
               }`}
             >
               <Image
