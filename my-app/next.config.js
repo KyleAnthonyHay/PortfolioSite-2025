@@ -2,6 +2,9 @@ const path = require('path');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  experimental: {
+    agentUpgrade: 'security',
+  },
   outputFileTracingRoot: path.join(__dirname, '..'),
   // Content and PDF assets are read at runtime from dynamic paths. Keep their
   // deployment bundle explicit instead of tracing the entire repository.
